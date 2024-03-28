@@ -1,0 +1,5 @@
+extension NES {
+    class Cartridge {
+        
+    }
+}
