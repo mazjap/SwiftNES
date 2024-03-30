@@ -10,12 +10,14 @@ class NintendoEntertainmentSystem {
     var input: InputHandler
     
     init() {
-        cpu = CPU()
-        ppu = PPU()
-        apu = APU()
-        memory = Memory()
-        cartridge = Cartridge()
-        input = InputHandler()
+        let memory = Memory()
+        
+        self.cpu = CPU(memory: memory)
+        self.ppu = PPU()
+        self.apu = APU()
+        self.memory = memory
+        self.cartridge = Cartridge()
+        self.input = InputHandler()
         
         // TODO: - Post init steps:
         // - Initialize components and load ROM

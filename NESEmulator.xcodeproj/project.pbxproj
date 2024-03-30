@@ -19,6 +19,10 @@
 		0E9512F32BB5DC0000E9CA83 /* NES+Cartridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9512F22BB5DC0000E9CA83 /* NES+Cartridge.swift */; };
 		0E9512F52BB5DC1D00E9CA83 /* NES+InputHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9512F42BB5DC1D00E9CA83 /* NES+InputHandler.swift */; };
 		0E9512F72BB5E04C00E9CA83 /* NES.CPU+Opcode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9512F62BB5E04C00E9CA83 /* NES.CPU+Opcode.swift */; };
+		0E9512F92BB6029400E9CA83 /* NES.CPU+Registers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9512F82BB6029400E9CA83 /* NES.CPU+Registers.swift */; };
+		0E9512FF2BB6302000E9CA83 /* NES.CPU+OpcodeImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9512FE2BB6302000E9CA83 /* NES.CPU+OpcodeImpl.swift */; };
+		0E9513012BB77D3200E9CA83 /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9513002BB77D3200E9CA83 /* Logger.swift */; };
+		0E9513042BB7F55300E9CA83 /* NES.CPU+AddressingModes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9513032BB7F55300E9CA83 /* NES.CPU+AddressingModes.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -35,6 +39,10 @@
 		0E9512F22BB5DC0000E9CA83 /* NES+Cartridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NES+Cartridge.swift"; sourceTree = "<group>"; };
 		0E9512F42BB5DC1D00E9CA83 /* NES+InputHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NES+InputHandler.swift"; sourceTree = "<group>"; };
 		0E9512F62BB5E04C00E9CA83 /* NES.CPU+Opcode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NES.CPU+Opcode.swift"; sourceTree = "<group>"; };
+		0E9512F82BB6029400E9CA83 /* NES.CPU+Registers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NES.CPU+Registers.swift"; sourceTree = "<group>"; };
+		0E9512FE2BB6302000E9CA83 /* NES.CPU+OpcodeImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NES.CPU+OpcodeImpl.swift"; sourceTree = "<group>"; };
+		0E9513002BB77D3200E9CA83 /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
+		0E9513032BB7F55300E9CA83 /* NES.CPU+AddressingModes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NES.CPU+AddressingModes.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -67,17 +75,10 @@
 		0E9512D92BB5D88400E9CA83 /* NESEmulator */ = {
 			isa = PBXGroup;
 			children = (
-				0E9512DA2BB5D88400E9CA83 /* NESEmulatorApp.swift */,
-				0E9512DC2BB5D88400E9CA83 /* ContentView.swift */,
-				0E9512E82BB5D89300E9CA83 /* NES.swift */,
-				0E9512EA2BB5DBA100E9CA83 /* NES+CPU.swift */,
-				0E9512F62BB5E04C00E9CA83 /* NES.CPU+Opcode.swift */,
-				0E9512EC2BB5DBC300E9CA83 /* NES+PPU.swift */,
-				0E9512EE2BB5DBD400E9CA83 /* NES+APU.swift */,
-				0E9512F02BB5DBEB00E9CA83 /* NES+Memory.swift */,
-				0E9512F22BB5DC0000E9CA83 /* NES+Cartridge.swift */,
-				0E9512F42BB5DC1D00E9CA83 /* NES+InputHandler.swift */,
-				0E9512DE2BB5D88500E9CA83 /* Assets.xcassets */,
+				0E9512FC2BB62FFF00E9CA83 /* Resources */,
+				0E9512FD2BB6300600E9CA83 /* Views */,
+				0E9512FB2BB62F7C00E9CA83 /* Emulator */,
+				0E9513022BB77D4100E9CA83 /* Managers */,
 				0E9512E02BB5D88500E9CA83 /* Preview Content */,
 			);
 			path = NESEmulator;
@@ -89,6 +90,57 @@
 				0E9512E12BB5D88500E9CA83 /* Preview Assets.xcassets */,
 			);
 			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+		0E9512FA2BB62F6F00E9CA83 /* CPU */ = {
+			isa = PBXGroup;
+			children = (
+				0E9512EA2BB5DBA100E9CA83 /* NES+CPU.swift */,
+				0E9512F82BB6029400E9CA83 /* NES.CPU+Registers.swift */,
+				0E9512F62BB5E04C00E9CA83 /* NES.CPU+Opcode.swift */,
+				0E9512FE2BB6302000E9CA83 /* NES.CPU+OpcodeImpl.swift */,
+				0E9513032BB7F55300E9CA83 /* NES.CPU+AddressingModes.swift */,
+			);
+			path = CPU;
+			sourceTree = "<group>";
+		};
+		0E9512FB2BB62F7C00E9CA83 /* Emulator */ = {
+			isa = PBXGroup;
+			children = (
+				0E9512E82BB5D89300E9CA83 /* NES.swift */,
+				0E9512FA2BB62F6F00E9CA83 /* CPU */,
+				0E9512EC2BB5DBC300E9CA83 /* NES+PPU.swift */,
+				0E9512EE2BB5DBD400E9CA83 /* NES+APU.swift */,
+				0E9512F02BB5DBEB00E9CA83 /* NES+Memory.swift */,
+				0E9512F22BB5DC0000E9CA83 /* NES+Cartridge.swift */,
+				0E9512F42BB5DC1D00E9CA83 /* NES+InputHandler.swift */,
+			);
+			path = Emulator;
+			sourceTree = "<group>";
+		};
+		0E9512FC2BB62FFF00E9CA83 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				0E9512DA2BB5D88400E9CA83 /* NESEmulatorApp.swift */,
+				0E9512DE2BB5D88500E9CA83 /* Assets.xcassets */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		0E9512FD2BB6300600E9CA83 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				0E9512DC2BB5D88400E9CA83 /* ContentView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		0E9513022BB77D4100E9CA83 /* Managers */ = {
+			isa = PBXGroup;
+			children = (
+				0E9513002BB77D3200E9CA83 /* Logger.swift */,
+			);
+			path = Managers;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -166,11 +218,15 @@
 				0E9512EB2BB5DBA100E9CA83 /* NES+CPU.swift in Sources */,
 				0E9512F52BB5DC1D00E9CA83 /* NES+InputHandler.swift in Sources */,
 				0E9512DB2BB5D88400E9CA83 /* NESEmulatorApp.swift in Sources */,
+				0E9513042BB7F55300E9CA83 /* NES.CPU+AddressingModes.swift in Sources */,
 				0E9512E92BB5D89300E9CA83 /* NES.swift in Sources */,
 				0E9512ED2BB5DBC300E9CA83 /* NES+PPU.swift in Sources */,
 				0E9512F72BB5E04C00E9CA83 /* NES.CPU+Opcode.swift in Sources */,
 				0E9512EF2BB5DBD400E9CA83 /* NES+APU.swift in Sources */,
+				0E9513012BB77D3200E9CA83 /* Logger.swift in Sources */,
 				0E9512F32BB5DC0000E9CA83 /* NES+Cartridge.swift in Sources */,
+				0E9512FF2BB6302000E9CA83 /* NES.CPU+OpcodeImpl.swift in Sources */,
+				0E9512F92BB6029400E9CA83 /* NES.CPU+Registers.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

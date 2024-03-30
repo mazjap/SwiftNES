@@ -1,5 +1,0 @@
-extension NES {
-    class CPU {
-        
-    }
-}
