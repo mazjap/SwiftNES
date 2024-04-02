@@ -23,6 +23,7 @@
 		0E9512FF2BB6302000E9CA83 /* NES.CPU+OpcodeImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9512FE2BB6302000E9CA83 /* NES.CPU+OpcodeImpl.swift */; };
 		0E9513012BB77D3200E9CA83 /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9513002BB77D3200E9CA83 /* Logger.swift */; };
 		0E9513042BB7F55300E9CA83 /* NES.CPU+AddressingModes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9513032BB7F55300E9CA83 /* NES.CPU+AddressingModes.swift */; };
+		0E9513202BBB9DBC00E9CA83 /* NES.CPU.Registers+Status.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E95131F2BBB9DBC00E9CA83 /* NES.CPU.Registers+Status.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -43,6 +44,7 @@
 		0E9512FE2BB6302000E9CA83 /* NES.CPU+OpcodeImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NES.CPU+OpcodeImpl.swift"; sourceTree = "<group>"; };
 		0E9513002BB77D3200E9CA83 /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
 		0E9513032BB7F55300E9CA83 /* NES.CPU+AddressingModes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NES.CPU+AddressingModes.swift"; sourceTree = "<group>"; };
+		0E95131F2BBB9DBC00E9CA83 /* NES.CPU.Registers+Status.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NES.CPU.Registers+Status.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -97,6 +99,7 @@
 			children = (
 				0E9512EA2BB5DBA100E9CA83 /* NES+CPU.swift */,
 				0E9512F82BB6029400E9CA83 /* NES.CPU+Registers.swift */,
+				0E95131F2BBB9DBC00E9CA83 /* NES.CPU.Registers+Status.swift */,
 				0E9512F62BB5E04C00E9CA83 /* NES.CPU+Opcode.swift */,
 				0E9512FE2BB6302000E9CA83 /* NES.CPU+OpcodeImpl.swift */,
 				0E9513032BB7F55300E9CA83 /* NES.CPU+AddressingModes.swift */,
@@ -227,6 +230,7 @@
 				0E9512F32BB5DC0000E9CA83 /* NES+Cartridge.swift in Sources */,
 				0E9512FF2BB6302000E9CA83 /* NES.CPU+OpcodeImpl.swift in Sources */,
 				0E9512F92BB6029400E9CA83 /* NES.CPU+Registers.swift in Sources */,
+				0E9513202BBB9DBC00E9CA83 /* NES.CPU.Registers+Status.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

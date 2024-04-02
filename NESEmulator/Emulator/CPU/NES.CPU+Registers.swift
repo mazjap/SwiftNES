@@ -9,105 +9,23 @@ extension NES.CPU {
         var indexY: UInt8
         var stackPointer: UInt8
         
-        var processorStatus: UInt8
+        var status: Status
         
-        init(programCounter: UInt16 = 0x8000, accumulator: UInt8 = 0, indexX: UInt8 = 0, indexY: UInt8 = 0, stackPointer: UInt8 = 0xFD, processorStatus: UInt8 = 0) {
+        init(
+            programCounter: UInt16 = 0x8000,
+            accumulator: UInt8 = 0,
+            indexX: UInt8 = 0,
+            indexY: UInt8 = 0,
+            stackPointer: UInt8 = 0xFD,
+            processorStatus: UInt8 = 0
+        ) {
             self.programCounter = programCounter
             self.accumulator = accumulator
             self.indexX = indexX
             self.indexY = indexY
             self.stackPointer = stackPointer
-            self.processorStatus = processorStatus
+            self.status = Status(status: processorStatus)
         }
-        
-        // Processor Status Flags
-        
-        var carry: Bool {
-            get {
-                (processorStatus & Self.carryFlag) != 0
-            }
-            set {
-                if newValue {
-                    processorStatus |= Self.carryFlag
-                } else {
-                    processorStatus &= ~Self.carryFlag
-                }
-            }
-        }
-        
-        var zero: Bool {
-            get {
-                (processorStatus & Self.zeroFlag) != 0
-            }
-            set {
-                if newValue {
-                    processorStatus |= Self.zeroFlag
-                } else {
-                    processorStatus &= ~Self.zeroFlag
-                }
-            }
-        }
-        
-        var interruptDisabled: Bool {
-            get {
-                (processorStatus & Self.interruptFlag) != 0
-            }
-            set {
-                if newValue {
-                    processorStatus |= Self.interruptFlag
-                } else {
-                    processorStatus &= ~Self.interruptFlag
-                }
-            }
-        }
-        
-        var decimal: Bool {
-            get {
-                (processorStatus & Self.decimalFlag) != 0
-            }
-            set {
-                if newValue {
-                    processorStatus |= Self.decimalFlag
-                } else {
-                    processorStatus &= ~Self.decimalFlag
-                }
-            }
-        }
-        
-//        var bFlag: {}
-        
-        var overflow: Bool {
-            get {
-                (processorStatus & Self.overflowFlag) != 0
-            }
-            set {
-                if newValue {
-                    processorStatus |= Self.overflowFlag
-                } else {
-                    processorStatus &= ~Self.overflowFlag
-                }
-            }
-        }
-        
-        var negative: Bool {
-            get {
-                (processorStatus & Self.negativeFlag) != 0
-            }
-            set {
-                if newValue {
-                    processorStatus |= Self.negativeFlag
-                } else {
-                    processorStatus &= ~Self.negativeFlag
-                }
-            }
-        }
-        
-        static let carryFlag: UInt8 = 1
-        static let zeroFlag: UInt8 = (1 << 1)
-        static let interruptFlag: UInt8 = (1 << 2)
-        static let decimalFlag: UInt8 = (1 << 3)
-        static let overflowFlag: UInt8 = (1 << 6)
-        static let negativeFlag: UInt8 = (1 << 7)
     }
 }
 
@@ -122,48 +40,8 @@ extension NES.CPU {
         let value = optionalValue ?? registers.accumulator
         
         // Set zero flag based on whether value is 0b00000000 (0) or 0b10000000 (-0)
-        if value == 0 || value == Registers.negativeFlag {
-            setZeroFlag()
-        } else {
-            clearZeroFlag()
-        }
-        
-        if (value & Registers.negativeFlag) != 0 {
-            setNegativeFlag()
-        } else {
-            clearNegativeFlag()
-        }
-    }
-    
-    func setZeroFlag() {
-        registers.zero = true
-    }
-    
-    func clearZeroFlag() {
-        registers.zero = false
-    }
-    
-    func setNegativeFlag() {
-        registers.negative = true
-    }
-    
-    func clearNegativeFlag() {
-        registers.negative = false
-    }
-    
-    func setCarryFlag() {
-        registers.carry = true
-    }
-    
-    func clearCarryFlag() {
-        registers.carry = false
-    }
-    
-    func setOverflowFlag() {
-        registers.overflow = true
-    }
-    
-    func clearOverflowFlag() {
-        registers.overflow = false
+        registers.status.setFlag(.zero, to: value == 0 || value == Registers.Status.Flag.negative.rawValue)
+        // Set negative flag based on the most significant bit
+        registers.status.setFlag(.negative, to: (Registers.Status.Flag.negative.rawValue) != 0)
     }
 }
