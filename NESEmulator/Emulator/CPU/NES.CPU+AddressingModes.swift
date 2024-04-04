@@ -1,87 +1,101 @@
 extension NES.CPU {
-    /// Uses the 8-bit operand itself as the value for the operation (doesn't fetch from a provided address)
-    /// - Parameter addr: The 16-bit address containing the immediate value.
-    /// - Returns: The immediate value fetched from the specified address.
-    func getImmediate(addr: UInt16) -> UInt16 {
-        UInt16(memory.read(from: addr))
+    /// Fetches the 8-bit zero page address from the provided 8-bit base address, optionally applying an offset
+    /// - Parameters:
+    ///   - addr: The 8-bit base address from which to fetch the value
+    ///   - offset: An optional 8-bit offset to add to the base address, used in indexed zero page addressing modes
+    /// - Returns: The resolved zero page address after applying the offset
+    /// - Note: This function increments the clock cycle count based on the addressing mode used
+    func getZeropageAddress(addr: UInt8, offset: UInt8? = nil) -> UInt16 {
+        clockCycleCount += 2 // Base cycles for ZeroPage access
+        var resolvedAddress = addr // Ensure address is within the zero page range
+        
+        if let offset {
+            clockCycleCount += 1 // Indexed ZeroPage access requires an additional cycle
+            resolvedAddress = (resolvedAddress &+ offset)
+        }
+        
+        return UInt16(resolvedAddress)
     }
     
-    /// Fetches the value from an 8-bit address on the zero page (bytes 0 - 256)
-    /// - Parameter addr: The 16-bit address to fetch the value from.
-    /// - Returns: The value fetched from the specified zero page address.
-    func getZeropage(addr: UInt16) -> UInt16 {
-        UInt16(memory.read(from: addr % 256))
+    /// Calculates the memory address using the Indexed Indirect addressing mode. Gets the low byte from `(addr + x) % 256`, the high byte from `(addr + x + 1) % 256`, then returns the calculated address
+    /// - Parameter addr: The 8-bit base address to which the X register offset will be added
+    /// - Returns: The resolved 16-bit address calculated from the low and high bytes
+    /// - Note: This function increments the clock cycle count based on the addressing mode used
+    func getIndexedIndirectAddress(addr: UInt8) -> UInt16 {
+        let baseAddr = UInt16(addr) &+ UInt16(registers.indexX)
+        let lowByteAddr = UInt16(memory.read(from: baseAddr & 0xFF))
+        let highByteAddr = UInt16(memory.read(from: (baseAddr &+ 1) & 0xFF)) << 8
+        
+        clockCycleCount += 5 // Base cycles for (indirect,x) access
+        
+        return highByteAddr | lowByteAddr
     }
 
-    /// Same as `Zeropage`, but using x as an offset (addr + x) % 256
-    /// - Parameters:
-    ///   - addr: The 16-bit base address on the zero page to which the X register offset will be added.
-    ///   - x: The 8-bit value in the X register to be added as an offset to the base address.
-    /// - Returns: The value fetched from the calculated address.
-    func getZeropageXIndex(addr: UInt16, x: UInt8) -> UInt16 {
-        let effectiveAddr = addr &+ UInt16(x)
-        return getZeropage(addr: effectiveAddr)
+    /// Calculates the memory address using the Indirect Indexed addressing mode. Gets the low byte from `addr % 256`, the high byte from `(addr + 1) % 256`, and adds `y` to create an effective address, then returns the calculated address
+    /// - Parameter addr: The base address
+    /// - Returns: The calculated memory address
+    /// - Note: This function increments the clock cycle count based on the addressing mode used
+    func getIndirectIndexedAddress(addr: UInt8) -> UInt16 {
+        let addr16 = UInt16(addr)
+        let lowByteAddr = UInt16(memory.read(from: addr16 & 0xFF))
+        let highByteAddr = UInt16(memory.read(from: (addr16 &+ 1) & 0xFF)) << 8
+        var resolvedAddress = lowByteAddr | highByteAddr
+        clockCycleCount += 4 // Base cycles for (indirect),y access
+        
+        if isCrossingPageBoundary(addr: resolvedAddress, offset: registers.indexY) {
+            clockCycleCount += 1
+        }
+        
+        resolvedAddress &+= UInt16(registers.indexY)
+        
+        return resolvedAddress
     }
+    
+    /// Calculates the absolute memory address by adding an optional offset to the base address
+    /// - Parameters:
+    ///   - lsb: The least significant byte of the address to fetch from
+    ///   - msb: The most significant byte, combined with `lsb` to create the effective address
+    ///   - offset: An optional offset to be added to the base address
+    /// - Returns: The calculated absolute memory address
+    /// - Note: This function increments the clock cycle count based on the addressing mode used
+    func getAbsoluteAddress(lsb: UInt8, msb: UInt8, offset: UInt8? = nil) -> UInt16 {
+        clockCycleCount += 3 // Base cycles for absolute/abs,x/abs,y access
+        var resolvedAddress = UInt16(lsb) | (UInt16(msb) << 8)
+        
+        if let offset {
+            clockCycleCount += 1 // Add 1 cycle for abs,x or abs,y operations due to offset addition
+            if isCrossingPageBoundary(addr: resolvedAddress, offset: offset) {
+                clockCycleCount += 1
+            }
+            resolvedAddress &+= UInt16(offset)
+        }
+        
+        return resolvedAddress
+    }
+    
+    /// Calculates whether adding an offset to an address causes a page boundary crossing (oops cycle)
+    fileprivate func isCrossingPageBoundary(addr: UInt16, offset: UInt8) -> Bool {
+        let initialPage = addr & 0xFF00
+        let offsetAddr = addr &+ UInt16(offset)
+        let finalPage = offsetAddr & 0xFF00
+        return initialPage != finalPage
+    }
+}
 
-    /// Same as `Zeropage`, but using y as an offset (addr + y) % 256
-    /// - Parameters:
-    ///   - addr: The 16-bit base address on the zero page to which the Y register offset will be added.
-    ///   - y: The 8-bit value in the Y register to be added as an offset to the base address.
-    /// - Returns: The value fetched from the calculated address.
-    func getZeropageYIndex(addr: UInt16, y: UInt8) -> UInt16 {
-        let effectiveAddr = addr &+ UInt16(y)
-        return getZeropage(addr: effectiveAddr)
+extension NES.CPU {
+    func getZeropageXAddress(addr: UInt8) -> UInt16 {
+        getZeropageAddress(addr: addr, offset: registers.indexX)
     }
     
-    /// Gets two subsequent bytes from `(addr + x) % 256` and `(addr + x + 1) % 256`, uses that value as another address, and returns the value from that created address
-    /// - Parameters:
-    ///   - addr: The 16-bit base address to which the X register offset will be added.
-    ///   - x: The 8-bit value in the X register to be added as an offset to the base address.
-    /// - Returns: The value fetched from the calculated address.
-    func getIndirectXIndex(addr: UInt16, x: UInt8) -> UInt16 {
-        let lowByteAddr = (addr &+ UInt16(x)) % 256
-        let highByteAddr = (lowByteAddr &+ 1) % 256
-        
-        return UInt16(memory.read(from: lowByteAddr)) + UInt16((memory.read(from: highByteAddr))) << 8
+    func getZeropageYAddress(addr: UInt8) -> UInt16 {
+        getZeropageAddress(addr: addr, offset: registers.indexY)
     }
     
-    /// Gets the low byte from `addr`, the high byte from `(addr + 1) % 256`, and adds `y` to create an effective address, then returns the value from that address
-    /// - Parameters:
-    ///   - addr: The 16-bit base address from which the indirect address will be fetched.
-    ///   - y: The 8-bit value in the Y register to be added to the fetched indirect address.
-    /// - Returns: The value fetched from the calculated address.
-    func getIndirectYIndex(addr: UInt16, y: UInt8) -> UInt16 {
-        let lowAddr = UInt16(memory.read(from: addr))
-        let highAddr = UInt16(memory.read(from: (addr &+ 1) % 256)) << 8
-        let effectiveAddr = lowAddr &+ highAddr &+ UInt16(y)
-        
-        return UInt16(memory.read(from: effectiveAddr))
+    func getAbsoluteXAddress(lsb: UInt8, msb: UInt8) -> UInt16 {
+        getAbsoluteAddress(lsb: lsb, msb: msb, offset: registers.indexX)
     }
     
-    /// Fetches the value from a 16-bit absolute address.
-    /// - Parameter addr: The 16-bit address to fetch the value from.
-    /// - Returns: The value fetched from the specified address.
-    func getAbsolute(addr: UInt16) -> UInt16 {
-        return UInt16(memory.read(from: addr))
-    }
-    
-    /// Fetches the value from a 16-bit absolute address with an offset provided by the X register.
-    /// - Parameters:
-    ///   - addr: The 16-bit base address to which the X register offset will be added.
-    ///   - x: The 8-bit value in the X register to be added as an offset to the base address.
-    /// - Returns: The value fetched from the calculated address.
-    func getAbsoluteXIndex(addr: UInt16, x: UInt8) -> UInt16 {
-        let effectiveAddr = addr &+ UInt16(x)
-        return getAbsolute(addr: effectiveAddr)
-    }
-    
-    /// Fetches the value from a 16-bit absolute address with an offset provided by the Y register.
-    /// - Parameters:
-    ///   - addr: The 16-bit base address to which the Y register offset will be added.
-    ///   - y: The 8-bit value in the Y register to be added as an offset to the base address.
-    /// - Returns: The value fetched from the calculated address.
-    func getAbsoluteYIndex(addr: UInt16, y: UInt8) -> UInt16 {
-        let effectiveAddr = addr &+ UInt16(y)
-        return getAbsolute(addr: effectiveAddr)
+    func getAbsoluteYAddress(lsb: UInt8, msb: UInt8) -> UInt16 {
+        getAbsoluteAddress(lsb: lsb, msb: msb, offset: registers.indexY)
     }
 }
