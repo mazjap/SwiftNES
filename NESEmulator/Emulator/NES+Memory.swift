@@ -44,6 +44,6 @@ extension NES.CPU {
     }
     
     func peek() -> UInt8 {
-        memory.read(from: 0x100 + UInt16(registers.stackPointer + 1))
+        memory.read(from: 0x100 + UInt16(registers.stackPointer))
     }
 }

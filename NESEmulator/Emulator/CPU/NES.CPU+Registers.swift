@@ -16,7 +16,7 @@ extension NES.CPU {
             accumulator: UInt8 = 0,
             indexX: UInt8 = 0,
             indexY: UInt8 = 0,
-            stackPointer: UInt8 = 0xFD,
+            stackPointer: UInt8 = 0xFF,
             processorStatus: UInt8 = 0
         ) {
             self.programCounter = programCounter

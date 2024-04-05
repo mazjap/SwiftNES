@@ -24,7 +24,19 @@
 		0E9513012BB77D3200E9CA83 /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9513002BB77D3200E9CA83 /* Logger.swift */; };
 		0E9513042BB7F55300E9CA83 /* NES.CPU+AddressingModes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9513032BB7F55300E9CA83 /* NES.CPU+AddressingModes.swift */; };
 		0E9513202BBB9DBC00E9CA83 /* NES.CPU.Registers+Status.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E95131F2BBB9DBC00E9CA83 /* NES.CPU.Registers+Status.swift */; };
+		0E9CE13C2BBE6E8400F884E5 /* AddressingModeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9CE13B2BBE6E8400F884E5 /* AddressingModeTests.swift */; };
+		0E9CE1432BBF6ECF00F884E5 /* StackManipulationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9CE1422BBF6ECF00F884E5 /* StackManipulationTests.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		0E9CE13D2BBE6E8400F884E5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0E9512CF2BB5D88400E9CA83 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0E9512D62BB5D88400E9CA83;
+			remoteInfo = NESEmulator;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		0E9512D72BB5D88400E9CA83 /* NESEmulator.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NESEmulator.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -45,10 +57,20 @@
 		0E9513002BB77D3200E9CA83 /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
 		0E9513032BB7F55300E9CA83 /* NES.CPU+AddressingModes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NES.CPU+AddressingModes.swift"; sourceTree = "<group>"; };
 		0E95131F2BBB9DBC00E9CA83 /* NES.CPU.Registers+Status.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NES.CPU.Registers+Status.swift"; sourceTree = "<group>"; };
+		0E9CE1392BBE6E8400F884E5 /* NESEmulatorTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NESEmulatorTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		0E9CE13B2BBE6E8400F884E5 /* AddressingModeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddressingModeTests.swift; sourceTree = "<group>"; };
+		0E9CE1422BBF6ECF00F884E5 /* StackManipulationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StackManipulationTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		0E9512D42BB5D88400E9CA83 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0E9CE1362BBE6E8400F884E5 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -62,6 +84,7 @@
 			isa = PBXGroup;
 			children = (
 				0E9512D92BB5D88400E9CA83 /* NESEmulator */,
+				0E9CE13A2BBE6E8400F884E5 /* NESEmulatorTests */,
 				0E9512D82BB5D88400E9CA83 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -70,6 +93,7 @@
 			isa = PBXGroup;
 			children = (
 				0E9512D72BB5D88400E9CA83 /* NESEmulator.app */,
+				0E9CE1392BBE6E8400F884E5 /* NESEmulatorTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -146,6 +170,15 @@
 			path = Managers;
 			sourceTree = "<group>";
 		};
+		0E9CE13A2BBE6E8400F884E5 /* NESEmulatorTests */ = {
+			isa = PBXGroup;
+			children = (
+				0E9CE13B2BBE6E8400F884E5 /* AddressingModeTests.swift */,
+				0E9CE1422BBF6ECF00F884E5 /* StackManipulationTests.swift */,
+			);
+			path = NESEmulatorTests;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -166,6 +199,24 @@
 			productReference = 0E9512D72BB5D88400E9CA83 /* NESEmulator.app */;
 			productType = "com.apple.product-type.application";
 		};
+		0E9CE1382BBE6E8400F884E5 /* NESEmulatorTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0E9CE1412BBE6E8400F884E5 /* Build configuration list for PBXNativeTarget "NESEmulatorTests" */;
+			buildPhases = (
+				0E9CE1352BBE6E8400F884E5 /* Sources */,
+				0E9CE1362BBE6E8400F884E5 /* Frameworks */,
+				0E9CE1372BBE6E8400F884E5 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				0E9CE13E2BBE6E8400F884E5 /* PBXTargetDependency */,
+			);
+			name = NESEmulatorTests;
+			productName = NESEmulatorTests;
+			productReference = 0E9CE1392BBE6E8400F884E5 /* NESEmulatorTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -178,6 +229,10 @@
 				TargetAttributes = {
 					0E9512D62BB5D88400E9CA83 = {
 						CreatedOnToolsVersion = 15.3;
+					};
+					0E9CE1382BBE6E8400F884E5 = {
+						CreatedOnToolsVersion = 15.3;
+						TestTargetID = 0E9512D62BB5D88400E9CA83;
 					};
 				};
 			};
@@ -195,6 +250,7 @@
 			projectRoot = "";
 			targets = (
 				0E9512D62BB5D88400E9CA83 /* NESEmulator */,
+				0E9CE1382BBE6E8400F884E5 /* NESEmulatorTests */,
 			);
 		};
 /* End PBXProject section */
@@ -206,6 +262,13 @@
 			files = (
 				0E9512E22BB5D88500E9CA83 /* Preview Assets.xcassets in Resources */,
 				0E9512DF2BB5D88500E9CA83 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0E9CE1372BBE6E8400F884E5 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -234,7 +297,24 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		0E9CE1352BBE6E8400F884E5 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0E9CE13C2BBE6E8400F884E5 /* AddressingModeTests.swift in Sources */,
+				0E9CE1432BBF6ECF00F884E5 /* StackManipulationTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		0E9CE13E2BBE6E8400F884E5 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0E9512D62BB5D88400E9CA83 /* NESEmulator */;
+			targetProxy = 0E9CE13D2BBE6E8400F884E5 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		0E9512E32BB5D88500E9CA83 /* Debug */ = {
@@ -414,6 +494,42 @@
 			};
 			name = Release;
 		};
+		0E9CE13F2BBE6E8400F884E5 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = HFR8F4BT7E;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mazjap.NESEmulatorTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NESEmulator.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/NESEmulator";
+			};
+			name = Debug;
+		};
+		0E9CE1402BBE6E8400F884E5 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = HFR8F4BT7E;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mazjap.NESEmulatorTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NESEmulator.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/NESEmulator";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -431,6 +547,15 @@
 			buildConfigurations = (
 				0E9512E62BB5D88500E9CA83 /* Debug */,
 				0E9512E72BB5D88500E9CA83 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0E9CE1412BBE6E8400F884E5 /* Build configuration list for PBXNativeTarget "NESEmulatorTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0E9CE13F2BBE6E8400F884E5 /* Debug */,
+				0E9CE1402BBE6E8400F884E5 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

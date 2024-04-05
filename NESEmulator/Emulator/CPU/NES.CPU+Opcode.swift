@@ -1,5 +1,5 @@
 extension NES.CPU {
-    enum Opcode {
+    enum Opcode: UInt8 {
         case BRK                  // 0x00
         case ORA_indexedIndirect  // 0x01
         case STP                  // 0x02
@@ -256,5 +256,17 @@ extension NES.CPU {
         case SBC_absoluteX        // 0xFD
         case INC_absoluteX        // 0xFE
         case ISC_absoluteX        // 0xFF
+    }
+}
+
+extension NES.CPU {
+    func getOpcode() -> Opcode {
+        let opValue = memory.read(from: registers.programCounter)
+        
+        registers.programCounter += 1
+        clockCycleCount += 1
+        
+        // Opcode enum covers all UInt8 values
+        return Opcode(rawValue: opValue)!
     }
 }

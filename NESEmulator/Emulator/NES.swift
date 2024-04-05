@@ -28,7 +28,7 @@ class NintendoEntertainmentSystem {
     func run() {
         while true {
             // Emulation loop
-//            let cpuCycles = cpu.executeNextInstruction()
+            let cpuCycles = cpu.executeNextInstruction()
 //            ppu.step(cpuCycles)
 //            apu.step(cpuCycles)
             // Handle other components as needed
