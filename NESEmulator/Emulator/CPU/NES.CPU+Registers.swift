@@ -12,11 +12,11 @@ extension NES.CPU {
         var status: Status
         
         init(
-            programCounter: UInt16 = 0x8000,
+            programCounter: UInt16 = 0xFFFC,
             accumulator: UInt8 = 0,
             indexX: UInt8 = 0,
             indexY: UInt8 = 0,
-            stackPointer: UInt8 = 0xFF,
+            stackPointer: UInt8 = 0xFD,
             processorStatus: UInt8 = 0
         ) {
             self.programCounter = programCounter

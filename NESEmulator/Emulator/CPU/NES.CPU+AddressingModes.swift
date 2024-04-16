@@ -23,8 +23,8 @@ extension NES.CPU {
     /// - Note: This function increments the clock cycle count based on the addressing mode used
     func getIndexedIndirectAddress(addr: UInt8) -> UInt16 {
         let baseAddr = UInt16(addr) &+ UInt16(registers.indexX)
-        let lowByteAddr = UInt16(memory.read(from: baseAddr & 0xFF))
-        let highByteAddr = UInt16(memory.read(from: (baseAddr &+ 1) & 0xFF)) << 8
+        let lowByteAddr = UInt16(memoryManager.read(from: baseAddr & 0xFF))
+        let highByteAddr = UInt16(memoryManager.read(from: (baseAddr &+ 1) & 0xFF)) << 8
         
         clockCycleCount += 5 // Base cycles for (indirect,x) access
         
@@ -37,8 +37,8 @@ extension NES.CPU {
     /// - Note: This function increments the clock cycle count based on the addressing mode used
     func getIndirectIndexedAddress(addr: UInt8) -> UInt16 {
         let addr16 = UInt16(addr)
-        let lowByteAddr = UInt16(memory.read(from: addr16 & 0xFF))
-        let highByteAddr = UInt16(memory.read(from: (addr16 &+ 1) & 0xFF)) << 8
+        let lowByteAddr = UInt16(memoryManager.read(from: addr16 & 0xFF))
+        let highByteAddr = UInt16(memoryManager.read(from: (addr16 &+ 1) & 0xFF)) << 8
         var resolvedAddress = lowByteAddr | highByteAddr
         clockCycleCount += 4 // Base cycles for (indirect),y access
         

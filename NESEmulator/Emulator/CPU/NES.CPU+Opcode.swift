@@ -260,10 +260,10 @@ extension NES.CPU {
 }
 
 extension NES.CPU {
-    func getOpcode() -> Opcode {
-        let opValue = memory.read(from: registers.programCounter)
+    func getOpcode() throws -> Opcode {
+        let opValue = memoryManager.read(from: registers.programCounter)
         
-        registers.programCounter += 1
+        incrementPc()
         clockCycleCount += 1
         
         // Opcode enum covers all UInt8 values

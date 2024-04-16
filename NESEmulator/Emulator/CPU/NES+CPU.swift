@@ -1,11 +1,11 @@
 extension NES {
     class CPU {
-        let memory: Memory
+        let memoryManager: MMU
         var registers: Registers
         var clockCycleCount: UInt8
         
-        init(memory: Memory, registers: Registers = Registers(), clockCycleCount: UInt8 = 0) {
-            self.memory = memory
+        init(memoryManager: MMU, registers: Registers = Registers(), clockCycleCount: UInt8 = 0) {
+            self.memoryManager = memoryManager
             self.registers = registers
             self.clockCycleCount = clockCycleCount
         }
@@ -13,11 +13,16 @@ extension NES {
         func executeNextInstruction() -> UInt8 {
             clockCycleCount = 0
             
-            let opcode = getOpcode()
-            
-//            resolveAndCall(opcode)
-            
-            return clockCycleCount
+            do {
+                let opcode = try getOpcode()
+                
+//                resolveAndCall(opcode)
+                
+                return clockCycleCount
+            } catch {
+                // TODO: - Proper error handling
+                fatalError(error.localizedDescription + "\n" + "Please implement better error handling")
+            }
         }
     }
 }

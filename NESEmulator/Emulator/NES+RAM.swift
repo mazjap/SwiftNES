@@ -1,11 +1,13 @@
 import Foundation
 
 extension NES {
-    class Memory {
+    class RandomAccessMemory: Memory {
+        let size: UInt16
         private(set) var memory: [UInt8]
         
-        init(size: Int = 2048) {
-            memory = [UInt8](repeating: 0, count: size)
+        init(size: UInt16 = 2048) {
+            self.size = size
+            self.memory = [UInt8](repeating: 0, count: Int(size))
         }
 
         func read(from address: UInt16) -> UInt8 {
@@ -35,15 +37,15 @@ extension NES {
 extension NES.CPU {
     func push(_ value: UInt8) {
         registers.stackPointer &-= 1
-        memory.write(value, to: 0x100 + UInt16(registers.stackPointer))
+        memoryManager.write(value, to: 0x100 + UInt16(registers.stackPointer))
     }
     
     func pop() -> UInt8 {
         defer { registers.stackPointer &+= 1 }
-        return memory.read(from: 0x100 + UInt16(registers.stackPointer))
+        return memoryManager.read(from: 0x100 + UInt16(registers.stackPointer))
     }
     
     func peek() -> UInt8 {
-        memory.read(from: 0x100 + UInt16(registers.stackPointer))
+        memoryManager.read(from: 0x100 + UInt16(registers.stackPointer))
     }
 }

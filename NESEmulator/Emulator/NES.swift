@@ -5,18 +5,16 @@ class NintendoEntertainmentSystem {
     var cpu: CPU
     var ppu: PPU
     var apu: APU
-    var memory: Memory
-    var cartridge: Cartridge
+    var memoryManager: MMU
     var input: InputHandler
     
-    init() {
-        let memory = Memory()
+    init(cartridge: Cartridge? = nil) {
+        let memoryManager = MMU(cartridge: cartridge)
         
-        self.cpu = CPU(memory: memory)
+        self.cpu = CPU(memoryManager: memoryManager)
         self.ppu = PPU()
         self.apu = APU()
-        self.memory = memory
-        self.cartridge = Cartridge()
+        self.memoryManager = memoryManager
         self.input = InputHandler()
         
         // TODO: - Post init steps:
@@ -25,7 +23,9 @@ class NintendoEntertainmentSystem {
         // - Configure input handling
     }
     
-    func run() {
+    func run() throws {
+        guard memoryManager.cartridge != nil else { throw NESError.cartridge(.noCartridge) }
+        
         while true {
             // Emulation loop
             let cpuCycles = cpu.executeNextInstruction()
