@@ -1,12 +1,24 @@
 protocol Mapper: Memory {
     var prgROM: [UInt8] { get }
     var chrROM: [UInt8] { get }
+    
+    var prgStart: UInt16 { get }
+    var prgEnd: UInt16 { get }
+}
+
+extension Mapper {
+    var prgSize: UInt16 {
+        prgEnd - prgStart + 1
+    }
 }
 
 extension NES.Cartridge {
     class Mapper0: Mapper {
         let prgROM: [UInt8]
         let chrROM: [UInt8]
+        
+        let prgStart: UInt16 = 0x8000
+        let prgEnd: UInt16 = 0xFFFF
         
         init(programMemory: [UInt8], characterMemory: [UInt8]) {
             self.prgROM = programMemory
@@ -15,7 +27,7 @@ extension NES.Cartridge {
         
         func read(from address: UInt16) -> UInt8 {
             switch address {
-            case 0x8000...0xFFFF:
+            case prgStart...prgEnd:
                 // PRG ROM - used by the CPU
                 // NES assumes 32KB of PRG ROM, but some cartridges only have 16KB
                 // If there's less than 32KB, the data gets mirrored to fill all 32KB (0x8000-0xBFFF) == (0xC000-0xFFFF)
