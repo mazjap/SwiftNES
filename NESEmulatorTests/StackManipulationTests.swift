@@ -73,8 +73,10 @@ final class StackManipulationTests: XCTestCase {
         _ = cpu.pop()
         _ = cpu.pop()
         
-        XCTAssertEqual(cpu.registers.stackPointer, 0xFF)
+        XCTAssertEqual(cpu.registers.stackPointer, 0xFD)
         
+        _ = cpu.pop()
+        _ = cpu.pop()
         _ = cpu.pop()
         
         XCTAssertEqual(cpu.registers.stackPointer, 0x00)
