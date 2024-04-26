@@ -153,16 +153,32 @@ extension NES.CPU {
         emuLogger.debug("and")
     }
     
-    func rla() {
-        emuLogger.debug("rla")
+    /// Rotate Left + And:
+    /// - Note: Cycles are handled by `rol` call
+    func rla(value: inout UInt8) {
+        rol(value: &value)
+        and(value: value)
     }
     
     func bit() {
         emuLogger.debug("bit")
     }
     
-    func rol() {
+    /// Rotate Left:
+    /// Shifts all bits in the value one place to the left.
+    /// Carry flag becomes bit 0 while the old bit 7 becomes the new carry flag.
+    /// - Note:
+    func rol(value: inout UInt8, isAccumulator: Bool = false) {
         emuLogger.debug("rol")
+        
+        let carryFlag = Registers.Status.Flag.carry
+        let newCarry = (value & .mostSignificantBit) != 0
+        value <<= 1
+        value |= registers.status.readFlag(carryFlag) ? 1 : 0
+        registers.status.setFlag(carryFlag, to: newCarry)
+        
+        updateZeroNegativeFlags(for: value)
+        clockCycleCount += isAccumulator ? 1 : 2
     }
     
     func plp() {
