@@ -91,7 +91,7 @@ extension NES.CPU {
     }
     
     /// AND with Carry:
-    /// Performs a bitwise AND between the accumulator and the specified value, and then sets the carry flag to the same value as bit 7 of the result
+    /// Performs a bitwise AND between the accumulator and the specified value, and then sets the carry flag to the same value as bit 7 of the result.
     /// - Parameter value: The value to perform the AND operation with the accumulator.
     func anc(value: UInt8) {
         emuLogger.debug("anc")
@@ -103,7 +103,7 @@ extension NES.CPU {
     }
     
     /// Branch if Positive:
-    /// If the negative flag is clear then add the relative displacement to the program counter to cause a branch to a new location
+    /// If the negative flag is clear then add the relative displacement to the program counter to cause a branch to a new location.
     /// - Note: Cycle count is incremented if branch succeeds, and is incremented again if page boundary is crossed.
     func bpl(value: Int8) {
         emuLogger.debug("bpl")
