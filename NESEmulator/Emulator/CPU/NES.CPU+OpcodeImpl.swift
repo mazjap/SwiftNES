@@ -160,8 +160,17 @@ extension NES.CPU {
         and(value: value)
     }
     
-    func bit() {
+    /// Test Bits in Memory with Accumulator:
+    /// Transfer bits 7 and 6 of operand to bit 7 and 6 of SR (N,V).
+    /// The zero-flag is set according to the result of the operand AND the accumulator (set, if the result is zero, unset otherwise).
+    /// This allows a quick check of a few bits at once without affecting any of the registers, other than the status register (SR).
+    /// - Note: No cycles are added because fetching the opcode and addressing mode function handles all cycles
+    func bit(value: UInt8) {
         emuLogger.debug("bit")
+
+        registers.status.setFlag(.negative, to: (value & .mostSignificantBit) != 0)
+        registers.status.setFlag(.overflow, to: (value & 0b01000000) != 0)
+        registers.status.setFlag(.zero, to: (registers.accumulator & value) == 0)
     }
     
     /// Rotate Left:
