@@ -1,6 +1,6 @@
 extension NES.CPU.Registers {
     struct Status {
-        private(set) var rawValue: UInt8
+        var rawValue: UInt8
         
         init(status: UInt8) {
             self.rawValue = status
