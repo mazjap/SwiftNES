@@ -105,11 +105,12 @@ extension NES.CPU {
     /// Branch if Positive:
     /// If the negative flag is clear then add the relative displacement to the program counter to cause a branch to a new location.
     /// - Note: Cycle count is incremented if branch succeeds, and is incremented again if page boundary is crossed.
-    func bpl(value: Int8) {
+    func bpl(value: UInt8) {
         emuLogger.debug("bpl")
         
         if !registers.status.readFlag(.negative) {
-            let newAddress = UInt16(Int16(registers.programCounter) + Int16(value))
+            let offset = Int8(bitPattern: value)
+            let newAddress = UInt16(Int16(registers.programCounter) + Int16(offset))
             if (registers.programCounter & 0xFF00) != (newAddress & 0xFF00) {
                 clockCycleCount += 1 // Add cycle when crossing page boundary
             }
@@ -201,8 +202,22 @@ extension NES.CPU {
         clockCycleCount += 3
     }
     
-    func bmi() {
+    /// Branch if Minus (Negative):
+    /// If the negative flag is set then add the relative displacement to the program counter to cause a branch to a new location.
+    /// - Note: Cycle count is incremented if branch succeeds, and is incremented again if page boundary is crossed
+    func bmi(value: UInt8) {
         emuLogger.debug("bmi")
+        
+        if registers.status.readFlag(.negative) {
+            let offset = Int8(bitPattern: value)
+            let newAddress = UInt16(Int16(registers.programCounter) + Int16(offset))
+            if (registers.programCounter & 0xFF00) != (newAddress & 0xFF00) {
+                clockCycleCount += 1 // Add cycle when crossing page boundary
+            }
+            
+            registers.programCounter = newAddress
+            clockCycleCount += 1 // Add cycle when branch is successful
+        }
     }
     
     func sec() {
