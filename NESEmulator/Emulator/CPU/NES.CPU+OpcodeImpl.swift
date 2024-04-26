@@ -220,8 +220,13 @@ extension NES.CPU {
         }
     }
     
+    /// Set Carry Flag:
+    /// - Note: Clock cycle incremented by 1 (instead of the expected 2) due to the run function incrementing the cycle count
     func sec() {
         emuLogger.debug("sec")
+        
+        registers.status.setFlag(.carry, to: true)
+        clockCycleCount += 1
     }
     
     func rti() {
