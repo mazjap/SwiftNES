@@ -190,8 +190,15 @@ extension NES.CPU {
         clockCycleCount += isAccumulator ? 1 : 2
     }
     
+    /// Pull Processor Status:
+    /// Pulls an 8 bit value from the stack and into the processor status register (SR).
+    /// - Note: Clock cycle incremented by 3 (instead of the expected 4) due to the run function incrementing the cycle count
     func plp() {
         emuLogger.debug("plp")
+        
+        registers.status.rawValue = pop()
+        
+        clockCycleCount += 3
     }
     
     func bmi() {
