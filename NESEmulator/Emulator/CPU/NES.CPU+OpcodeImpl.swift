@@ -229,8 +229,21 @@ extension NES.CPU {
         clockCycleCount += 1
     }
     
+    /// Return from Interrupt:
+    /// Pulls the processor status register and the program counter from the stack.
+    /// - Note: Clock cycle incremented by 5 (instead of the expected 6) due to the run function incrementing the cycle count
     func rti() {
         emuLogger.debug("rti")
+        
+        let status = pop()
+        registers.status.rawValue = status & ~Registers.Status.Flag.break.rawValue
+        
+        let lowByte = UInt16(pop())
+        let highByte = UInt16(pop()) << 8
+        
+        registers.programCounter = lowByte | highByte
+        
+        clockCycleCount += 5
     }
     
     func eor() {
