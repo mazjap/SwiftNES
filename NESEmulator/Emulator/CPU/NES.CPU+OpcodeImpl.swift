@@ -246,8 +246,16 @@ extension NES.CPU {
         clockCycleCount += 5
     }
     
-    func eor() {
+    /// Exclusive-OR (XOR):
+    /// An exclusive OR is performed, bit by bit, on the accumulator register using the provided value.
+    /// The result is stored back into the accumulator.
+    /// - Note: No cycles are added because fetching the opcode and addressing mode function handles all cycles
+    func eor(value: UInt8) {
         emuLogger.debug("eor")
+        
+        registers.accumulator ^= value
+        
+        updateZeroNegativeFlags()
     }
     
     func sre() {
