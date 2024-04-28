@@ -258,12 +258,31 @@ extension NES.CPU {
         updateZeroNegativeFlags()
     }
     
-    func sre() {
+    /// LSR + EOR:
+    /// An "Illegal" Opcode.
+    /// Shifts all bits in the value one place to the right, then XORs the result with the accumulator.
+    /// - Note: No cycles are added because calling lsr as well as run function and addressing mode function handles all cycles
+    func sre(value: inout UInt8) {
         emuLogger.debug("sre")
+        
+        lsr(value: &value)
+        eor(value: value)
     }
     
-    func lsr() {
+    /// Logical Shift Right:
+    /// Shifts all bits in the value one place to the right, storing the old bit 0 in the carry flag.
+    /// - Note: Added cycle count is based on whether operating on accumulator register or not
+    func lsr(value: inout UInt8, isAccumulator: Bool = false) {
         emuLogger.debug("lsr")
+        
+        let newCarry = (value & 1) != 0
+        
+        value >>= 1
+        
+        registers.status.setFlag(.carry, to: newCarry)
+        updateZeroNegativeFlags(for: value)
+        
+        clockCycleCount += isAccumulator ? 1 : 2
     }
     
     func pha() {
