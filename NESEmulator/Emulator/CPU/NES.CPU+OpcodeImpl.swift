@@ -285,12 +285,32 @@ extension NES.CPU {
         clockCycleCount += isAccumulator ? 1 : 2
     }
     
+    /// Push Accumulator:
+    /// Pushes the contents of the accumulator on to the stack.
+    /// - Note: Clock cycle incremented by 2 (instead of the expected 3) due to the run function incrementing the cycle count
     func pha() {
         emuLogger.debug("pha")
+        
+        push(registers.accumulator)
+        
+        clockCycleCount += 2
     }
     
-    func alr() {
+    /// AND + Logical Shift Right:
+    /// An "Illegal" Opcode.
+    /// - Note: No cycles are added because calling and as well as run function and addressing mode function handles all cycles
+    func alr(value: UInt8) {
         emuLogger.debug("alr")
+        
+        and(value: value)
+        
+        // Re-implement LSR with no cycles
+        let carry = registers.accumulator & 0x01 // Save the original carry before shifting
+        registers.accumulator >>= 1
+        registers.status.setFlag(.carry, to: carry != 0)
+        
+        // Update zero and negative flags
+        updateZeroNegativeFlags(for: registers.accumulator)
     }
     
     func jmp() {
