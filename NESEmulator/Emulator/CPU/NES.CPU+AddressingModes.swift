@@ -73,6 +73,8 @@ extension NES.CPU {
         return resolvedAddress
     }
     
+    // TODO: - Indirect addressing mode should take 5 cycles (only used for jmp op)
+    
     /// Calculates whether adding an offset to an address causes a page boundary crossing (oops cycle)
     fileprivate func isCrossingPageBoundary(addr: UInt16, offset: UInt8) -> Bool {
         let initialPage = addr & 0xFF00

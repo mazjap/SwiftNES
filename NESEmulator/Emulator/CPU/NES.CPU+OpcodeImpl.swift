@@ -298,7 +298,7 @@ extension NES.CPU {
     
     /// AND + Logical Shift Right:
     /// An "Illegal" Opcode.
-    /// - Note: No cycles are added because calling and as well as run function and addressing mode function handles all cycles
+    /// - Note: No cycles are added because run function and addressing mode function handles all cycles
     func alr(value: UInt8) {
         emuLogger.debug("alr")
         
@@ -313,8 +313,13 @@ extension NES.CPU {
         updateZeroNegativeFlags(for: registers.accumulator)
     }
     
-    func jmp() {
+    /// Jump:
+    /// The program counter is set to the address specified by the operand.
+    /// - Note: No cycles are added because run function and addressing mode function handles all cycles
+    func jmp(value: UInt16) {
         emuLogger.debug("jmp")
+        
+        registers.programCounter = value
     }
     
     func bvc() {
