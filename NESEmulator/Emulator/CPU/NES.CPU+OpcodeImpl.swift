@@ -343,8 +343,14 @@ extension NES.CPU {
         }
     }
     
+    /// Clear Interrupt Flag:
+    /// Clears the interrupt disable flag in the processor status register, allowing the CPU to respond to interrupts.
+    /// - Note: Increments the clock cycle count by 1 (instead of the expected 2) due to the run function incrementing the cycle count.
     func cli() {
         emuLogger.debug("cli")
+        
+        registers.status.setFlag(.interrupt, to: false)
+        clockCycleCount += 1
     }
     
     func rts() {
