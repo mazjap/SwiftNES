@@ -322,8 +322,25 @@ extension NES.CPU {
         registers.programCounter = value
     }
     
-    func bvc() {
+    /// Branch if Overflow Clear:
+    /// If the negative flag is clear then add the relative displacement to the program counter to cause a branch to a new location.
+    /// - Note: Cycle count is incremented if branch succeeds, and is incremented again if page boundary is crossed.
+    func bvc(value: UInt8) {
         emuLogger.debug("bvc")
+        
+        if !registers.status.readFlag(.overflow) {
+            // TODO: - Fix potential issue with int conversion:
+            // let offset = UInt16(bitPattern: Int16(Int8(bitPattern: value)))
+            // let newAddress = registers.programCounter + offset
+            let offset = Int8(bitPattern: value)
+            let newAddress = UInt16(Int16(registers.programCounter) + Int16(offset))
+            if (registers.programCounter & 0xFF00) != (newAddress & 0xFF00) {
+                clockCycleCount += 1 // Add cycle when crossing page boundary
+            }
+            
+            registers.programCounter = newAddress
+            clockCycleCount += 1 // Add cycle when branch is successful
+        }
     }
     
     func cli() {
