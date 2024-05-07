@@ -353,8 +353,19 @@ extension NES.CPU {
         clockCycleCount += 1
     }
     
+    /// Return from Subroutine:
+    /// Restores the program counter (PC) to the address on the stack, then increments the PC to the address following the original subroutine call.
+    /// - Note: Increments the clock cycle count by 5 (instead of the expected 6) due to the run function incrementing the cycle count.
     func rts() {
         emuLogger.debug("rts")
+        
+        let low = UInt16(pop())
+        let high = UInt16(pop()) << 8
+        
+        let value = high | low
+        
+        registers.programCounter = value
+        clockCycleCount += 5
     }
     
     func adc() {
