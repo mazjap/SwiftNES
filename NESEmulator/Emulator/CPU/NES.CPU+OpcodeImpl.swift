@@ -368,8 +368,23 @@ extension NES.CPU {
         clockCycleCount += 5
     }
     
-    func adc() {
+    /// Add with Carry:
+    /// Adds a given byte to the accumulator along with the carry bit, updating the flags for zero, carry, overflow, and negative results.
+    /// - Parameters:
+    ///   - value: The byte to add to the accumulator.
+    func adc(value: UInt8) {
         emuLogger.debug("adc")
+        
+        let carry: UInt16 = registers.status.readFlag(.carry) ? 1 : 0
+        let sum = UInt16(registers.accumulator) + UInt16(value) + carry
+        registers.status.setFlag(.carry, to: sum > 0xFF)
+        
+        let newAccumulator = UInt8(sum & 0xFF) // Truncate to 8 bits
+        registers.status.setFlag(.zero, to: newAccumulator == 0)
+        registers.status.setFlag(.negative, to: newAccumulator & 0x80 != 0)
+        registers.status.setFlag(.overflow, to: ((registers.accumulator ^ newAccumulator) & (value ^ newAccumulator) & 0x80) != 0)
+        
+        registers.accumulator = newAccumulator
     }
     
     func rra() {
