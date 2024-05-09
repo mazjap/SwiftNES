@@ -177,7 +177,7 @@ extension NES.CPU {
     /// Rotate Left:
     /// Shifts all bits in the value one place to the left.
     /// Carry flag becomes bit 0 while the old bit 7 becomes the new carry flag.
-    /// - Note:
+    /// - Note: Added cycle count is based on whether operating on accumulator register or not
     func rol(value: inout UInt8, isAccumulator: Bool = false) {
         emuLogger.debug("rol")
         
