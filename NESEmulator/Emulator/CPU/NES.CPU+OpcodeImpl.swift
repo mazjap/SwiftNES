@@ -391,8 +391,21 @@ extension NES.CPU {
         emuLogger.debug("rra")
     }
     
-    func ror() {
+    /// Rotate Right:
+    /// Shifts all bits in the value one place to the right.
+    /// Carry flag becomes bit 7 while the old bit 0 becomes the new carry flag.
+    /// - Note: Added cycle count is based on whether operating on accumulator register or not
+    func ror(value: inout UInt8, isAccumulator: Bool = false) {
         emuLogger.debug("ror")
+        
+        let carryFlag = Registers.Status.Flag.carry
+        let newCarry = (value & 0x1) != 0
+        value >>= 1
+        value |= registers.status.readFlag(carryFlag) ? .mostSignificantBit : 0
+        registers.status.setFlag(carryFlag, to: newCarry)
+        
+        updateZeroNegativeFlags(for: value)
+        clockCycleCount += isAccumulator ? 1 : 2
     }
     
     func pla() {
