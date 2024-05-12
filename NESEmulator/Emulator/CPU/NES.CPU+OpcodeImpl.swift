@@ -155,6 +155,7 @@ extension NES.CPU {
     }
     
     /// Rotate Left + And:
+    /// An "Illegal" Opcode.
     /// - Note: Cycles are handled by `rol` call
     func rla(value: inout UInt8) {
         rol(value: &value)
