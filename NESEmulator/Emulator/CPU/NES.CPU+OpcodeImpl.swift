@@ -388,8 +388,16 @@ extension NES.CPU {
         registers.accumulator = newAccumulator
     }
     
-    func rra() {
+    /// ROR + ADC:
+    /// An "Illegal" Opcode.
+    /// - Note: Adds 2 cycles on top of cycles added from ror
+    func rra(value: inout UInt8) {
         emuLogger.debug("rra")
+        
+        ror(value: &value)
+        adc(value: value)
+        
+        clockCycleCount += 2
     }
     
     /// Rotate Right:
