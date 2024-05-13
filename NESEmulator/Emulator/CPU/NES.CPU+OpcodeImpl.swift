@@ -417,8 +417,18 @@ extension NES.CPU {
         clockCycleCount += isAccumulator ? 1 : 2
     }
     
+    /// Pull Accumulator:
+    /// Pulls an 8 bit value from the stack and into the accumulator.
+    /// - Note: Increments the clock cycle count by 3 (instead of the expected 4) due to the run function incrementing the cycle count
     func pla() {
         emuLogger.debug("pla")
+        
+        let value = pop()
+        
+        registers.accumulator = value
+        updateZeroNegativeFlags(for: value)
+        
+        clockCycleCount += 3
     }
     
     func arr() {
