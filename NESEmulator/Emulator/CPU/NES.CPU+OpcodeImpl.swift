@@ -431,8 +431,34 @@ extension NES.CPU {
         clockCycleCount += 3
     }
     
-    func arr() {
+    /// AND + ROR:
+    /// An "Illegal" Opcode.
+    /// - Note: Increments the clock cycle count by 1 (instead of the expected 2) due to the run function incrementing the cycle count
+    // TODO: - Verify implementation (sources conflict on how ARR should be implemented):
+    // https://www.nesdev.org/wiki/Programming_with_unofficial_opcodes
+    // https://www.masswerk.at/nowgobang/2021/6502-illegal-opcodes#ARR
+    // https://c74project.com/wp-content/uploads/2020/04/c74-6502-undocumented-opcodes.pdf
+    func arr(value: inout UInt8) {
         emuLogger.debug("arr")
+        
+        // Perform AND operation
+        let result = registers.accumulator & value
+        
+        // Rotate right by one bit
+        let oldCarry: UInt8 = registers.status.readFlag(.carry) ? 1 : 0
+        let newCarry = (result & 0x40) != 0
+        let rotatedResult = (result >> 1) | (oldCarry << 7)
+        
+        // Update flags
+        updateZeroNegativeFlags(for: rotatedResult)
+        registers.status.setFlag(.carry, to: newCarry) // Set C to bit 6
+        let vFlag = ((result & 0x40) ^ (result & 0x20)) != 0 // Calculate V as bit 6 XOR bit 5
+        registers.status.setFlag(.overflow, to: vFlag)
+        
+        // Update accumulator with the result
+        registers.accumulator = rotatedResult
+        
+        clockCycleCount += 1
     }
     
     func bvs() {
