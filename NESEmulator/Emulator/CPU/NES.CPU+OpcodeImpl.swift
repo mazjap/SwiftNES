@@ -479,8 +479,13 @@ extension NES.CPU {
         }
     }
     
+    /// Set Interrupt Disable:
+    /// - Note: Cycle count is incremented by 1 (instead of the expected 2) due to the run function incrementing the cycle count
     func sei() {
         emuLogger.debug("sei")
+        
+        registers.status.setFlag(.interrupt, to: true)
+        clockCycleCount += 1
     }
     
     func sta() {
