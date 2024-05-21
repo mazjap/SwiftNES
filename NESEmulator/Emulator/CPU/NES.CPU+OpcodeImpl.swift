@@ -488,8 +488,15 @@ extension NES.CPU {
         clockCycleCount += 1
     }
     
-    func sta() {
+    /// Store Accumulator:
+    /// Stores the value of the accumulator at the specified memory address.
+    /// - Parameters:
+    ///   - value: The memory address where the accumulator's value will be stored.
+    /// - Note: No cycles are added because fetching the opcode and addressing mode function handles all cycles
+    func sta(value address: UInt16) {
         emuLogger.debug("sta")
+        
+        memoryManager.write(registers.accumulator, to: address)
     }
     
     func sax() {
