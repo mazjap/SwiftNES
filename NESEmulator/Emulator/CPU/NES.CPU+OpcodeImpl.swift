@@ -499,8 +499,14 @@ extension NES.CPU {
         memoryManager.write(registers.accumulator, to: address)
     }
     
-    func sax() {
+    /// AND Accumulator + indexX, then store result at the specified memory address:
+    /// Illegal Opcode.
+    /// - Note: No cycles are added because fetching the opcode and addressing mode function handles all cycles
+    func sax(value address: UInt16) {
         emuLogger.debug("sax")
+        
+        let result = registers.accumulator & registers.indexX
+        memoryManager.write(result, to: address)
     }
     
     func sty() {
