@@ -491,7 +491,7 @@ extension NES.CPU {
     /// Store Accumulator:
     /// Stores the value of the accumulator at the specified memory address.
     /// - Parameters:
-    ///   - value: The memory address where the accumulator's value will be stored.
+    ///   - value: The memory address where the register's value will be stored.
     /// - Note: No cycles are added because fetching the opcode and addressing mode function handles all cycles
     func sta(value address: UInt16) {
         emuLogger.debug("sta")
@@ -520,8 +520,15 @@ extension NES.CPU {
         memoryManager.write(registers.indexY, to: address)
     }
     
-    func stx() {
+    /// Store X Register:
+    /// Stores the value of the x register at the specified memory address.
+    /// - Parameters:
+    ///   - value: The memory address where the register's value will be stored.
+    /// - Note: No cycles are added because fetching the opcode and addressing mode function handles all cycles
+    func stx(value address: UInt16) {
         emuLogger.debug("stx")
+        
+        memoryManager.write(registers.indexX, to: address)
     }
     
     func dey() {
