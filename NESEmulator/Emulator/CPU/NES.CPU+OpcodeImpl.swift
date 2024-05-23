@@ -509,8 +509,15 @@ extension NES.CPU {
         memoryManager.write(result, to: address)
     }
     
-    func sty() {
+    /// Store Y Register:
+    /// Stores the value of the y register at the specified memory address.
+    /// - Parameters:
+    ///   - value: The memory address where the register's value will be stored.
+    /// - Note: No cycles are added because fetching the opcode and addressing mode function handles all cycles
+    func sty(value address: UInt16) {
         emuLogger.debug("sty")
+        
+        memoryManager.write(registers.indexY, to: address)
     }
     
     func stx() {
