@@ -581,8 +581,13 @@ extension NES.CPU {
         }
     }
     
+    /// Stores A & X AND high byte of addr + 1 at addr
+    /// "Illegal" Opcode.
+    /// Unstable - do not use.
     func ahx() {
         emuLogger.debug("ahx")
+        
+        fatalError("AHX not implemented")
     }
     
     func tya() {
