@@ -531,8 +531,14 @@ extension NES.CPU {
         memoryManager.write(registers.indexX, to: address)
     }
     
+    /// Decrement Y Register:
+    /// Updates the zero and negative flags based on the result.
+    /// - Note: Cycle count is incremented by 1 (instead of the expected 2) due to the run function incrementing the cycle count
     func dey() {
         emuLogger.debug("dey")
+        
+        registers.indexY &-= 1
+        clockCycleCount += 1
     }
     
     func txa() {
