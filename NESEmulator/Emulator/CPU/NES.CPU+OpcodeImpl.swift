@@ -463,7 +463,7 @@ extension NES.CPU {
     
     /// Branch is Overflow Set:
     /// If the overflow flag is set then add the relative displacement to the program counter to cause a branch to a new location.
-    /// - Note: Cycle count is incrmented if branch succeeds, and is incremented again if page boundary is crossed.
+    /// - Note: Cycle count is incremented if branch succeeds, and is incremented again if page boundary is crossed.
     func bvs(value: UInt8) {
         emuLogger.debug("bvs")
         
