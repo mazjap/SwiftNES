@@ -553,8 +553,14 @@ extension NES.CPU {
         clockCycleCount += 1
     }
     
+    /// * AND X + AND oper:
+    /// An "Illegal" Opcode.
+    /// Unstable - do not use.
+    /// From 'Now Go Bang' - "The value of this constant depends on temperature, the chip series, and maybe other factors"
     func xaa() {
         emuLogger.debug("xaa")
+        
+        fatalError("XAA is not implemented")
     }
     
     func bcc() {
