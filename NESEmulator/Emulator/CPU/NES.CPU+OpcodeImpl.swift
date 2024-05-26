@@ -630,8 +630,13 @@ extension NES.CPU {
         fatalError("SHY not implemented")
     }
     
+    /// Stores X AND (high-byte of addr. + 1) at addr.
+    /// "Illegal" Opcode.
+    /// Unstable - do not use.
     func shx() {
         emuLogger.debug("shx")
+        
+        fatalError("SHX not implemented")
     }
     
     func ldy() {
