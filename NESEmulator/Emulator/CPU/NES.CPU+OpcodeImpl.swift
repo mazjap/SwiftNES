@@ -639,8 +639,14 @@ extension NES.CPU {
         fatalError("SHX not implemented")
     }
     
-    func ldy() {
+    /// Load Y Register:
+    /// Sets the zero and negative flags.
+    /// - Note: No cycles are added to `clockCycleCount` due to the run function and addressing mode functions incrementing the cycle count
+    func ldy(value: UInt8) {
         emuLogger.debug("ldy")
+        
+        registers.indexY = value
+        updateZeroNegativeFlags(for: value)
     }
     
     func lda() {
