@@ -602,8 +602,14 @@ extension NES.CPU {
         clockCycleCount += 1
     }
     
+    /// Transfer X to Stack Pointer:
+    /// - Note: Cycle count is incremented by 1 (instead of the expected 2) due to the run function incrementing the cycle count
     func txs() {
         emuLogger.debug("txs")
+        
+        registers.stackPointer = registers.indexX
+        
+        clockCycleCount += 1
     }
     
     func tas() {
