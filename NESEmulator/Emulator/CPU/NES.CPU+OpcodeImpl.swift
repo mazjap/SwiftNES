@@ -590,8 +590,16 @@ extension NES.CPU {
         fatalError("AHX not implemented")
     }
     
+    /// Transfer Y to Accumulator:
+    /// Updates the zero and negative flags.
+    /// - Note: Cycle count is incremented by 1 (instead of the expected 2) due to the run function incrementing the cycle count
     func tya() {
         emuLogger.debug("tya")
+        
+        registers.accumulator = registers.indexY
+        updateZeroNegativeFlags()
+        
+        clockCycleCount += 1
     }
     
     func txs() {
