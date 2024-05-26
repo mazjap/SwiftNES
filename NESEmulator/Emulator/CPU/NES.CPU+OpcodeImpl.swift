@@ -612,12 +612,22 @@ extension NES.CPU {
         clockCycleCount += 1
     }
     
+    /// Put A & X in SP and store A & X & high byte of addr at addr
+    /// "Illegal" Opcode.
+    /// Unstable - do not use.
     func tas() {
         emuLogger.debug("tas")
+        
+        fatalError("TAS not implemented")
     }
     
+    /// Stores Y AND (high-byte of addr. + 1) at addr.
+    /// "Illegal" Opcode.
+    /// Unstable - do not use.
     func shy() {
         emuLogger.debug("shy")
+        
+        fatalError("SHY not implemented")
     }
     
     func shx() {
