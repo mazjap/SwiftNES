@@ -660,8 +660,14 @@ extension NES.CPU {
         updateZeroNegativeFlags()
     }
     
-    func ldx() {
+    /// Load X Register:
+    /// Sets the zero and negative flags.
+    /// - Note: No cycles are added to `clockCycleCount` due to the run function and addressing mode functions incrementing the cycle count
+    func ldx(value: UInt8) {
         emuLogger.debug("ldx")
+        
+        registers.indexX = value
+        updateZeroNegativeFlags(for: value)
     }
     
     func lax() {
