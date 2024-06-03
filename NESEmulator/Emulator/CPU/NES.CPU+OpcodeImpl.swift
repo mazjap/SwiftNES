@@ -670,8 +670,16 @@ extension NES.CPU {
         updateZeroNegativeFlags(for: value)
     }
     
-    func lax() {
+    /// LDA oper + LDX oper:
+    /// "Illegal" Opcode
+    /// Sets the zero and negative flags.
+    func lax(value: UInt8) {
         emuLogger.debug("lax")
+        
+        registers.accumulator = value
+        registers.indexX = value
+        
+        updateZeroNegativeFlags(for: value)
     }
     
     func tay() {
