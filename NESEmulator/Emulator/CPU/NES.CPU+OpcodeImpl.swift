@@ -694,8 +694,16 @@ extension NES.CPU {
         clockCycleCount += 1
     }
     
+    /// Transfer Accumulator to X:
+    /// Sets zero and negative flags.
+    /// - Note: Cycle count is incremented by 1 (instead of the expected 2) due to the run function incrementing the cycle count
     func tax() {
         emuLogger.debug("tax")
+        
+        registers.indexX = registers.accumulator
+        updateZeroNegativeFlags(for: registers.indexX)
+        
+        clockCycleCount += 1
     }
     
     func bcs() {
