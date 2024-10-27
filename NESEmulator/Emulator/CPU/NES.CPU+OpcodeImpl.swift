@@ -762,8 +762,19 @@ extension NES.CPU {
         updateZeroNegativeFlags()
     }
     
-    func cpy() {
+    /// Compare Y Register:
+    /// Compares the contents of the Y register with a specified value and sets the zero, carry, and negative flags based on the result.
+    /// - Parameters:
+    ///   - value: The value to compare with the Y register.
+    /// - Note: No cycles are added to `clockCycleCount` due to the run function and addressing mode functions incrementing the cycle count
+    func cpy(value: UInt8) {
         emuLogger.debug("cpy")
+        
+        let result = Int(registers.indexY) - Int(value)
+        
+        registers.status.setFlag(.carry, to: registers.indexY >= value)
+        registers.status.setFlag(.zero, to: registers.indexY == value)
+        registers.status.setFlag(.negative, to: (result & 0x80) != 0)
     }
     
     func cmp() {
