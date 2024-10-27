@@ -841,9 +841,21 @@ extension NES.CPU {
         
         clockCycleCount += 1
     }
-    
+
+    /// Decrement X Register:
+    /// Subtracts one from the X index register.
+    /// - Note: Updates zero and negative flags based on the result.
+    ///   Takes 1 cycle (not including opcode fetch).
+    ///   DEX affects flags:
+    ///     - Zero (Z): Set if X becomes zero, cleared otherwise
+    ///     - Negative (N): Set if bit 7 of X is set, cleared otherwise
     func dex() {
         emuLogger.debug("dex")
+        
+        registers.indexX &-= 1
+        updateZeroNegativeFlags(for: registers.indexX)
+        
+        clockCycleCount += 1
     }
     
     func axs() {
