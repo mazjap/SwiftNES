@@ -937,8 +937,29 @@ extension NES.CPU {
         registers.status.setFlag(.overflow, to: overflow != 0)
     }
     
-    func isc() {
+    /// INC oper + SBC oper:
+    /// "Illegal" Opcode.
+    /// Increments the value at the specified memory location by one, then subtracts the result from the accumulator
+    /// along with the carry flag, updating the accumulator and flags accordingly (zero, negative, carry, overflow).
+    /// - Note: Clock cycle count is incremented by 2 as run function and addressing mode functions handle other cycles.
+    func isc(value: inout UInt8) {
         emuLogger.debug("isc")
+        
+        value &+= 1
+        
+        let carryValue = registers.status.readFlag(.carry) ? 1 : 0
+        let result = Int(registers.accumulator) - Int(value) - carryValue
+        
+        registers.accumulator -= value + (registers.status.readFlag(.carry) ? 0 : 1)
+        
+        registers.accumulator = UInt8(truncatingIfNeeded: result)
+        updateZeroNegativeFlags()
+        registers.status.setFlag(.carry, to: result >= 0)
+        
+        let overflow = ((registers.accumulator ^ UInt8(result)) & (value ^ UInt8(result)) & 0x80) != 0
+        registers.status.setFlag(.overflow, to: overflow)
+        
+        clockCycleCount += 2
     }
     
     func inc() {
