@@ -904,8 +904,19 @@ extension NES.CPU {
         clockCycleCount += 1
     }
     
-    func cpx() {
+    /// Compare X Register:
+    /// Compares the contents of the X register with a specified value and sets the zero, carry, and negative flags based on the result.
+    /// - Parameters:
+    ///   - value: The value to compare with the X register.
+    /// - Note: No cycles are added to `clockCycleCount` due to the run function and addressing mode functions incrementing the cycle count
+    func cpx(value: UInt8) {
         emuLogger.debug("cpx")
+        
+        let result = Int(registers.indexX) - Int(value)
+        
+        registers.status.setFlag(.carry, to: registers.indexX >= value)
+        registers.status.setFlag(.zero, to: registers.indexX == value)
+        registers.status.setFlag(.negative, to: (result & 0x80) != 0)
     }
     
     func sbc() {
