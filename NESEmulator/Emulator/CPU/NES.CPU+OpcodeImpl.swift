@@ -777,8 +777,19 @@ extension NES.CPU {
         registers.status.setFlag(.negative, to: (result & 0x80) != 0)
     }
     
-    func cmp() {
+    /// Compare Accumulator:
+    /// Compares the contents of the Accumulator register with a specified value and sets the zero, carry, and negative flags based on the result.
+    /// - Parameters:
+    ///   - value: The value to compare with Accumulator.
+    /// - Note: No cycles are added to `clockCycleCount` due to the run function and addressing mode functions incrementing the cycle count
+    func cmp(value: UInt8) {
         emuLogger.debug("cmp")
+        
+        let result = Int(registers.accumulator) - Int(value)
+        
+        registers.status.setFlag(.carry, to: registers.accumulator >= value)
+        registers.status.setFlag(.zero, to: registers.accumulator == value)
+        registers.status.setFlag(.negative, to: (result & 0x80) != 0)
     }
     
     func dcp() {
