@@ -919,8 +919,22 @@ extension NES.CPU {
         registers.status.setFlag(.negative, to: (result & 0x80) != 0)
     }
     
-    func sbc() {
+    /// Subtract with Carry:
+    /// Subtracts the provided byte value and the inverted carry flag from the accumulator.
+    /// Updates the zero, carry, overflow, and negative flags based on the result.
+    /// - Parameter value: The byte value to subtract from the accumulator.
+    func sbc(value: UInt8) {
         emuLogger.debug("sbc")
+        
+        let inverseCarry = registers.status.readFlag(.carry) ? 0 : 1
+        let result = Int(registers.accumulator) - Int(value) - inverseCarry
+        
+        registers.accumulator = UInt8(truncatingIfNeeded: result)
+        updateZeroNegativeFlags()
+        registers.status.setFlag(.carry, to: result >= 0)
+        
+        let overflow = (registers.accumulator ^ UInt8(result)) & (UInt8(result) ^ value) & 0x80
+        registers.status.setFlag(.overflow, to: overflow != 0)
     }
     
     func isc() {
