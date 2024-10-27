@@ -27,8 +27,29 @@ extension NES.CPU.Registers {
     }
 }
 
+extension NES.CPU.Registers.Status: CustomStringConvertible {
+    init(setFlags: Set<Flag>) {
+        self.init(status: 0)
+        for flag in setFlags {
+            self.setFlag(flag, to: true)
+        }
+    }
+    
+    var description: String {
+        var binaryString = String(rawValue, radix: 2)
+        
+        if binaryString.count < 8 {
+            binaryString = String(repeating: "0", count: 8 - binaryString.count) + binaryString
+        }
+        
+        return "\nNO_BDIZC\n\(binaryString)"
+    }
+    
+    static let zero = Self(status: 0)
+}
+
 extension NES.CPU.Registers.Status {
-    struct Flag: OptionSet {
+    struct Flag: OptionSet, Hashable {
         var rawValue: UInt8
         
         static let carry = Flag(rawValue: 1)
