@@ -974,8 +974,20 @@ extension NES.CPU {
         clockCycleCount += 1
     }
     
+    /// Increment X Register:
+    /// Adds one to the X index register.
+    /// - Note: Updates zero and negative flags based on the result.
+    ///   Takes 1 cycle (not including opcode fetch).
+    ///   INX affects flags:
+    ///     - Zero (Z): Set if X becomes zero, cleared otherwise
+    ///     - Negative (N): Set if bit 7 of X is set, cleared otherwise
     func inx() {
         emuLogger.debug("inx")
+        
+        registers.indexX &+= 1
+        updateZeroNegativeFlags(for: registers.indexX)
+        
+        clockCycleCount += 1
     }
     
     func beq() {
