@@ -1,4 +1,32 @@
 extension NES.CPU {
+    enum OpcodeType {
+        case BRK, ORA, STP
+        case SLO, NOP, ASL
+        case PHP, ANC, BPL
+        case CLC, JSR, AND
+        case RLA, BIT, ROL
+        case PLP, BMI, SEC
+        case RTI, EOR, SRE
+        case LSR, PHA, ALR
+        case JMP, BVC, CLI
+        case RTS, ADC, RRA
+        case ROR, PLA, ARR
+        case BVS, SEI, STA
+        case SAX, STY, STX
+        case DEY, TXA, XAA
+        case BCC, AHX, TYA
+        case TXS, TAS, SHY
+        case SHX, LDY, LDA
+        case LDX, LAX, TAY
+        case TAX, BCS, CLV
+        case TSX, LAS, CPY
+        case CMP, DCP, DEC
+        case INY, DEX, AXS
+        case BNE, CLD, CPX
+        case SBC, ISC, INC
+        case INX, BEQ, SED
+    }
+    
     enum Opcode: UInt8 {
         case BRK                  // 0x00
         case ORA_indexedIndirect  // 0x01
