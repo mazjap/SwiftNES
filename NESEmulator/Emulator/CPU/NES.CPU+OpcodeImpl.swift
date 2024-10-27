@@ -1008,7 +1008,14 @@ extension NES.CPU {
         }
     }
     
+    /// Set Decimal Flag:
+    /// - Note: Cycle count is incremented if branch succeeds, and is incremented again if page boundary is crossed.
+    // TODO: - Support Decimal mode
     func sed() {
         emuLogger.debug("sed")
+        
+        registers.status.setFlag(.decimal, to: true)
+        
+        clockCycleCount += 1
     }
 }
