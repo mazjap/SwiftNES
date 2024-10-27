@@ -858,8 +858,21 @@ extension NES.CPU {
         clockCycleCount += 1
     }
     
-    func axs() {
+    /// Compare and Subtract from X (SBX, SAX):
+    /// "Illegal" Opcode.
+    /// Performs (A AND X) - parameter, stores the result in X, and sets flags like CMP.
+    /// - Note: No cycles are added to `clockCycleCount` due to the run function and addressing mode functions incrementing the cycle count
+    func axs(value: UInt8) {
         emuLogger.debug("axs")
+        
+        let andResult = registers.accumulator & registers.indexX
+        let subtractedResult = andResult &- value
+        
+        registers.indexX = subtractedResult
+        
+        registers.status.setFlag(.carry, to: andResult >= value)
+        registers.status.setFlag(.zero, to: subtractedResult == 0)
+        registers.status.setFlag(.negative, to: (subtractedResult & 0x80) != 0)
     }
     
     func bne() {
