@@ -792,8 +792,20 @@ extension NES.CPU {
         registers.status.setFlag(.negative, to: (result & 0x80) != 0)
     }
     
-    func dcp() {
+    /// DEC + CPM
+    /// "Illegal" Opcode.
+    /// Decrements the given value by one and compares the result with the accumulator.
+    /// Updates the carry, zero, and negative flags based on the comparison.
+    func dcp(value: inout UInt8) {
         emuLogger.debug("dcp")
+        
+        value &-= 1
+        
+        let result = registers.accumulator - value
+        
+        registers.status.setFlag(.carry, to: registers.accumulator >= value)
+        registers.status.setFlag(.zero, to: registers.accumulator == value)
+        registers.status.setFlag(.negative, to: (result & 0x80) != 0)
     }
     
     func dec() {
