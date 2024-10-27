@@ -875,8 +875,22 @@ extension NES.CPU {
         registers.status.setFlag(.negative, to: (subtractedResult & 0x80) != 0)
     }
     
-    func bne() {
+    /// Branch if Not Equal:
+    /// If the zero flag is not set then add the relative displacement to the program counter to cause a branch to a new location.
+    /// - Note: Cycle count is incremented if branch succeeds, and is incremented again if page boundary is crossed.
+    func bne(value: UInt8) {
         emuLogger.debug("bne")
+        
+        if !registers.status.readFlag(.zero) {
+            let offset = Int8(bitPattern: value)
+            let newAddress = UInt16(Int16(registers.programCounter) + Int16(offset))
+            if (registers.programCounter & 0xFF00) != (newAddress & 0xFF00) {
+                clockCycleCount += 1 // Add cycle when crossing page boundary
+            }
+            
+            registers.programCounter = newAddress
+            clockCycleCount += 1 // Add cycle when branch is successful
+        }
     }
     
     func cld() {
