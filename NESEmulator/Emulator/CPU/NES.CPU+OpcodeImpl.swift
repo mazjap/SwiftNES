@@ -962,8 +962,16 @@ extension NES.CPU {
         clockCycleCount += 2
     }
     
-    func inc() {
+    /// Increment Memory:
+    /// Updates the zero and negative flags based on the result.
+    /// - Note: Cycle count is incremented by 1 (instead of the expected 2) due to the run function incrementing the cycle count
+    func inc(value: inout UInt8) {
         emuLogger.debug("inc")
+        
+        value &+= 1
+        updateZeroNegativeFlags(for: value)
+        
+        clockCycleCount += 1
     }
     
     func inx() {
