@@ -893,8 +893,15 @@ extension NES.CPU {
         }
     }
     
+    /// Clear Decimal Mode:
+    /// - Note: Cycle count is incremented by 1 (instead of the expected 2) due to the run function incrementing the cycle count
+    // TODO: - Support Decimal mode
     func cld() {
         emuLogger.debug("cld")
+        
+        registers.status.setFlag(.decimal, to: false)
+        
+        clockCycleCount += 1
     }
     
     func cpx() {
