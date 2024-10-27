@@ -726,8 +726,14 @@ extension NES.CPU {
         }
     }
     
+    /// Clear Overflow Flag:
+    /// - Note: Cycle count is incremented by 1 (instead of the expected 2) due to the run function incrementing the cycle count
     func clv() {
         emuLogger.debug("clv")
+        
+        registers.status.setFlag(.overflow, to: false)
+        
+        clockCycleCount += 1
     }
     
     func tsx() {
