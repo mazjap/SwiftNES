@@ -1,4 +1,12 @@
 extension NES.CPU {
+    /// Returns the program counter, unmodified, but adds 1 clock cycle.
+    /// - Returns: The program counter
+    /// - Note: This function increments the clock cycle count based on the addressing mode used
+    func getImmediateAddress() -> UInt16 {
+        clockCycleCount += 1
+        return registers.programCounter
+    }
+    
     /// Fetches the 8-bit zero page address from the provided 8-bit base address, optionally applying an offset
     /// - Parameters:
     ///   - addr: The 8-bit base address from which to fetch the value
@@ -73,7 +81,34 @@ extension NES.CPU {
         return resolvedAddress
     }
     
-    // TODO: - Indirect addressing mode should take 5 cycles (only used for jmp op)
+    /// Calculates the target address for an indirect jump, replicating the 6502 page boundary bug
+    /// - Parameters:
+    ///   - lsb: The least significant byte of the pointer address
+    ///   - msb: The most significant byte of the pointer address
+    /// - Returns: The resolved jump target address
+    /// - Note: When the pointer address is at $xxFF, the high byte is fetched from $xx00
+    ///         instead of $(xx+1)00 due to a hardware bug in the 6502
+    func getIndirectJumpAddress(lsb: UInt8, msb: UInt8) -> UInt16 {
+        let pointerAddress = UInt16(lsb) | (UInt16(msb) << 8)
+        
+        // Get low byte of target address
+        let targetLow = memoryManager.read(from: pointerAddress)
+        
+        // Calculate address for high byte, implementing the page-crossing bug
+        let highByteAddr = if lsb == 0xFF {
+            // Bug: When pointer is at $xxFF, high byte is fetched from $xx00
+            pointerAddress & 0xFF00
+        } else {
+            // Normal case: High byte fetched from next address
+            pointerAddress + 1
+        }
+        
+        let targetHigh = memoryManager.read(from: highByteAddr)
+        
+        clockCycleCount += 5  // Indirect JMP takes 5 cycles
+        
+        return UInt16(targetLow) | (UInt16(targetHigh) << 8)
+    }
     
     /// Calculates whether adding an offset to an address causes a page boundary crossing (oops cycle)
     fileprivate func isCrossingPageBoundary(addr: UInt16, offset: UInt8) -> Bool {
@@ -85,18 +120,40 @@ extension NES.CPU {
 }
 
 extension NES.CPU {
+    /// Fetches the 8-bit zero page address from the provided 8-bit base address, using the X register to apply an offset
+    /// - Parameters:
+    ///   - addr: The 8-bit base address from which to fetch the value
+    /// - Returns: The resolved zero page address after applying the offset
+    /// - Note: This function increments the clock cycle count based on the addressing mode used
     func getZeropageXAddress(addr: UInt8) -> UInt16 {
         getZeropageAddress(addr: addr, offset: registers.indexX)
     }
     
+    /// Fetches the 8-bit zero page address from the provided 8-bit base address, using the Y register to apply an offset
+    /// - Parameters:
+    ///   - addr: The 8-bit base address from which to fetch the value
+    /// - Returns: The resolved zero page address after applying the offset
+    /// - Note: This function increments the clock cycle count based on the addressing mode used
     func getZeropageYAddress(addr: UInt8) -> UInt16 {
         getZeropageAddress(addr: addr, offset: registers.indexY)
     }
     
+    /// Calculates the absolute memory address, using the X register as an offset to the base address
+    /// - Parameters:
+    ///   - lsb: The least significant byte of the address to fetch from
+    ///   - msb: The most significant byte, combined with `lsb` to create the effective address
+    /// - Returns: The calculated absolute memory address
+    /// - Note: This function increments the clock cycle count based on the addressing mode used
     func getAbsoluteXAddress(lsb: UInt8, msb: UInt8) -> UInt16 {
         getAbsoluteAddress(lsb: lsb, msb: msb, offset: registers.indexX)
     }
     
+    /// Calculates the absolute memory address, using the Y register as an offset to the base address
+    /// - Parameters:
+    ///   - lsb: The least significant byte of the address to fetch from
+    ///   - msb: The most significant byte, combined with `lsb` to create the effective address
+    /// - Returns: The calculated absolute memory address
+    /// - Note: This function increments the clock cycle count based on the addressing mode used
     func getAbsoluteYAddress(lsb: UInt8, msb: UInt8) -> UInt16 {
         getAbsoluteAddress(lsb: lsb, msb: msb, offset: registers.indexY)
     }
