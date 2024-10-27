@@ -808,8 +808,22 @@ extension NES.CPU {
         registers.status.setFlag(.negative, to: (result & 0x80) != 0)
     }
     
-    func dec() {
+    /// Decrement Memory:
+    /// Subtracts one from the value at the specified memory location.
+    /// - Parameter value: Memory location to decrement, passed by reference
+    /// - Note: Updates zero and negative flags based on the result.
+    ///   Takes 2 cycles (not including opcode fetch and addressing mode).
+    ///   DEC affects flags:
+    ///     - Zero (Z): Set if result is zero, cleared otherwise
+    ///     - Negative (N): Set if bit 7 of result is set, cleared otherwise
+    func dec(value: inout UInt8) {
         emuLogger.debug("dec")
+        
+        value &-= 1
+        
+        updateZeroNegativeFlags(for: value)
+        
+        clockCycleCount += 2
     }
     
     func iny() {
