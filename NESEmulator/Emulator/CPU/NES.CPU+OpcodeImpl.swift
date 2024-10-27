@@ -747,8 +747,19 @@ extension NES.CPU {
         clockCycleCount += 1
     }
     
-    func las() {
+    /// LDA/TSX oper:
+    /// "Illegal" Opcode.
+    /// ANDs provided value with the stack pointer, and then updates the accumulator and index X register with the result.
+    func las(value: UInt8) {
         emuLogger.debug("las")
+        
+        let result = registers.stackPointer & value
+        
+        registers.stackPointer = result
+        registers.indexX = result
+        registers.accumulator = result
+        
+        updateZeroNegativeFlags()
     }
     
     func cpy() {
