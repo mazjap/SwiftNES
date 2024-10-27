@@ -84,7 +84,7 @@ extension NES.CPU {
     func php() {
         emuLogger.debug("php")
         
-        // Bit 5 is ignored in this context
+        // Bit 5 is overridden in this context
         push(registers.status.rawValue | Registers.Status.Flag.break.rawValue)
         
         clockCycleCount += 2
@@ -316,11 +316,13 @@ extension NES.CPU {
     
     /// Jump:
     /// The program counter is set to the address specified by the operand.
-    /// - Note: No cycles are added because run function and addressing mode function handles all cycles
+    /// - Note: 1 cycle is removed, as jmp takes 3 cycles for abs and 5 for indirect. Because incrementing PC takes one cycle, one is removed to equalize
     func jmp(value: UInt16) {
         emuLogger.debug("jmp")
         
         registers.programCounter = value
+        
+        clockCycleCount -= 1
     }
     
     /// Branch if Overflow Clear:
