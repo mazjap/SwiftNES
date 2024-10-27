@@ -736,8 +736,15 @@ extension NES.CPU {
         clockCycleCount += 1
     }
     
+    /// Transfer Stack Pointer to X:
+    /// Sets the zero and negative flags.
+    /// - Note: Cycle count is incremented by 1 (instead of the expected 2) due to the run function incrementing the cycle count
     func tsx() {
         emuLogger.debug("tsx")
+        
+        registers.indexX = registers.stackPointer
+        
+        clockCycleCount += 1
     }
     
     func las() {
