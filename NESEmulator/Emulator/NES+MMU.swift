@@ -1,4 +1,10 @@
 extension NES {
+    /// Represents the Memory Management Unit (MMU) of the NES.
+    /// Handles memory mapping and access to various components including:
+    /// - Internal RAM (0x0000-0x1FFF, mirrored every 0x800 bytes)
+    /// - PPU registers (0x2000-0x3FFF, mirrored every 8 bytes)
+    /// - APU and I/O registers (0x4000-0x4017)
+    /// - Cartridge space (0x4020-0xFFFF)
     class MMU: Memory {
         var internalRAM: RandomAccessMemory
         var cartridge: Cartridge?
@@ -8,41 +14,55 @@ extension NES {
             self.cartridge = cartridge
         }
         
-        func read(from address: UInt16) -> UInt8 {
+        /// Accesses memory at the specified address and allows modification of the value.
+        /// - Parameters:
+        ///   - address: The memory address to access
+        ///   - modify: A closure that receives a mutable reference to the value at the address
+        /// - Note: This method handles memory mirroring and component-specific access rules
+        @_disfavoredOverload
+        func access(at address: UInt16, modify: (inout UInt8) -> Void) {
+            var defaultReturn: UInt8 = 0
+            
             switch address {
             case 0x0000...0x1FFF:
                 // Internal RAM and its mirrors
-                return internalRAM.read(from: address & 0x07FF)
+                internalRAM.access(at: address & 0x07FF, modify: modify)
             case 0x2000...0x3FFF:
                 // TODO: - Retreive from PPU registers (only 8 bytes, subsequent bytes are mirrored)
-                return 0
+                modify(&defaultReturn)
             case 0x4000...0x4017:
                 // TODO: - Retreive from APU and IO registers
-                return 0
+                modify(&defaultReturn)
             case 0x4018...0x401F:
                 // APU and IO functionality that is normally disabled
-                return 0
+                modify(&defaultReturn)
             case 0x4020...0xFFFF:
                 // Handled by Cartridges mapper
                 guard let cartridge else {
                     emuLogger.error("Read request failed: Cartridge is nil for address: \(address)")
-                    return 0
+                    modify(&defaultReturn)
+                    return
                 }
                 
-                let zeroedAddress = address - 0x4020 // Remove the MMU cartridge offset (0x4020)
-                let wrappedAddress = zeroedAddress % cartridge.mapper.prgSize
-                let normalizedAddress = cartridge.mapper.prgStart + wrappedAddress
+                var copy = cartridge.read(from: address)
                 
-                return cartridge.read(from: normalizedAddress)
+                modify(&copy)
             default:
                 // Switch's cases are exhaustive, but swift doesn't check for types that aren't enum, tuple, or the specific Bool struct (https://forums.swift.org/t/switch-on-int-with-exhaustive-cases-still-needs-default/49548)
                 fatalError("Switch wasn't exhaustive for \(address) (\(String(address, radix: 16)) 😬")
             }
         }
         
+        func read(from address: UInt16) -> UInt8 {
+            var value: UInt8 = 0
+            access(at: address) { value = $0 }
+            
+            return value
+        }
+        
         func write(_ value: UInt8, to address: UInt16) {
             switch address {
-            case 0x0000...0x1FFF:
+            case ...0x1FFF:
                 // Internal RAM and its mirrors
                 internalRAM.write(value, to: address & 0x07FF)
             case 0x2000...0x3FFF:
@@ -62,11 +82,7 @@ extension NES {
                     return
                 }
                 
-                let zeroedAddress = address - 0x4020
-                let wrappedAddress = zeroedAddress % cartridge.mapper.prgSize
-                let normalizedAddress = cartridge.mapper.prgStart + wrappedAddress
-                
-                cartridge.write(value, to: normalizedAddress)
+                cartridge.write(value, to: address)
             default:
                 fatalError("Switch wasn't exhaustive for \(address) (\(String(address, radix: 16)) 😬")
             }

@@ -9,12 +9,20 @@ extension NES {
             self.size = size
             self.memory = [UInt8](repeating: 0, count: Int(size))
         }
-
+        
         func read(from address: UInt16) -> UInt8 {
+            var value: UInt8 = 0
+            access(at: address) { value = $0 }
+            
+            return value
+        }
+        
+        func access(at address: UInt16, modify: (inout UInt8) -> Void) {
             guard address < memory.count else {
                 fatalError("Memory out of bounds")
             }
-            return memory[Int(address)]
+            
+            modify(&memory[Int(address)])
         }
 
         func write(_ value: UInt8, to address: UInt16) {
@@ -24,28 +32,37 @@ extension NES {
             memory[Int(address)] = value
         }
     }
-    
-    func loadProgram(data: [Data]) throws {
-        
-    }
-    
-    func loadProgram(at filePath: String) throws {
-        
-    }
 }
 
 extension NES.CPU {
+    /// Pushes a value onto the stack.
+    /// Stack pointer is automatically decremented.
+    /// - Parameter value: The value to push onto the stack
+    /// - Note: The stack wraps from $0100 through $01FF.
+    ///   Stack pointer decrements after each push, wrapping from $00 to $FF.
     func push(_ value: UInt8) {
-        registers.stackPointer &-= 1
-        memoryManager.write(value, to: 0x100 + UInt16(registers.stackPointer))
+        registers.stackPointer &-= 1 // Will naturally wrap from 0x00 to 0xFF
+        let stackAddr = 0x100 + UInt16(registers.stackPointer)
+        memoryManager.write(value, to: stackAddr)
     }
     
+    /// Pops a value from the stack.
+    /// Stack pointer is automatically incremented.
+    /// - Returns: The value popped from the stack
+    /// - Note: The stack wraps from $0100 through $01FF.
+    ///   Stack pointer increments after each pop, wrapping from $FF to $00.
     func pop() -> UInt8 {
-        defer { registers.stackPointer &+= 1 }
-        return memoryManager.read(from: 0x100 + UInt16(registers.stackPointer))
+        let stackAddr = 0x100 + UInt16(registers.stackPointer)
+        let value = memoryManager.read(from: stackAddr)
+        registers.stackPointer &+= 1 // Will naturally wrap from 0xFF to 0x00
+        return value
     }
     
+    /// Peeks at the top value on the stack without removing it.
+    /// - Returns: The value at the current stack pointer
+    /// - Note: Does not modify the stack pointer
     func peek() -> UInt8 {
-        memoryManager.read(from: 0x100 + UInt16(registers.stackPointer))
+        let stackAddr = 0x100 + UInt16(registers.stackPointer)
+        return memoryManager.read(from: stackAddr)
     }
 }

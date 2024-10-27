@@ -14,15 +14,11 @@ import Foundation
 
 extension NES.Cartridge {
     convenience init(fileURL: URL) throws {
-        let data = try Data(contentsOf: fileURL)
-        var bytes = [UInt8](repeating: 0, count: data.count)
-
-        data.withUnsafeBytes { rawBufferPointer in
-            let bufferPointer = rawBufferPointer.bindMemory(to: UInt8.self)
-            for i in 0..<data.count {
-                bytes[i] = bufferPointer[i]
-            }
-        }
+        try self.init(data: try Data(contentsOf: fileURL))
+    }
+    
+    convenience init(data: Data) throws {
+        let bytes = Array(data)
         
         try self.init(fileData: bytes)
     }
@@ -45,7 +41,7 @@ extension NES.Cartridge {
         let chrStartIndex = prgEndIndex
         let chrEndIndex = chrStartIndex + chrSize
         
-        self.init(mapper: Mapper0(programMemory: Array(fileData[prgStartIndex..<prgEndIndex]), characterMemory: Array(fileData[chrStartIndex...chrEndIndex])))
+        self.init(mapper: Mapper0(programMemory: Array(fileData[prgStartIndex..<prgEndIndex]), characterMemory: Array(fileData[chrStartIndex..<chrEndIndex])))
     }
 }
 
