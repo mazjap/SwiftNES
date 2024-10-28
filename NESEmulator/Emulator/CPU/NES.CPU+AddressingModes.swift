@@ -1,94 +1,98 @@
 extension NES.CPU {
-    /// Returns the program counter, unmodified, but adds 1 clock cycle.
-    /// - Returns: The program counter
-    /// - Note: This function increments the clock cycle count based on the addressing mode used
-    func getImmediateAddress() -> UInt16 {
-        clockCycleCount += 1
-        return registers.programCounter
+    /// Handles immediate addressing mode by returning the current program counter as the address
+    /// Example: LDA #$44 - The value $44 is read from the byte following the opcode
+    /// - Returns: A tuple containing:
+    ///   - address: The current program counter location
+    ///   - pageBoundaryCrossed: Always false for immediate addressing
+    func getImmediateAddress() -> (address: UInt16, pageBoundaryCrossed: Bool) {
+        return (registers.programCounter, false)
     }
     
-    /// Fetches the 8-bit zero page address from the provided 8-bit base address, optionally applying an offset
+    /// Handles zero page addressing by interpreting the operand as an address in page zero ($0000-$00FF)
+    /// Example: LDA $44 - The value is read from address $0044
     /// - Parameters:
-    ///   - addr: The 8-bit base address from which to fetch the value
-    ///   - offset: An optional 8-bit offset to add to the base address, used in indexed zero page addressing modes
-    /// - Returns: The resolved zero page address after applying the offset
-    /// - Note: This function increments the clock cycle count based on the addressing mode used
-    func getZeropageAddress(addr: UInt8, offset: UInt8? = nil) -> UInt16 {
-        clockCycleCount += 2 // Base cycles for ZeroPage access
+    ///   - addr: The zero page address (0-255)
+    ///   - offset: Optional index value (for zero page,X or zero page,Y addressing)
+    /// - Returns: A tuple containing:
+    ///   - address: The calculated zero page address (wraps within page zero)
+    ///   - pageBoundaryCrossed: Always false as zero page addressing cannot cross pages
+    func getZeropageAddress(addr: UInt8, offset: UInt8? = nil) -> (address: UInt16, pageBoundaryCrossed: Bool) {
         var resolvedAddress = addr // Ensure address is within the zero page range
         
         if let offset {
-            clockCycleCount += 1 // Indexed ZeroPage access requires an additional cycle
             resolvedAddress = (resolvedAddress &+ offset)
         }
         
-        return UInt16(resolvedAddress)
+        return (UInt16(resolvedAddress), false)
     }
     
-    /// Calculates the memory address using the Indexed Indirect addressing mode. Gets the low byte from `(addr + x) % 256`, the high byte from `(addr + x + 1) % 256`, then returns the calculated address
-    /// - Parameter addr: The 8-bit base address to which the X register offset will be added
-    /// - Returns: The resolved 16-bit address calculated from the low and high bytes
-    /// - Note: This function increments the clock cycle count based on the addressing mode used
-    func getIndexedIndirectAddress(addr: UInt8) -> UInt16 {
+    /// Handles indexed indirect (X) addressing mode, aka (indirect,X) or (d,X)
+    /// Example: LDA ($20,X) - If X contains $04, fetch address from $24/$25
+    /// - Parameter addr: The zero page base address before X indexing
+    /// - Returns: A tuple containing:
+    ///   - address: The 16-bit address fetched from the indexed zero page location
+    ///   - pageBoundaryCrossed: Always false as final address is fully computed before access
+    /// - Note: Address calculation wraps within zero page. If addr+X=$FF, high byte comes from $00
+    func getIndexedIndirectAddress(addr: UInt8) -> (address: UInt16, pageBoundaryCrossed: Bool) {
         let baseAddr = UInt16(addr) &+ UInt16(registers.indexX)
         let lowByteAddr = UInt16(memoryManager.read(from: baseAddr & 0xFF))
         let highByteAddr = UInt16(memoryManager.read(from: (baseAddr &+ 1) & 0xFF)) << 8
         
-        clockCycleCount += 5 // Base cycles for (indirect,x) access
-        
-        return highByteAddr | lowByteAddr
+        return (highByteAddr | lowByteAddr, false)
     }
 
-    /// Calculates the memory address using the Indirect Indexed addressing mode. Gets the low byte from `addr % 256`, the high byte from `(addr + 1) % 256`, and adds `y` to create an effective address, then returns the calculated address
-    /// - Parameter addr: The base address
-    /// - Returns: The calculated memory address
-    /// - Note: This function increments the clock cycle count based on the addressing mode used
-    func getIndirectIndexedAddress(addr: UInt8) -> UInt16 {
+    /// Handles indirect indexed (Y) addressing mode, aka (indirect),Y or (d),Y
+    /// Example: LDA ($86),Y - Fetch base address from $86/$87, then add Y
+    /// - Parameter addr: The zero page location containing the base address
+    /// - Returns: A tuple containing:
+    ///   - address: The computed address (base address + Y)
+    ///   - pageBoundaryCrossed: True if Y indexing crosses a page boundary
+    /// - Note: Page boundary crossing occurs if base address + Y crosses a page boundary
+    func getIndirectIndexedAddress(addr: UInt8) -> (address: UInt16, pageBoundaryCrossed: Bool) {
         let addr16 = UInt16(addr)
         let lowByteAddr = UInt16(memoryManager.read(from: addr16 & 0xFF))
         let highByteAddr = UInt16(memoryManager.read(from: (addr16 &+ 1) & 0xFF)) << 8
         var resolvedAddress = lowByteAddr | highByteAddr
-        clockCycleCount += 4 // Base cycles for (indirect),y access
         
-        if isCrossingPageBoundary(addr: resolvedAddress, offset: registers.indexY) {
-            clockCycleCount += 1
-        }
+        let pageBoundaryCrossed = isCrossingPageBoundary(addr: resolvedAddress, offset: registers.indexY)
         
         resolvedAddress &+= UInt16(registers.indexY)
         
-        return resolvedAddress
+        return (resolvedAddress, pageBoundaryCrossed)
     }
     
-    /// Calculates the absolute memory address by adding an optional offset to the base address
+    /// Handles absolute addressing with optional indexing
+    /// Example: LDA $1234 or LDA $1234,X
     /// - Parameters:
-    ///   - lsb: The least significant byte of the address to fetch from
-    ///   - msb: The most significant byte, combined with `lsb` to create the effective address
-    ///   - offset: An optional offset to be added to the base address
-    /// - Returns: The calculated absolute memory address
-    /// - Note: This function increments the clock cycle count based on the addressing mode used
-    func getAbsoluteAddress(lsb: UInt8, msb: UInt8, offset: UInt8? = nil) -> UInt16 {
-        clockCycleCount += 3 // Base cycles for absolute/abs,x/abs,y access
+    ///   - lsb: Low byte of the target address
+    ///   - msb: High byte of the target address
+    ///   - offset: Optional index value (X or Y register)
+    /// - Returns: A tuple containing:
+    ///   - address: The final absolute address (with optional indexing applied)
+    ///   - pageBoundaryCrossed: True if indexing causes a page boundary cross
+    func getAbsoluteAddress(lsb: UInt8, msb: UInt8, offset: UInt8? = nil) -> (address: UInt16, pageBoundaryCrossed: Bool) {
         var resolvedAddress = UInt16(lsb) | (UInt16(msb) << 8)
+        var pageBoundaryCrossed = false
         
         if let offset {
-            clockCycleCount += 1 // Add 1 cycle for abs,x or abs,y operations due to offset addition
-            if isCrossingPageBoundary(addr: resolvedAddress, offset: offset) {
-                clockCycleCount += 1
-            }
+            pageBoundaryCrossed = isCrossingPageBoundary(addr: resolvedAddress, offset: offset)
+            
             resolvedAddress &+= UInt16(offset)
         }
         
-        return resolvedAddress
+        return (resolvedAddress, pageBoundaryCrossed)
     }
     
-    /// Calculates the target address for an indirect jump, replicating the 6502 page boundary bug
+    /// Handles indirect addressing used by JMP instruction, implementing the 6502 page boundary bug
+    /// Example: JMP ($1234) - Jump to address stored at $1234/$1235
     /// - Parameters:
-    ///   - lsb: The least significant byte of the pointer address
-    ///   - msb: The most significant byte of the pointer address
-    /// - Returns: The resolved jump target address
-    /// - Note: When the pointer address is at $xxFF, the high byte is fetched from $xx00
-    ///         instead of $(xx+1)00 due to a hardware bug in the 6502
-    func getIndirectJumpAddress(lsb: UInt8, msb: UInt8) -> UInt16 {
+    ///   - lsb: Low byte of the indirect pointer address
+    ///   - msb: High byte of the indirect pointer address
+    /// - Returns: A tuple containing:
+    ///   - address: The address to jump to
+    ///   - pageBoundaryCrossed: Always false as JMP timing is static
+    /// - Note: Has hardware bug: JMP ($xxFF) reads high byte from $xx00 instead of $(xx+1)00
+    func getIndirectJumpAddress(lsb: UInt8, msb: UInt8) -> (address: UInt16, pageBoundaryCrossed: Bool) {
         let pointerAddress = UInt16(lsb) | (UInt16(msb) << 8)
         
         // Get low byte of target address
@@ -105,9 +109,7 @@ extension NES.CPU {
         
         let targetHigh = memoryManager.read(from: highByteAddr)
         
-        clockCycleCount += 5  // Indirect JMP takes 5 cycles
-        
-        return UInt16(targetLow) | (UInt16(targetHigh) << 8)
+        return (UInt16(targetLow) | (UInt16(targetHigh) << 8), false)
     }
     
     /// Calculates whether adding an offset to an address causes a page boundary crossing (oops cycle)
@@ -120,41 +122,52 @@ extension NES.CPU {
 }
 
 extension NES.CPU {
-    /// Fetches the 8-bit zero page address from the provided 8-bit base address, using the X register to apply an offset
-    /// - Parameters:
-    ///   - addr: The 8-bit base address from which to fetch the value
-    /// - Returns: The resolved zero page address after applying the offset
-    /// - Note: This function increments the clock cycle count based on the addressing mode used
-    func getZeropageXAddress(addr: UInt8) -> UInt16 {
+    /// Handles zero page,X addressing by adding X register to a zero page address
+    /// Example: LDA $44,X - If X contains $20, reads from zero page address $64
+    /// - Parameter addr: Base zero page address before X indexing
+    /// - Returns: A tuple containing:
+    ///   - address: The indexed zero page address (wraps within zero page)
+    ///   - pageBoundaryCrossed: Always false as zero page indexing cannot cross pages
+    /// - Note: Result wraps within zero page ($0000-$00FF) if addr + X > $FF
+    func getZeropageXAddress(addr: UInt8) -> (address: UInt16, pageBoundaryCrossed: Bool) {
         getZeropageAddress(addr: addr, offset: registers.indexX)
     }
     
-    /// Fetches the 8-bit zero page address from the provided 8-bit base address, using the Y register to apply an offset
-    /// - Parameters:
-    ///   - addr: The 8-bit base address from which to fetch the value
-    /// - Returns: The resolved zero page address after applying the offset
-    /// - Note: This function increments the clock cycle count based on the addressing mode used
-    func getZeropageYAddress(addr: UInt8) -> UInt16 {
+    /// Handles zero page,Y addressing by adding Y register to a zero page address
+    /// Example: LDX $44,Y - If Y contains $20, reads from zero page address $64
+    /// - Parameter addr: Base zero page address before Y indexing
+    /// - Returns: A tuple containing:
+    ///   - address: The indexed zero page address (wraps within zero page)
+    ///   - pageBoundaryCrossed: Always false as zero page indexing cannot cross pages
+    /// - Note: Result wraps within zero page ($0000-$00FF) if addr + Y > $FF
+    /// - Note: Only used by a few instructions (LDX, STX)
+    func getZeropageYAddress(addr: UInt8) -> (address: UInt16, pageBoundaryCrossed: Bool) {
         getZeropageAddress(addr: addr, offset: registers.indexY)
     }
     
-    /// Calculates the absolute memory address, using the X register as an offset to the base address
+    /// Handles absolute,X addressing by adding X register to a 16-bit address
+    /// Example: LDA $1234,X - If X contains $20, reads from address $1254
     /// - Parameters:
-    ///   - lsb: The least significant byte of the address to fetch from
-    ///   - msb: The most significant byte, combined with `lsb` to create the effective address
-    /// - Returns: The calculated absolute memory address
-    /// - Note: This function increments the clock cycle count based on the addressing mode used
-    func getAbsoluteXAddress(lsb: UInt8, msb: UInt8) -> UInt16 {
+    ///   - lsb: Low byte of base address
+    ///   - msb: High byte of base address
+    /// - Returns: A tuple containing:
+    ///   - address: The computed absolute address after X indexing
+    ///   - pageBoundaryCrossed: True if adding X crosses a page boundary
+    /// - Note: Page boundary crossing occurs if (base + X) crosses a page boundary
+    func getAbsoluteXAddress(lsb: UInt8, msb: UInt8) -> (address: UInt16, pageBoundaryCrossed: Bool) {
         getAbsoluteAddress(lsb: lsb, msb: msb, offset: registers.indexX)
     }
     
-    /// Calculates the absolute memory address, using the Y register as an offset to the base address
+    /// Handles absolute,Y addressing by adding Y register to a 16-bit address
+    /// Example: LDA $1234,Y - If Y contains $20, reads from address $1254
     /// - Parameters:
-    ///   - lsb: The least significant byte of the address to fetch from
-    ///   - msb: The most significant byte, combined with `lsb` to create the effective address
-    /// - Returns: The calculated absolute memory address
-    /// - Note: This function increments the clock cycle count based on the addressing mode used
-    func getAbsoluteYAddress(lsb: UInt8, msb: UInt8) -> UInt16 {
+    ///   - lsb: Low byte of base address
+    ///   - msb: High byte of base address
+    /// - Returns: A tuple containing:
+    ///   - address: The computed absolute address after Y indexing
+    ///   - pageBoundaryCrossed: True if adding Y crosses a page boundary
+    /// - Note: Page boundary crossing occurs if (base + Y) crosses a page boundary
+    func getAbsoluteYAddress(lsb: UInt8, msb: UInt8) -> (address: UInt16, pageBoundaryCrossed: Bool) {
         getAbsoluteAddress(lsb: lsb, msb: msb, offset: registers.indexY)
     }
 }
