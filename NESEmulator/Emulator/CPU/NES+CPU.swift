@@ -17,27 +17,27 @@ extension NES {
         }
         
         func fetchAddress(for opcode: UInt8) -> (address: UInt16, pageBoundaryCrossed: Bool)? {
-            if immediateOps.contains(opcode) {
+            if Self.immediateOps.contains(opcode) {
                 let value = getImmediateAddress()
                 incrementPc()
                 return value
-            } else if zeropageOps.contains(opcode) {
+            } else if Self.zeropageOps.contains(opcode) {
                 return getZeropageAddress(addr: getNextByte())
-            } else if zeropageXOps.contains(opcode) {
+            } else if Self.zeropageXOps.contains(opcode) {
                 return getZeropageXAddress(addr: getNextByte())
-            } else if zeropageYOps.contains(opcode) {
+            } else if Self.zeropageYOps.contains(opcode) {
                 return getZeropageYAddress(addr: getNextByte())
-            } else if absoluteOps.contains(opcode) {
+            } else if Self.absoluteOps.contains(opcode) {
                 return getAbsoluteAddress(lsb: getNextByte(), msb: getNextByte())
-            } else if absoluteXOps.contains(opcode) {
+            } else if Self.absoluteXOps.contains(opcode) {
                 return getAbsoluteXAddress(lsb: getNextByte(), msb: getNextByte())
-            } else if absoluteYOps.contains(opcode) {
+            } else if Self.absoluteYOps.contains(opcode) {
                 return getAbsoluteYAddress(lsb: getNextByte(), msb: getNextByte())
-            } else if indirectIndexedOps.contains(opcode) {
+            } else if Self.indirectIndexedOps.contains(opcode) {
                 return getIndirectIndexedAddress(addr: getNextByte())
-            } else if indexedIndirectOps.contains(opcode) {
+            } else if Self.indexedIndirectOps.contains(opcode) {
                 return getIndexedIndirectAddress(addr: getNextByte())
-            } else if indirectOps.contains(opcode) {
+            } else if Self.indirectOps.contains(opcode) {
                 return getIndirectJumpAddress(lsb: getNextByte(), msb: getNextByte())
             } else {
                 return nil
@@ -51,7 +51,7 @@ extension NES {
         func executeNextInstruction() -> UInt8 {
             let opcode = getOpcode()
             
-            guard let timingForInstruction = instructionTimings[opcode] else {
+            guard let timingForInstruction = Self.instructionTimings[opcode] else {
                 fatalError("Unhandled instruction timing for 0x\(String(opcode, radix: 16))")
             }
             var pageCrossed = false
@@ -59,7 +59,7 @@ extension NES {
             
             switch codeToCallingMode[opcode] {
             case let .noParam(fun):
-                if !impliedOps.contains(opcode) {
+                if !Self.impliedOps.contains(opcode) {
                     fatalError("An opcode with no parameters was called that isn't an implied opcode! 0x\(String(opcode, radix: 16))")
                 }
                 
@@ -67,7 +67,7 @@ extension NES {
                 
                 fun()
             case let .mutatingValue(fun):
-                if accumulatorOps.contains(opcode) {
+                if Self.accumulatorOps.contains(opcode) {
                     fun(&registers.accumulator, true)
                 } else if let (addr, pageBoundaryCrossed) = fetchAddress(for: opcode) {
                     pageCrossed = pageBoundaryCrossed
@@ -78,7 +78,7 @@ extension NES {
                     fatalError("Ran into unhandled case!\n\tOpcode 0x\(String(opcode, radix: 16))")
                 }
             case let .mutating(fun):
-                if accumulatorOps.contains(opcode) {
+                if Self.accumulatorOps.contains(opcode) {
                     fun(&registers.accumulator)
                 } else if let (addr, pageBoundaryCrossed) = fetchAddress(for: opcode) {
                     pageCrossed = pageBoundaryCrossed
@@ -201,7 +201,7 @@ extension NES {
             }
         }
 
-        let instructionTimings: [UInt8 : InstructionTiming] = [
+        static let instructionTimings: [UInt8 : InstructionTiming] = [
             0x00 : .unchanged(7),    0x01 : .unchanged(6),    0x02 : .fatalError(),
             0x03 : .iUnchanged(8),   0x04 : .iUnchanged(3),   0x05 : .unchanged(3),
             0x06 : .unchanged(5),    0x07 : .iUnchanged(5),   0x08 : .unchanged(3),
@@ -309,12 +309,12 @@ extension NES {
             case nonMutatingAddress((UInt16) -> Void)
         }
         
-        let immediateOps: Set<UInt8> = [
+        static let immediateOps: Set<UInt8> = [
             0x09, 0x0B, 0x29, 0x2B, 0x49, 0x4B, 0x69, 0x6B,
             0x80, 0x82, 0x89, 0x8B, 0xA0, 0xA2, 0xA9, 0xAB,
             0xC0, 0xC2, 0xC9, 0xCB, 0xE0, 0xE2, 0xE9, 0xEB
         ]
-        let impliedOps: Set<UInt8> = [
+        static let impliedOps: Set<UInt8> = [
             0x00, 0x02, 0x08, 0x12, 0x18, 0x1A, 0x22, 0x28,
             0x32, 0x38, 0x3A, 0x40, 0x42, 0x48, 0x52, 0x58,
             0x5A, 0x60, 0x62, 0x68, 0x72, 0x78, 0x7A, 0x88,
@@ -322,53 +322,53 @@ extension NES {
             0xBA, 0xC8, 0xCA, 0xD2, 0xD8, 0xDA, 0xE8, 0xEA,
             0xF2, 0xF8, 0xFA
         ]
-        let accumulatorOps: Set<UInt8> = [
+        static let accumulatorOps: Set<UInt8> = [
             0x0A, 0x2A, 0x4A, 0x6A
         ]
-        let indexedIndirectOps: Set<UInt8> = [
-            0x01, 0x03, 0x21, 0x23, 0x41, 0x43, 0x61, 0x63, 
+        static let indexedIndirectOps: Set<UInt8> = [
+            0x01, 0x03, 0x21, 0x23, 0x41, 0x43, 0x61, 0x63,
             0x81, 0x83, 0xA1, 0xA3, 0xC1, 0xC3, 0xE1, 0xE3
         ]
-        let indirectIndexedOps: Set<UInt8> = [
+        static let indirectIndexedOps: Set<UInt8> = [
             0x11, 0x13, 0x31, 0x33, 0x51, 0x53, 0x71, 0x73,
             0x91, 0x93, 0xB1, 0xB3, 0xD1, 0xD3, 0xF1, 0xF3
         ]
-        let zeropageOps: Set<UInt8> = [
+        static let zeropageOps: Set<UInt8> = [
             0x04, 0x05, 0x06, 0x07, 0x24, 0x25, 0x26, 0x27,
             0x44, 0x45, 0x46, 0x47, 0x64, 0x65, 0x66, 0x67,
             0x84, 0x85, 0x86, 0x87, 0xA4, 0xA5, 0xA6, 0xA7,
             0xC4, 0xC5, 0xC6, 0xC7, 0xE4, 0xE5, 0xE6, 0xE7
         ]
-        let zeropageXOps: Set<UInt8> = [
+        static let zeropageXOps: Set<UInt8> = [
             0x14, 0x15, 0x16, 0x17, 0x34, 0x35, 0x36, 0x37,
             0x54, 0x55, 0x56, 0x57, 0x74, 0x75, 0x76, 0x77,
             0x94, 0x95, 0xB5, 0xB6, 0xB7, 0xD4, 0xD5, 0xD6,
             0xD7, 0xF4, 0xF5, 0xF6, 0xF7
         ]
-        let zeropageYOps: Set<UInt8> = [
+        static let zeropageYOps: Set<UInt8> = [
             0x96, 0x97, 0xB6, 0xB7
         ]
-        let absoluteOps: Set<UInt8> = [
+        static let absoluteOps: Set<UInt8> = [
             0x0C, 0x0D, 0x0E, 0x0F, 0x20, 0x2C, 0x2D, 0x2E,
             0x2F, 0x4C, 0x4D, 0x4E, 0x4F, 0x6D, 0x6E, 0x6F,
             0x8C, 0x8D, 0x8E, 0x8F, 0xAC, 0xAD, 0xAE, 0xAF,
             0xCC, 0xCD, 0xCE, 0xCF, 0xEC, 0xED, 0xEE, 0xEF
         ]
-        let absoluteXOps: Set<UInt8> = [
+        static let absoluteXOps: Set<UInt8> = [
             0x1C, 0x1D, 0x1E, 0x1F, 0x3C, 0x3D, 0x3E, 0x3F,
             0x5C, 0x5D, 0x5E, 0x5F, 0x7C, 0x7D, 0x7E, 0x7F,
             0x9C, 0x9D, 0xBC, 0xBD, 0xDC, 0xDD, 0xDE, 0xDF,
             0xFC, 0xFD, 0xFE, 0xFF
         ]
-        let absoluteYOps: Set<UInt8> = [
+        static let absoluteYOps: Set<UInt8> = [
             0x19, 0x1B, 0x39, 0x3B, 0x59, 0x5B, 0x79, 0x7B,
             0x99, 0x9B, 0x9E, 0x9F, 0xB9, 0xBB, 0xBE, 0xBF,
             0xD9, 0xDB, 0xF9, 0xFB
         ]
-        let relativeOps: Set<UInt8> = [
+        static let relativeOps: Set<UInt8> = [
             0x10, 0x30, 0x50, 0x70, 0x90, 0xB0, 0xD0, 0xF0
         ]
-        let indirectOps: Set<UInt8> = [0x6C]
+        static let indirectOps: Set<UInt8> = [0x6C]
         
         lazy var codeToCallingMode: [UInt8 : OpcodeCallingMode] = {[
             0x00 : .noParam(brk), 0x01 : .nonMutating(ora), 0x02 : .noParam(nop),
