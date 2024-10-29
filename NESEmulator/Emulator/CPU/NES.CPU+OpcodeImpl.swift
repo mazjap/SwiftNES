@@ -1,11 +1,8 @@
-
-/// Opcodes only handle the cycle count for the current instruction, and not for fetching the opcode nor handling the addressing mode
 extension NES.CPU {
     /// Break:
     /// Pushes the program counter and processor status to the stack.
     /// Loads the interrupt vector from 0xFFFE/F into the program counter.
     /// Sets the break flag status to 1 (in both the active status and the status pushed to the stack).
-    /// - Note: This function increments the clock cycle count by 6 (instead of the expected 7) due to the run function incrementing the clock cycle when fetching the opcode
     func brk() {
         emuLogger.debug("brk")
         
@@ -19,14 +16,11 @@ extension NES.CPU {
         let highByte = UInt16(memoryManager.read(from: 0xFFFF))
         
         registers.programCounter = lowByte | (highByte << 8)
-        
-        clockCycleCount += 6
     }
     
     /// Logical Inclusive OR:
     /// Performs a bitwise OR operation, bit by bit, on the accumulator with the value fetched using the specified addressing mode.
     /// - Parameter value: The value fetched using the specified addressing mode to be ORed with the accumulator
-    /// - Note: No cycles are added to `clockCycleCount` due to the run function and addressing mode functions incrementing the cycle count
     func ora(value: UInt8) {
         emuLogger.debug("ora")
         registers.accumulator |= value
@@ -44,7 +38,6 @@ extension NES.CPU {
     /// Shift Left Logical OR:
     /// Shifts all bits in the value one place to the left and then ORs the accumulator with the result.
     /// - Parameter value: The value to perform the SLO operation on
-    /// - Note: This function increments the clock cycle count by 1 (instead of the expected 5) due to the run function and addressing mode functions incrementing the cycle count
     func slo(value: inout UInt8) {
         emuLogger.debug("slo")
         
@@ -53,16 +46,14 @@ extension NES.CPU {
     }
     
     /// No Operation:
-    /// Burns one clock cycle (or two, including the opcode pulled from memory).
     func nop() {
         emuLogger.debug("nop")
         
-        clockCycleCount += 1
+        // TODO: - Urgent: Do nothing
     }
     
     /// Accumulator Shift Left:
     /// Shifts the accumulator left 1 bit and updates carry, zero, and negative flags.
-    /// - Note: This function increments the clock cycle count by 1 (instead of the expected 2 or 5+ based on addressing mode) due to the run function and addressing mode functions incrementing the cycle count
     func asl(value: inout UInt8, isAccumulator: Bool = false) {
         emuLogger.debug("asl")
         
@@ -73,21 +64,16 @@ extension NES.CPU {
         value <<= 1
         
         updateZeroNegativeFlags(for: value)
-        
-        clockCycleCount += isAccumulator ? 1 : 2
     }
     
     /// Push Processor Status:
     /// Pushes the current status register (processor status) onto the stack with the break flag and bit 5 set to 1.
     /// Updates the stack pointer.
-    /// - Note: Increments the clock cycle count by 2 (instead of the expected 3) due to the run function incrementing the cycle count
     func php() {
         emuLogger.debug("php")
         
         // Bit 5 is overridden in this context
         push(registers.status.rawValue | Registers.Status.break.rawValue)
-        
-        clockCycleCount += 2
     }
     
     /// AND with Carry:
@@ -104,34 +90,26 @@ extension NES.CPU {
     
     /// Branch if Positive:
     /// If the negative flag is clear then add the relative displacement to the program counter to cause a branch to a new location.
-    /// - Note: Cycle count is incremented if branch succeeds, and is incremented again if page boundary is crossed.
     func bpl(value: UInt8) {
         emuLogger.debug("bpl")
         
         if !registers.status.readFlag(.negative) {
             let offset = Int8(bitPattern: value)
             let newAddress = UInt16(Int16(registers.programCounter) + Int16(offset))
-            if (registers.programCounter & 0xFF00) != (newAddress & 0xFF00) {
-                clockCycleCount += 1 // Add cycle when crossing page boundary
-            }
             
             registers.programCounter = newAddress
-            clockCycleCount += 1 // Add cycle when branch is successful
         }
     }
     
     /// Clear Carry Flag:
-    /// - Note: This function increments the clock cycle count by 1 (instead of the expected 2) due to the run function and addressing mode functions incrementing the cycle count
     func clc() {
         emuLogger.debug("clc")
         
         registers.status.setFlag(.carry, to: false)
-        clockCycleCount += 1
     }
     
     /// Jump to Subroutine:
     /// Pushes the address of the return point on to the stack and then sets the program counter to the target memory address.
-    /// - Note: Increments the clock cycle count by 3 (instead of the expected 6) due to the run function and addressing mode functions incrementing the cycle count
     func jsr(value: UInt16) {
         emuLogger.debug("jsr")
         
@@ -139,14 +117,11 @@ extension NES.CPU {
         push(UInt8(registers.programCounter & 0xFF))
         
         registers.programCounter = value
-        
-        clockCycleCount += 3
     }
     
     /// And:
     /// Performs a bitwise AND operation between the accumulator and the provided value.
     /// Updates the zero and negative flags.
-    /// - Note: Clock cycle is not incrmented as AND takes 2 cycles total, one for fetching the opcode, and one for fetching the value
     func and(value: UInt8) {
         registers.accumulator &= value
         updateZeroNegativeFlags()
@@ -156,7 +131,6 @@ extension NES.CPU {
     
     /// Rotate Left + And:
     /// An "Illegal" Opcode.
-    /// - Note: Cycles are handled by `rol` call
     func rla(value: inout UInt8) {
         rol(value: &value)
         and(value: value)
@@ -166,7 +140,6 @@ extension NES.CPU {
     /// Transfer bits 7 and 6 of operand to bit 7 and 6 of SR (N,V).
     /// The zero-flag is set according to the result of the operand AND the accumulator (set, if the result is zero, unset otherwise).
     /// This allows a quick check of a few bits at once without affecting any of the registers, other than the status register (SR).
-    /// - Note: No cycles are added because fetching the opcode and addressing mode function handles all cycles
     func bit(value: UInt8) {
         emuLogger.debug("bit")
 
@@ -178,7 +151,6 @@ extension NES.CPU {
     /// Rotate Left:
     /// Shifts all bits in the value one place to the left.
     /// Carry flag becomes bit 0 while the old bit 7 becomes the new carry flag.
-    /// - Note: Added cycle count is based on whether operating on accumulator register or not
     func rol(value: inout UInt8, isAccumulator: Bool = false) {
         emuLogger.debug("rol")
         
@@ -189,50 +161,38 @@ extension NES.CPU {
         registers.status.setFlag(carryFlag, to: newCarry)
         
         updateZeroNegativeFlags(for: value)
-        clockCycleCount += isAccumulator ? 1 : 2
     }
     
     /// Pull Processor Status:
     /// Pulls an 8 bit value from the stack and into the processor status register (SR).
-    /// - Note: Clock cycle incremented by 3 (instead of the expected 4) due to the run function incrementing the cycle count
     func plp() {
         emuLogger.debug("plp")
         
         registers.status.rawValue = pop()
-        
-        clockCycleCount += 3
     }
     
     /// Branch if Minus (Negative):
     /// If the negative flag is set then add the relative displacement to the program counter to cause a branch to a new location.
-    /// - Note: Cycle count is incremented if branch succeeds, and is incremented again if page boundary is crossed
     func bmi(value: UInt8) {
         emuLogger.debug("bmi")
         
         if registers.status.readFlag(.negative) {
             let offset = Int8(bitPattern: value)
             let newAddress = UInt16(Int16(registers.programCounter) + Int16(offset))
-            if (registers.programCounter & 0xFF00) != (newAddress & 0xFF00) {
-                clockCycleCount += 1 // Add cycle when crossing page boundary
-            }
             
             registers.programCounter = newAddress
-            clockCycleCount += 1 // Add cycle when branch is successful
         }
     }
     
     /// Set Carry Flag:
-    /// - Note: Clock cycle incremented by 1 (instead of the expected 2) due to the run function incrementing the cycle count
     func sec() {
         emuLogger.debug("sec")
         
         registers.status.setFlag(.carry, to: true)
-        clockCycleCount += 1
     }
     
     /// Return from Interrupt:
     /// Pulls the processor status register and the program counter from the stack.
-    /// - Note: Clock cycle incremented by 5 (instead of the expected 6) due to the run function incrementing the cycle count
     func rti() {
         emuLogger.debug("rti")
         
@@ -243,14 +203,11 @@ extension NES.CPU {
         let highByte = UInt16(pop()) << 8
         
         registers.programCounter = lowByte | highByte
-        
-        clockCycleCount += 5
     }
     
     /// Exclusive-OR (XOR):
     /// An exclusive OR is performed, bit by bit, on the accumulator register using the provided value.
     /// The result is stored back into the accumulator.
-    /// - Note: No cycles are added because fetching the opcode and addressing mode function handles all cycles
     func eor(value: UInt8) {
         emuLogger.debug("eor")
         
@@ -262,7 +219,6 @@ extension NES.CPU {
     /// LSR + EOR:
     /// An "Illegal" Opcode.
     /// Shifts all bits in the value one place to the right, then XORs the result with the accumulator.
-    /// - Note: No cycles are added because calling lsr as well as run function and addressing mode function handles all cycles
     func sre(value: inout UInt8) {
         emuLogger.debug("sre")
         
@@ -272,7 +228,6 @@ extension NES.CPU {
     
     /// Logical Shift Right:
     /// Shifts all bits in the value one place to the right, storing the old bit 0 in the carry flag.
-    /// - Note: Added cycle count is based on whether operating on accumulator register or not
     func lsr(value: inout UInt8, isAccumulator: Bool = false) {
         emuLogger.debug("lsr")
         
@@ -282,30 +237,24 @@ extension NES.CPU {
         
         registers.status.setFlag(.carry, to: newCarry)
         updateZeroNegativeFlags(for: value)
-        
-        clockCycleCount += isAccumulator ? 1 : 2
     }
     
     /// Push Accumulator:
     /// Pushes the contents of the accumulator on to the stack.
-    /// - Note: Clock cycle incremented by 2 (instead of the expected 3) due to the run function incrementing the cycle count
     func pha() {
         emuLogger.debug("pha")
         
         push(registers.accumulator)
-        
-        clockCycleCount += 2
     }
     
     /// AND + Logical Shift Right:
     /// An "Illegal" Opcode.
-    /// - Note: No cycles are added because run function and addressing mode function handles all cycles
     func alr(value: UInt8) {
         emuLogger.debug("alr")
         
         and(value: value)
         
-        // Re-implement LSR with no cycles
+        // Re-implement LSR
         let carry = registers.accumulator & 0x01 // Save the original carry before shifting
         registers.accumulator >>= 1
         registers.status.setFlag(.carry, to: carry != 0)
@@ -316,18 +265,14 @@ extension NES.CPU {
     
     /// Jump:
     /// The program counter is set to the address specified by the operand.
-    /// - Note: 1 cycle is removed, as jmp takes 3 cycles for abs and 5 for indirect. Because incrementing PC takes one cycle, one is removed to equalize
     func jmp(value: UInt16) {
         emuLogger.debug("jmp")
         
         registers.programCounter = value
-        
-        clockCycleCount -= 1
     }
     
     /// Branch if Overflow Clear:
     /// If the negative flag is clear then add the relative displacement to the program counter to cause a branch to a new location.
-    /// - Note: Cycle count is incremented if branch succeeds, and is incremented again if page boundary is crossed.
     func bvc(value: UInt8) {
         emuLogger.debug("bvc")
         
@@ -337,28 +282,21 @@ extension NES.CPU {
             // let newAddress = registers.programCounter + offset
             let offset = Int8(bitPattern: value)
             let newAddress = UInt16(Int16(registers.programCounter) + Int16(offset))
-            if (registers.programCounter & 0xFF00) != (newAddress & 0xFF00) {
-                clockCycleCount += 1 // Add cycle when crossing page boundary
-            }
             
             registers.programCounter = newAddress
-            clockCycleCount += 1 // Add cycle when branch is successful
         }
     }
     
     /// Clear Interrupt Flag:
     /// Clears the interrupt disable flag in the processor status register, allowing the CPU to respond to interrupts.
-    /// - Note: Increments the clock cycle count by 1 (instead of the expected 2) due to the run function incrementing the cycle count.
     func cli() {
         emuLogger.debug("cli")
         
         registers.status.setFlag(.interrupt, to: false)
-        clockCycleCount += 1
     }
     
     /// Return from Subroutine:
     /// Restores the program counter (PC) to the address on the stack, then increments the PC to the address following the original subroutine call.
-    /// - Note: Increments the clock cycle count by 5 (instead of the expected 6) due to the run function incrementing the cycle count.
     func rts() {
         emuLogger.debug("rts")
         
@@ -368,7 +306,6 @@ extension NES.CPU {
         let value = high | low
         
         registers.programCounter = value
-        clockCycleCount += 5
     }
     
     /// Add with Carry:
@@ -392,20 +329,16 @@ extension NES.CPU {
     
     /// ROR + ADC:
     /// An "Illegal" Opcode.
-    /// - Note: Adds 2 cycles on top of cycles added from ror
     func rra(value: inout UInt8) {
         emuLogger.debug("rra")
         
         ror(value: &value)
         adc(value: value)
-        
-        clockCycleCount += 2
     }
     
     /// Rotate Right:
     /// Shifts all bits in the value one place to the right.
     /// Carry flag becomes bit 7 while the old bit 0 becomes the new carry flag.
-    /// - Note: Added cycle count is based on whether operating on accumulator register or not
     func ror(value: inout UInt8, isAccumulator: Bool = false) {
         emuLogger.debug("ror")
         
@@ -416,12 +349,10 @@ extension NES.CPU {
         registers.status.setFlag(carryFlag, to: newCarry)
         
         updateZeroNegativeFlags(for: value)
-        clockCycleCount += isAccumulator ? 1 : 2
     }
     
     /// Pull Accumulator:
     /// Pulls an 8 bit value from the stack and into the accumulator.
-    /// - Note: Increments the clock cycle count by 3 (instead of the expected 4) due to the run function incrementing the cycle count
     func pla() {
         emuLogger.debug("pla")
         
@@ -429,13 +360,10 @@ extension NES.CPU {
         
         registers.accumulator = value
         updateZeroNegativeFlags(for: value)
-        
-        clockCycleCount += 3
     }
     
     /// AND + ROR:
     /// An "Illegal" Opcode.
-    /// - Note: Increments the clock cycle count by 1 (instead of the expected 2) due to the run function incrementing the cycle count
     // TODO: - Verify implementation (sources conflict on how ARR should be implemented):
     // https://www.nesdev.org/wiki/Programming_with_unofficial_opcodes
     // https://www.masswerk.at/nowgobang/2021/6502-illegal-opcodes#ARR
@@ -459,42 +387,33 @@ extension NES.CPU {
         
         // Update accumulator with the result
         registers.accumulator = rotatedResult
-        
-        clockCycleCount += 1
     }
     
-    /// Branch is Overflow Set:
+    /// Branch if Overflow Set:
     /// If the overflow flag is set then add the relative displacement to the program counter to cause a branch to a new location.
-    /// - Note: Cycle count is incremented if branch succeeds, and is incremented again if page boundary is crossed.
+
     func bvs(value: UInt8) {
         emuLogger.debug("bvs")
         
         if registers.status.readFlag(.overflow) {
             let offset = Int8(bitPattern: value)
             let newAddress = UInt16(Int16(registers.programCounter) + Int16(offset))
-            if (registers.programCounter & 0xFF00) != (newAddress & 0xFF00) {
-                clockCycleCount += 1 // Add cycle when crossing page boundary
-            }
             
             registers.programCounter = newAddress
-            clockCycleCount += 1 // Add cycle when branch is successful
         }
     }
     
     /// Set Interrupt Disable:
-    /// - Note: Cycle count is incremented by 1 (instead of the expected 2) due to the run function incrementing the cycle count
     func sei() {
         emuLogger.debug("sei")
         
         registers.status.setFlag(.interrupt, to: true)
-        clockCycleCount += 1
     }
     
     /// Store Accumulator:
     /// Stores the value of the accumulator at the specified memory address.
     /// - Parameters:
     ///   - value: The memory address where the register's value will be stored.
-    /// - Note: No cycles are added because fetching the opcode and addressing mode function handles all cycles
     func sta(value address: UInt16) {
         emuLogger.debug("sta")
         
@@ -503,7 +422,6 @@ extension NES.CPU {
     
     /// AND Accumulator + indexX, then store result at the specified memory address:
     /// Illegal Opcode.
-    /// - Note: No cycles are added because fetching the opcode and addressing mode function handles all cycles
     func sax(value address: UInt16) {
         emuLogger.debug("sax")
         
@@ -515,7 +433,6 @@ extension NES.CPU {
     /// Stores the value of the y register at the specified memory address.
     /// - Parameters:
     ///   - value: The memory address where the register's value will be stored.
-    /// - Note: No cycles are added because fetching the opcode and addressing mode function handles all cycles
     func sty(value address: UInt16) {
         emuLogger.debug("sty")
         
@@ -526,7 +443,6 @@ extension NES.CPU {
     /// Stores the value of the x register at the specified memory address.
     /// - Parameters:
     ///   - value: The memory address where the register's value will be stored.
-    /// - Note: No cycles are added because fetching the opcode and addressing mode function handles all cycles
     func stx(value address: UInt16) {
         emuLogger.debug("stx")
         
@@ -535,24 +451,20 @@ extension NES.CPU {
     
     /// Decrement Y Register:
     /// Updates the zero and negative flags based on the result.
-    /// - Note: Cycle count is incremented by 1 (instead of the expected 2) due to the run function incrementing the cycle count
     func dey() {
         emuLogger.debug("dey")
         
         registers.indexY &-= 1
-        clockCycleCount += 1
+        updateZeroNegativeFlags(for: registers.indexY)
     }
     
     /// Transfer X to Accumulator:
     /// Updates the zero and negative flags based on the result.
-    /// - Note: Cycle count is incremented by 1 (instead of the expected 2) due to the run function incrementing the cycle count
     func txa() {
         emuLogger.debug("txa")
         
         registers.accumulator = registers.indexX
         updateZeroNegativeFlags()
-        
-        clockCycleCount += 1
     }
     
     /// * AND X + AND oper:
@@ -567,19 +479,14 @@ extension NES.CPU {
     
     /// Branch if Carry Clear:
     /// If the carry flag is not set then add the relative displacement to the program counter to cause a branch to a new location.
-    /// - Note: Cycle count is incremented if branch succeeds, and is incremented again if page boundary is crossed.
     func bcc(value: UInt8) {
         emuLogger.debug("bcc")
         
         if !registers.status.readFlag(.carry) {
             let offset = Int8(bitPattern: value)
             let newAddress = UInt16(Int16(registers.programCounter) + Int16(offset))
-            if (registers.programCounter & 0xFF00) != (newAddress & 0xFF00) {
-                clockCycleCount += 1 // Add cycle when crossing page boundary
-            }
             
             registers.programCounter = newAddress
-            clockCycleCount += 1 // Add cycle when branch is successful
         }
     }
     
@@ -594,24 +501,18 @@ extension NES.CPU {
     
     /// Transfer Y to Accumulator:
     /// Updates the zero and negative flags.
-    /// - Note: Cycle count is incremented by 1 (instead of the expected 2) due to the run function incrementing the cycle count
     func tya() {
         emuLogger.debug("tya")
         
         registers.accumulator = registers.indexY
         updateZeroNegativeFlags()
-        
-        clockCycleCount += 1
     }
     
     /// Transfer X to Stack Pointer:
-    /// - Note: Cycle count is incremented by 1 (instead of the expected 2) due to the run function incrementing the cycle count
     func txs() {
         emuLogger.debug("txs")
         
         registers.stackPointer = registers.indexX
-        
-        clockCycleCount += 1
     }
     
     /// Put A & X in SP and store A & X & high byte of addr at addr
@@ -643,7 +544,6 @@ extension NES.CPU {
     
     /// Load Y Register:
     /// Sets the zero and negative flags.
-    /// - Note: No cycles are added to `clockCycleCount` due to the run function and addressing mode functions incrementing the cycle count
     func ldy(value: UInt8) {
         emuLogger.debug("ldy")
         
@@ -653,7 +553,6 @@ extension NES.CPU {
     
     /// Load Accumulator Register:
     /// Sets the zero and negative flags.
-    /// - Note: No cycles are added to `clockCycleCount` due to the run function and addressing mode functions incrementing the cycle count
     func lda(value: UInt8) {
         emuLogger.debug("lda")
         
@@ -664,7 +563,6 @@ extension NES.CPU {
     
     /// Load X Register:
     /// Sets the zero and negative flags.
-    /// - Note: No cycles are added to `clockCycleCount` due to the run function and addressing mode functions incrementing the cycle count
     func ldx(value: UInt8) {
         emuLogger.debug("ldx")
         
@@ -686,65 +584,48 @@ extension NES.CPU {
     
     /// Transfer Accumulator to Y:
     /// Sets zero and negative flags.
-    /// - Note: Cycle count is incremented by 1 (instead of the expected 2) due to the run function incrementing the cycle count
     func tay() {
         emuLogger.debug("tay")
         
         registers.indexY = registers.accumulator
         updateZeroNegativeFlags(for: registers.indexY)
-        
-        clockCycleCount += 1
     }
     
     /// Transfer Accumulator to X:
     /// Sets zero and negative flags.
-    /// - Note: Cycle count is incremented by 1 (instead of the expected 2) due to the run function incrementing the cycle count
     func tax() {
         emuLogger.debug("tax")
         
         registers.indexX = registers.accumulator
         updateZeroNegativeFlags(for: registers.indexX)
-        
-        clockCycleCount += 1
     }
     
     /// Branch if Carry Set:
     /// If the carry flag is set then add the relative displacement to the program counter to cause a branch to a new location.
-    /// - Note: Cycle count is incremented if branch succeeds, and is incremented again if page boundary is crossed.
     func bcs(value: UInt8) {
         emuLogger.debug("bcs")
         
         if registers.status.readFlag(.carry) {
             let offset = Int8(bitPattern: value)
             let newAddress = UInt16(Int16(registers.programCounter) + Int16(offset))
-            if (registers.programCounter & 0xFF00) != (newAddress & 0xFF00) {
-                clockCycleCount += 1 // Add cycle when crossing page boundary
-            }
             
             registers.programCounter = newAddress
-            clockCycleCount += 1 // Add cycle when branch is successful
         }
     }
     
     /// Clear Overflow Flag:
-    /// - Note: Cycle count is incremented by 1 (instead of the expected 2) due to the run function incrementing the cycle count
     func clv() {
         emuLogger.debug("clv")
         
         registers.status.setFlag(.overflow, to: false)
-        
-        clockCycleCount += 1
     }
     
     /// Transfer Stack Pointer to X:
     /// Sets the zero and negative flags.
-    /// - Note: Cycle count is incremented by 1 (instead of the expected 2) due to the run function incrementing the cycle count
     func tsx() {
         emuLogger.debug("tsx")
         
         registers.indexX = registers.stackPointer
-        
-        clockCycleCount += 1
     }
     
     /// LDA/TSX oper:
@@ -766,7 +647,6 @@ extension NES.CPU {
     /// Compares the contents of the Y register with a specified value and sets the zero, carry, and negative flags based on the result.
     /// - Parameters:
     ///   - value: The value to compare with the Y register.
-    /// - Note: No cycles are added to `clockCycleCount` due to the run function and addressing mode functions incrementing the cycle count
     func cpy(value: UInt8) {
         emuLogger.debug("cpy")
         
@@ -781,7 +661,6 @@ extension NES.CPU {
     /// Compares the contents of the Accumulator register with a specified value and sets the zero, carry, and negative flags based on the result.
     /// - Parameters:
     ///   - value: The value to compare with Accumulator.
-    /// - Note: No cycles are added to `clockCycleCount` due to the run function and addressing mode functions incrementing the cycle count
     func cmp(value: UInt8) {
         emuLogger.debug("cmp")
         
@@ -812,7 +691,6 @@ extension NES.CPU {
     /// Subtracts one from the value at the specified memory location.
     /// - Parameter value: Memory location to decrement, passed by reference
     /// - Note: Updates zero and negative flags based on the result.
-    ///   Takes 2 cycles (not including opcode fetch and addressing mode).
     ///   DEC affects flags:
     ///     - Zero (Z): Set if result is zero, cleared otherwise
     ///     - Negative (N): Set if bit 7 of result is set, cleared otherwise
@@ -822,14 +700,11 @@ extension NES.CPU {
         value &-= 1
         
         updateZeroNegativeFlags(for: value)
-        
-        clockCycleCount += 2
     }
 
     /// Increment Y Register:
     /// Adds one to the Y index register.
     /// - Note: Updates zero and negative flags based on the result.
-    ///   Takes 1 cycle (not including opcode fetch).
     ///   INY affects flags:
     ///     - Zero (Z): Set if Y becomes zero, cleared otherwise
     ///     - Negative (N): Set if bit 7 of Y is set, cleared otherwise
@@ -838,14 +713,11 @@ extension NES.CPU {
         
         registers.indexY &+= 1
         updateZeroNegativeFlags(for: registers.indexY)
-        
-        clockCycleCount += 1
     }
 
     /// Decrement X Register:
     /// Subtracts one from the X index register.
     /// - Note: Updates zero and negative flags based on the result.
-    ///   Takes 1 cycle (not including opcode fetch).
     ///   DEX affects flags:
     ///     - Zero (Z): Set if X becomes zero, cleared otherwise
     ///     - Negative (N): Set if bit 7 of X is set, cleared otherwise
@@ -854,14 +726,11 @@ extension NES.CPU {
         
         registers.indexX &-= 1
         updateZeroNegativeFlags(for: registers.indexX)
-        
-        clockCycleCount += 1
     }
     
     /// Compare and Subtract from X (SBX, SAX):
     /// "Illegal" Opcode.
     /// Performs (A AND X) - parameter, stores the result in X, and sets flags like CMP.
-    /// - Note: No cycles are added to `clockCycleCount` due to the run function and addressing mode functions incrementing the cycle count
     func axs(value: UInt8) {
         emuLogger.debug("axs")
         
@@ -877,38 +746,29 @@ extension NES.CPU {
     
     /// Branch if Not Equal:
     /// If the zero flag is not set then add the relative displacement to the program counter to cause a branch to a new location.
-    /// - Note: Cycle count is incremented if branch succeeds, and is incremented again if page boundary is crossed.
     func bne(value: UInt8) {
         emuLogger.debug("bne")
         
         if !registers.status.readFlag(.zero) {
             let offset = Int8(bitPattern: value)
             let newAddress = UInt16(Int16(registers.programCounter) + Int16(offset))
-            if (registers.programCounter & 0xFF00) != (newAddress & 0xFF00) {
-                clockCycleCount += 1 // Add cycle when crossing page boundary
-            }
             
             registers.programCounter = newAddress
-            clockCycleCount += 1 // Add cycle when branch is successful
         }
     }
     
     /// Clear Decimal Mode:
-    /// - Note: Cycle count is incremented by 1 (instead of the expected 2) due to the run function incrementing the cycle count
     // TODO: - Support Decimal mode
     func cld() {
         emuLogger.debug("cld")
         
         registers.status.setFlag(.decimal, to: false)
-        
-        clockCycleCount += 1
     }
     
     /// Compare X Register:
     /// Compares the contents of the X register with a specified value and sets the zero, carry, and negative flags based on the result.
     /// - Parameters:
     ///   - value: The value to compare with the X register.
-    /// - Note: No cycles are added to `clockCycleCount` due to the run function and addressing mode functions incrementing the cycle count
     func cpx(value: UInt8) {
         emuLogger.debug("cpx")
         
@@ -941,7 +801,6 @@ extension NES.CPU {
     /// "Illegal" Opcode.
     /// Increments the value at the specified memory location by one, then subtracts the result from the accumulator
     /// along with the carry flag, updating the accumulator and flags accordingly (zero, negative, carry, overflow).
-    /// - Note: Clock cycle count is incremented by 2 as run function and addressing mode functions handle other cycles.
     func isc(value: inout UInt8) {
         emuLogger.debug("isc")
         
@@ -958,26 +817,20 @@ extension NES.CPU {
         
         let overflow = ((registers.accumulator ^ UInt8(result)) & (value ^ UInt8(result)) & 0x80) != 0
         registers.status.setFlag(.overflow, to: overflow)
-        
-        clockCycleCount += 2
     }
     
     /// Increment Memory:
     /// Updates the zero and negative flags based on the result.
-    /// - Note: Cycle count is incremented by 1 (instead of the expected 2) due to the run function incrementing the cycle count
     func inc(value: inout UInt8) {
         emuLogger.debug("inc")
         
         value &+= 1
         updateZeroNegativeFlags(for: value)
-        
-        clockCycleCount += 1
     }
     
     /// Increment X Register:
     /// Adds one to the X index register.
     /// - Note: Updates zero and negative flags based on the result.
-    ///   Takes 1 cycle (not including opcode fetch).
     ///   INX affects flags:
     ///     - Zero (Z): Set if X becomes zero, cleared otherwise
     ///     - Negative (N): Set if bit 7 of X is set, cleared otherwise
@@ -986,36 +839,26 @@ extension NES.CPU {
         
         registers.indexX &+= 1
         updateZeroNegativeFlags(for: registers.indexX)
-        
-        clockCycleCount += 1
     }
     
     /// Branch if Equal
     /// If the negative flag is clear then add the relative displacement to the program counter to cause a branch to a new location.
-    /// - Note: Cycle count is incremented if branch succeeds, and is incremented again if page boundary is crossed.
     func beq(value: UInt8) {
         emuLogger.debug("beq")
         
         if registers.status.readFlag(.zero) {
             let offset = Int8(bitPattern: value)
             let newAddress = UInt16(Int16(registers.programCounter) + Int16(offset))
-            if (registers.programCounter & 0xFF00) != (newAddress & 0xFF00) {
-                clockCycleCount += 1 // Add cycle when crossing page boundary
-            }
             
             registers.programCounter = newAddress
-            clockCycleCount += 1 // Add cycle when branch is successful
         }
     }
     
     /// Set Decimal Flag:
-    /// - Note: Cycle count is incremented if branch succeeds, and is incremented again if page boundary is crossed.
     // TODO: - Support Decimal mode
     func sed() {
         emuLogger.debug("sed")
         
         registers.status.setFlag(.decimal, to: true)
-        
-        clockCycleCount += 1
     }
 }
