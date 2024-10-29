@@ -67,7 +67,7 @@ extension NES.CPU {
         emuLogger.debug("asl")
         
         // Check for carry before performing shift
-        let carryFlag = Registers.Status.Flag.carry
+        let carryFlag = Registers.Status.carry
         registers.status.setFlag(carryFlag, to: value & .mostSignificantBit != 0)
         
         value <<= 1
@@ -85,7 +85,7 @@ extension NES.CPU {
         emuLogger.debug("php")
         
         // Bit 5 is overridden in this context
-        push(registers.status.rawValue | Registers.Status.Flag.break.rawValue)
+        push(registers.status.rawValue | Registers.Status.break.rawValue)
         
         clockCycleCount += 2
     }
@@ -98,7 +98,7 @@ extension NES.CPU {
         
         and(value: value)
         
-        let carryFlag = Registers.Status.Flag.carry
+        let carryFlag = Registers.Status.carry
         registers.status.setFlag(carryFlag, to: registers.accumulator & .mostSignificantBit != 0)
     }
     
@@ -182,7 +182,7 @@ extension NES.CPU {
     func rol(value: inout UInt8, isAccumulator: Bool = false) {
         emuLogger.debug("rol")
         
-        let carryFlag = Registers.Status.Flag.carry
+        let carryFlag = Registers.Status.carry
         let newCarry = (value & .mostSignificantBit) != 0
         value <<= 1
         value |= registers.status.readFlag(carryFlag) ? 1 : 0
@@ -237,7 +237,7 @@ extension NES.CPU {
         emuLogger.debug("rti")
         
         let status = pop()
-        registers.status.rawValue = status & ~Registers.Status.Flag.break.rawValue
+        registers.status.rawValue = status & ~Registers.Status.break.rawValue
         
         let lowByte = UInt16(pop())
         let highByte = UInt16(pop()) << 8
@@ -409,7 +409,7 @@ extension NES.CPU {
     func ror(value: inout UInt8, isAccumulator: Bool = false) {
         emuLogger.debug("ror")
         
-        let carryFlag = Registers.Status.Flag.carry
+        let carryFlag = Registers.Status.carry
         let newCarry = (value & 0x1) != 0
         value >>= 1
         value |= registers.status.readFlag(carryFlag) ? .mostSignificantBit : 0

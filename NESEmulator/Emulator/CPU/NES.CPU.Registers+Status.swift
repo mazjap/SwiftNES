@@ -1,40 +1,41 @@
 extension NES.CPU.Registers {
-    struct Status {
+    struct Status: OptionSet {
         var rawValue: UInt8
         
-        init(status: UInt8) {
-            self.rawValue = status
+        init(rawValue: UInt8) {
+            self.rawValue = rawValue
         }
         
         /// Checks if specified flag(s) are set in the status register.
         /// - Parameter flag: The flag or flags to check.
         /// - Returns: `true` if all flags specified by `flag` are set, otherwise `false`.
-        func readFlag(_ flag: Flag) -> Bool {
-            (rawValue & flag.rawValue) == flag.rawValue
+        func readFlag(_ flag: Status) -> Bool {
+            contains(flag)
         }
 
         /// Sets or clears the specified flag in the status register.
         /// - Parameters:
-        ///   - flag: The flag to set or clear.
+        ///   - flag: The flag(s) to set or clear.
         ///   - value: If `true`, sets the flag; if `false`, clears the flag.
-        mutating func setFlag(_ flag: Flag, to value: Bool) {
+        mutating func setFlag(_ flag: Status, to value: Bool) {
             if value {
-                rawValue |= flag.rawValue
+                insert(flag)
             } else {
-                rawValue &= ~flag.rawValue
+                remove(flag)
             }
         }
+        
+        static let carry = Status(rawValue: 1)
+        static let zero = Status(rawValue: 1 << 1)
+        static let interrupt = Status(rawValue: 1 << 2)
+        static let decimal = Status(rawValue: 1 << 3)
+        static let `break` = Status(rawValue: 1 << 4)
+        static let overflow = Status(rawValue: 1 << 6)
+        static let negative = Status(rawValue: 1 << 7)
     }
 }
 
 extension NES.CPU.Registers.Status: CustomStringConvertible {
-    init(setFlags: Set<Flag>) {
-        self.init(status: 0)
-        for flag in setFlags {
-            self.setFlag(flag, to: true)
-        }
-    }
-    
     var description: String {
         var binaryString = String(rawValue, radix: 2)
         
@@ -45,19 +46,5 @@ extension NES.CPU.Registers.Status: CustomStringConvertible {
         return "\nNO_BDIZC\n\(binaryString)"
     }
     
-    static let zero = Self(status: 0)
-}
-
-extension NES.CPU.Registers.Status {
-    struct Flag: OptionSet, Hashable {
-        var rawValue: UInt8
-        
-        static let carry = Flag(rawValue: 1)
-        static let zero = Flag(rawValue: 1 << 1)
-        static let interrupt = Flag(rawValue: 1 << 2)
-        static let decimal = Flag(rawValue: 1 << 3)
-        static let `break` = Flag(rawValue: 1 << 4)
-        static let overflow = Flag(rawValue: 1 << 6)
-        static let negative = Flag(rawValue: 1 << 7)
-    }
+    static let empty = Self([])
 }

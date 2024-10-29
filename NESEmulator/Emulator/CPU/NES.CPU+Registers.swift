@@ -50,7 +50,7 @@ extension NES.CPU {
             indexX: UInt8 = 0,
             indexY: UInt8 = 0,
             stackPointer: UInt8 = 0xFD,
-            processorStatus: Status = .zero
+            processorStatus: Status = .empty
         ) {
             self.programCounter = programCounter
             self.accumulator = accumulator
@@ -93,7 +93,7 @@ extension NES.CPU.Registers {
             indexY: indexY,
             stackPointer: stackPointer,
             processorStatus: Status(
-                status: processorStatus
+                rawValue: processorStatus
             )
         )
     }
@@ -112,9 +112,9 @@ extension NES.CPU {
     func updateZeroNegativeFlags(for optionalValue: UInt8? = nil) {
         let value = optionalValue ?? registers.accumulator
         
-        // Set zero flag based on whether value is 0b00000000 (0) or 0b10000000 (-0)
-        registers.status.setFlag(.zero, to: value == 0 || value == Registers.Status.Flag.negative.rawValue)
-        // Set negative flag based on the most significant bit
-        registers.status.setFlag(.negative, to: (Registers.Status.Flag.negative.rawValue & value != 0))
+        // Set zero flag based on whether value is 0b00000000 (0)
+        registers.status.setFlag(.zero, to: value == 0)
+        // Set negative flag based on the most significant bit 0b10000000 (0x80)
+        registers.status.setFlag(.negative, to: (Registers.Status.negative.rawValue & value != 0))
     }
 }
