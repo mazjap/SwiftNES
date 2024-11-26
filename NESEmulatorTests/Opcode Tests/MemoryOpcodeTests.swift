@@ -4,7 +4,7 @@ import Testing
 // Memory Operations (LDA, LDX, LDY, NOP, STA, STX, STY, TAX, TAY, TSX, TXA, TXS, TYA)
 @Suite("CPU Memory Operations")
 class MemoryOpcodeTests: OpcodeTestBase {
-    @Test("LDA - immediate mode ✓")
+    @Test("LDA - immediate mode")
     func LDA_immediate() {
         var context = setupImmediate(opcode: 0xA9, value: 0x7F)
         context.expected.a = 0x7F
@@ -15,7 +15,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x8001) == 0x7F, "Memory should remain unchanged")
     }
 
-    @Test("LDA - zeropage mode ✓")
+    @Test("LDA - zeropage mode")
     func LDA_zeropage() {
         var context = setupZeroPage(opcode: 0xA5, zeroPageAddress: 0x00, value: 0x80)
         context.expected.a = 0x80
@@ -26,7 +26,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x00) == 0x80, "Memory should remain unchanged")
     }
 
-    @Test("LDA - zeropage,x mode ✓")
+    @Test("LDA - zeropage,x mode")
     func LDA_zeropageX() {
         var context = setupZeroPageX(opcode: 0xB5, zeroPageAddress: 0x40, xOffset: 0x40, value: 0x00)
         context.cpu.registers.accumulator = 0xFF // Set to a value other than 0 to ensure proper testing
@@ -38,7 +38,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x80) == 0x00, "Memory should remain unchanged")
     }
 
-    @Test("LDA - (d,x) mode ✓")
+    @Test("LDA - (d,x) mode")
     func LDA_indexedIndirect() {
         var context = setupIndexedIndirect(opcode: 0xA1, zeroPageAddress: 0x25, xOffset: 0x50, targetAddress: 0x0513, value: 0x55)
         context.expected.a = 0x55
@@ -49,7 +49,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x0513) == 0x55, "Memory should remain unchanged")
     }
 
-    @Test("LDA - (d),y mode ✓")
+    @Test("LDA - (d),y mode")
     func LDA_indirectIndexed() {
         var contextNoCross = setupIndirectIndexed(opcode: 0xB1, zeroPageAddress: 0x55, yOffset: 0x20, targetAddress: 0x0315, value: 0xFF)
         contextNoCross.expected.a = 0xFF
@@ -69,7 +69,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         #expect(contextWithCross.expected.cycles == contextNoCross.expected.cycles + 1)
     }
 
-    @Test("LDA - absolute mode ✓")
+    @Test("LDA - absolute mode")
     func LDA_absolute() {
         var context = setupAbsolute(opcode: 0xAD, absoluteAddress: 0x1000, value: 0x20)
         context.expected.a = 0x20
@@ -80,7 +80,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x1000) == 0x20)
     }
 
-    @Test("LDA - absolute,x mode ✓")
+    @Test("LDA - absolute,x mode")
     func LDA_absoluteX() {
         var contextNoCross = setupAbsoluteX(opcode: 0xBD, absoluteAddress: 0x10FE, xOffset: 0x01, value: 0x00)
         contextNoCross.cpu.registers.accumulator = 0x01
@@ -102,7 +102,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         #expect(contextWithCross.expected.cycles == contextNoCross.expected.cycles + 1)
     }
 
-    @Test("LDA - absolute,y mode ✓")
+    @Test("LDA - absolute,y mode")
     func LDA_absoluteY() {
         var contextNoCross = setupAbsoluteY(opcode: 0xB9, absoluteAddress: 0x1321, yOffset: 0x12, value: 0x95)
         contextNoCross.expected.a = 0x95
@@ -122,7 +122,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         #expect(contextWithCross.expected.cycles == contextNoCross.expected.cycles + 1)
     }
     
-    @Test("LDA - Flag behavior ✓")
+    @Test("LDA - Flag behavior")
     func testLDA_flags() {
         func testLDAFlags(value: UInt8) -> (result: UInt8, flags: Status) {
             let context = setupImmediate(opcode: 0xA9, value: value)
@@ -156,7 +156,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
                "LDA should preserve carry and overflow flags")
     }
     
-    @Test("LDX - immediate mode ✓")
+    @Test("LDX - immediate mode")
     func LDX_immediate() {
         var context = setupImmediate(opcode: 0xA2, value: 0x00)
         context.cpu.registers.indexX = 0xFF // Set to a value other than 0 to ensure proper testing
@@ -168,7 +168,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x8001) == 0x00, "Memory should remain unchanged")
     }
 
-    @Test("LDX - zeropage mode ✓")
+    @Test("LDX - zeropage mode")
     func LDX_zeropage() {
         var context = setupZeroPage(opcode: 0xA6, zeroPageAddress: 0x64, value: 0x80)
         context.expected.x = 0x80
@@ -179,7 +179,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x64) == 0x80, "Memory should remain unchanged")
     }
 
-    @Test("LDX - zeropage,y mode ✓")
+    @Test("LDX - zeropage,y mode")
     func LDX_zeropageY() {
         var context = setupZeroPageY(opcode: 0xB6, zeroPageAddress: 0x50, yOffset: 0x14, value: 0x01)
         context.expected.x = 0x01
@@ -190,7 +190,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x64) == 0x01, "Memory should remain unchanged")
     }
 
-    @Test("LDX - absolute mode ✓")
+    @Test("LDX - absolute mode")
     func LDX_absolute() {
         var context = setupAbsolute(opcode: 0xAE, absoluteAddress: 0x0200, value: 0xFF)
         context.expected.x = 0xFF
@@ -201,7 +201,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x0200) == 0xFF, "Memory should remain unchanged")
     }
 
-    @Test("LDX - absolute,y mode ✓")
+    @Test("LDX - absolute,y mode")
     func LDX_absoluteY() {
         var contextNoCross = setupAbsoluteY(opcode: 0xBE, absoluteAddress: 0x07FE, yOffset: 0x01, value: 0x55)
         contextNoCross.expected.x = 0x55
@@ -221,7 +221,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         #expect(contextWithCross.expected.cycles == contextNoCross.expected.cycles + 1)
     }
     
-    @Test("LDX - Flag behavior ✓")
+    @Test("LDX - Flag behavior")
     func testLDX_flags() {
         func testLDXFlags(value: UInt8) -> (result: UInt8, flags: Status) {
             let context = setupImmediate(opcode: 0xA2, value: value)
@@ -255,7 +255,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
                "LDX should preserve carry and overflow flags")
     }
     
-    @Test("LDY - immediate mode ✓")
+    @Test("LDY - immediate mode")
     func LDY_immediate() {
         var context = setupImmediate(opcode: 0xA0, value: 0x00)
         context.cpu.registers.indexY = 0xFF // Set to a value other than 0 to ensure proper testing
@@ -267,7 +267,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x8001) == 0x00, "Memory should remain unchanged")
     }
 
-    @Test("LDY - zeropage mode ✓")
+    @Test("LDY - zeropage mode")
     func LDY_zeropage() {
         var context = setupZeroPage(opcode: 0xA4, zeroPageAddress: 0x64, value: 0x80)
         context.expected.y = 0x80
@@ -278,7 +278,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x64) == 0x80, "Memory should remain unchanged")
     }
 
-    @Test("LDY - zeropage,x mode ✓")
+    @Test("LDY - zeropage,x mode")
     func LDY_zeropageX() {
         var context = setupZeroPageX(opcode: 0xB4, zeroPageAddress: 0x50, xOffset: 0x14, value: 0x01)
         context.expected.y = 0x01
@@ -289,7 +289,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x64) == 0x01, "Memory should remain unchanged")
     }
 
-    @Test("LDY - absolute mode ✓")
+    @Test("LDY - absolute mode")
     func LDY_absolute() {
         var context = setupAbsolute(opcode: 0xAC, absoluteAddress: 0x0200, value: 0xFF)
         context.expected.y = 0xFF
@@ -300,7 +300,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x0200) == 0xFF, "Memory should remain unchanged")
     }
 
-    @Test("LDX - absolute,x mode ✓")
+    @Test("LDX - absolute,x mode")
     func LDY_absoluteX() {
         var contextNoCross = setupAbsoluteX(opcode: 0xBC, absoluteAddress: 0x07FE, xOffset: 0x01, value: 0x55)
         contextNoCross.expected.y = 0x55
@@ -320,7 +320,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         #expect(contextWithCross.expected.cycles == contextNoCross.expected.cycles + 1)
     }
     
-    @Test("LDY - Flag behavior ✓")
+    @Test("LDY - Flag behavior")
     func testLDY_flags() {
         func testLDYFlags(value: UInt8) -> (result: UInt8, flags: Status) {
             let context = setupImmediate(opcode: 0xA0, value: value)
@@ -354,7 +354,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
                "LDY should preserve carry and overflow flags")
     }
     
-    @Test("NOP - implied mode (official) ✓")
+    @Test("NOP - implied mode (official)")
     func testNOP_implied() {
         let context = setupImplied(opcode: 0xEA)
         
@@ -364,7 +364,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
     
     // Illegal NOP variants
     
-    @Test("NOP - implied mode variants 🧪✓", arguments: [0x1A, 0x3A, 0x5A, 0x7A, 0xDA, 0xFA])
+    @Test("NOP - implied mode variants 🧪", arguments: [0x1A, 0x3A, 0x5A, 0x7A, 0xDA, 0xFA])
     func testNOP_implied_variants(opcode: UInt8) {
         let context = setupImplied(opcode: opcode)
         
@@ -372,7 +372,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("NOP - immediate mode variants 🧪✓", arguments: [0x80, 0x82, 0x89, 0xC2, 0xE2])
+    @Test("NOP - immediate mode variants 🧪", arguments: [0x80, 0x82, 0x89, 0xC2, 0xE2])
     func testNOP_immediate(opcode: UInt8) {
         let context = setupImmediate(opcode: opcode, value: 0x42)
         
@@ -380,7 +380,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("NOP - zeropage mode variants 🧪✓", arguments: [0x04, 0x44, 0x64])
+    @Test("NOP - zeropage mode variants 🧪", arguments: [0x04, 0x44, 0x64])
     func testNOP_zeropage(opcode: UInt8) {
         let context = setupZeroPage(opcode: opcode, zeroPageAddress: 0x42, value: 0xFF)
         
@@ -388,7 +388,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("NOP - zeropage,x mode variants 🧪✓", arguments: [0x14, 0x34, 0x54, 0x74, 0xD4, 0xF4])
+    @Test("NOP - zeropage,x mode variants 🧪", arguments: [0x14, 0x34, 0x54, 0x74, 0xD4, 0xF4])
     func testNOP_zeropageX(opcode: UInt8) {
         let context = setupZeroPageX(opcode: opcode, zeroPageAddress: 0x42, xOffset: 0x10, value: 0xFF)
         
@@ -396,7 +396,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("NOP - absolute mode variants 🧪✓")
+    @Test("NOP - absolute mode variants 🧪")
     func testNOP_absolute() {
         // Test all absolute NOPs (0x0C)
         let context = setupAbsolute(opcode: 0x0C, absoluteAddress: 0x1234, value: 0xFF)
@@ -405,7 +405,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("NOP - absolute,x mode variants 🧪✓", arguments: [0x1C, 0x3C, 0x5C, 0x7C, 0xDC, 0xFC])
+    @Test("NOP - absolute,x mode variants 🧪", arguments: [0x1C, 0x3C, 0x5C, 0x7C, 0xDC, 0xFC])
     func testNOP_absoluteX(opcode: UInt8) {
         let context = setupAbsoluteX(opcode: opcode, absoluteAddress: 0x1234, xOffset: 0x10, value: 0xFF)
         
@@ -413,7 +413,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
     
-    @Test("NOP - Flag behavior ✓")
+    @Test("NOP - Flag behavior")
     func testNOP_flags() {
         func testNOPFlags(value: UInt8, setAllFlags: Bool) -> Status {
             let context = setupImplied(opcode: 0xEA)
@@ -433,7 +433,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
                "NOP should not set flags")
     }
     
-    @Test("STA - zeropage mode ✓")
+    @Test("STA - zeropage mode")
     func STA_zeropage() {
         let context = setupZeroPage(opcode: 0x85, zeroPageAddress: 0x42, value: 0xFF) // Initial value doesn't matter
         context.cpu.registers.accumulator = 0x37 // Value to store
@@ -444,7 +444,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x42) == 0x37, "Value from accumulator should be stored in memory")
     }
     
-    @Test("STA - zeropage,x mode ✓")
+    @Test("STA - zeropage,x mode")
     func STA_zeropageX() {
         let context = setupZeroPageX(opcode: 0x95, zeroPageAddress: 0x42, xOffset: 0x10, value: 0xFF)
         context.cpu.registers.accumulator = 0x55
@@ -455,7 +455,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x52) == 0x55, "Value should be stored at wrapped zero-page address")
     }
     
-    @Test("STA - (d,x) mode ✓")
+    @Test("STA - (d,x) mode")
     func STA_indexedIndirect() {
         let context = setupIndexedIndirect(opcode: 0x81, zeroPageAddress: 0x20, xOffset: 0x05, targetAddress: 0x1234, value: 0xFF)
         context.cpu.registers.accumulator = 0x42
@@ -466,7 +466,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x1234) == 0x42, "Value should be stored at indirect address")
     }
     
-    @Test("STA - (d),y mode ✓")
+    @Test("STA - (d),y mode")
     func STA_indirectIndexed() {
         let context = setupIndirectIndexed(opcode: 0x91, zeroPageAddress: 0x20, yOffset: 0x05, targetAddress: 0x1234, value: 0xFF)
         context.cpu.registers.accumulator = 0x80
@@ -477,7 +477,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x1239) == 0x80, "Value should be stored at indexed address")
     }
     
-    @Test("STA - absolute mode ✓")
+    @Test("STA - absolute mode")
     func STA_absolute() {
         let context = setupAbsolute(opcode: 0x8D, absoluteAddress: 0x1234, value: 0xFF)
         context.cpu.registers.accumulator = 0xAA
@@ -488,7 +488,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x1234) == 0xAA, "Value should be stored at absolute address")
     }
     
-    @Test("STA - absolute,x mode ✓")
+    @Test("STA - absolute,x mode")
     func STA_absoluteX() {
         let context = setupAbsoluteX(opcode: 0x9D, absoluteAddress: 0x1234, xOffset: 0x10, value: 0xFF)
         context.cpu.registers.accumulator = 0xDD
@@ -499,7 +499,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x1244) == 0xDD, "Value should be stored at indexed address")
     }
     
-    @Test("STA - absolute,y mode ✓")
+    @Test("STA - absolute,y mode")
     func STA_absoluteY() {
         let context = setupAbsoluteY(opcode: 0x99, absoluteAddress: 0x1234, yOffset: 0x10, value: 0xFF)
         context.cpu.registers.accumulator = 0x00
@@ -510,7 +510,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x1244) == 0x00, "Value should be stored at indexed address")
     }
     
-    @Test("STX - zeropage mode ✓")
+    @Test("STX - zeropage mode")
     func STX_zeropage() {
         let context = setupZeroPage(opcode: 0x86, zeroPageAddress: 0x38, value: 0xFF)
         context.cpu.registers.indexX = 0x01
@@ -521,7 +521,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x38) == 0x01, "Value should be stored at indexed address")
     }
     
-    @Test("STX - zeropage,y mode ✓")
+    @Test("STX - zeropage,y mode")
     func STX_zeropageY() {
         let context = setupZeroPageY(opcode: 0x96, zeroPageAddress: 0x38, yOffset: 0x07, value: 0x30)
         context.cpu.registers.indexX = 0xFF
@@ -532,7 +532,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x3F) == 0xFF, "Value should be stored at indexed address")
     }
     
-    @Test("STX - absolute mode ✓")
+    @Test("STX - absolute mode")
     func STX_absolute() {
         let context = setupAbsolute(opcode: 0x8E, absoluteAddress: 0x1999, value: 0xFF)
         context.cpu.registers.indexX = 0x27
@@ -543,7 +543,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x1999) == 0x27, "Value should be stored at indexed address")
     }
     
-    @Test("STY - zeropage mode ✓")
+    @Test("STY - zeropage mode")
     func STY_zeropage() {
         let context = setupZeroPage(opcode: 0x84, zeroPageAddress: 0x83, value: 0xFF)
         context.cpu.registers.indexY = 0x88
@@ -554,7 +554,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x83) == 0x88, "Value should be stored at indexed address")
     }
     
-    @Test("STY - zeropage,x mode ✓")
+    @Test("STY - zeropage,x mode")
     func STY_zeropageX() {
         let context = setupZeroPageX(opcode: 0x94, zeroPageAddress: 0x83, xOffset: 0x02, value: 0xFF)
         context.cpu.registers.indexY = 0x5F
@@ -565,7 +565,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x85) == 0x5F, "Value should be stored at indexed address")
     }
     
-    @Test("STY - absolute mode ✓")
+    @Test("STY - absolute mode")
     func STY_absolute() {
         let context = setupAbsolute(opcode: 0x8C, absoluteAddress: 0x1555, value: 0xFF)
         context.cpu.registers.indexY = 0x00
@@ -576,7 +576,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x1555) == 0x00, "Value should be stored at indexed address")
     }
     
-    @Test("Store instructions never affect flags ✓")
+    @Test("Store instructions never affect flags")
     func testStore_flags() {
         // Use 0xFF to set all status flags (even unused ones)
         let allFlags = Status(rawValue: 0xFF)
@@ -606,7 +606,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
                "STY should preserve all flags when clear")
     }
     
-    @Test("TAX - implied mode ✓")
+    @Test("TAX - implied mode")
     func TAX_implied() {
         var context = setupImplied(opcode: 0xAA)
         context.cpu.registers.accumulator = 0x05
@@ -616,7 +616,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
     
-    @Test("TAX - Flag behavior ✓")
+    @Test("TAX - Flag behavior")
     func testTAX_flags() {
         func testTAXFlags(accumulator: UInt8) -> (result: UInt8, flags: Status) {
             let context = setupImplied(opcode: 0xAA)
@@ -652,7 +652,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
                "TAX should preserve carry and overflow flags")
     }
     
-    @Test("TAY - implied mode ✓")
+    @Test("TAY - implied mode")
     func TAY_implied() {
         var context = setupImplied(opcode: 0xA8)
         context.cpu.registers.accumulator = 0xFF
@@ -662,7 +662,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
     
-    @Test("TAY - Flag behavior ✓")
+    @Test("TAY - Flag behavior")
     func testTAY_flags() {
         func testTAYFlags(accumulator: UInt8) -> (result: UInt8, flags: Status) {
             let context = setupImplied(opcode: 0xA8)
@@ -698,7 +698,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
                "TAY should preserve carry and overflow flags")
     }
     
-    @Test("TSX - implied mode ✓")
+    @Test("TSX - implied mode")
     func TSX_implied() {
         var context = setupImplied(opcode: 0xBA)
         context.cpu.registers.stackPointer = 0x00
@@ -709,7 +709,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
     
-    @Test("TSX - Flag behavior ✓")
+    @Test("TSX - Flag behavior")
     func testTSX_flags() {
         func testTSXFlags(stackPointer: UInt8) -> (result: UInt8, flags: Status) {
             let context = setupImplied(opcode: 0xBA)
@@ -745,7 +745,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
                "TSX should preserve carry and overflow flags")
     }
     
-    @Test("TXA - implied mode ✓")
+    @Test("TXA - implied mode")
     func TXA_implied() {
         var context = setupImplied(opcode: 0x8A)
         context.cpu.registers.indexX = 0xBB
@@ -755,7 +755,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
     
-    @Test("TXA - Flag behavior ✓")
+    @Test("TXA - Flag behavior")
     func testTXA_flags() {
         func testTXAFlags(xRegister: UInt8) -> (result: UInt8, flags: Status) {
             let context = setupImplied(opcode: 0x8A)
@@ -791,7 +791,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
                "TXA should preserve carry and overflow flags")
     }
     
-    @Test("TXS - implied mode ✓")
+    @Test("TXS - implied mode")
     func TXS_implied() {
         var context = setupImplied(opcode: 0x9A)
         context.cpu.registers.indexX = 0xF0
@@ -801,7 +801,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
     
-    @Test("TXS - Flag behavior ✓")
+    @Test("TXS - Flag behavior")
     func testTXS_flags() {
         func testTXSFlags(xRegister: UInt8, initialFlags: Status) -> Status {
             let context = setupImplied(opcode: 0x9A)
@@ -833,7 +833,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
                "TXS should maintain cleared flags")
     }
     
-    @Test("TYA - implied mode ✓")
+    @Test("TYA - implied mode")
     func TYA_implied() {
         var context = setupImplied(opcode: 0x98)
         context.cpu.registers.indexY = 0x05
@@ -843,7 +843,7 @@ class MemoryOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
     
-    @Test("TYA - Flag behavior ✓")
+    @Test("TYA - Flag behavior")
     func testTYA_flags() {
         func testTYAFlags(yRegister: UInt8) -> (result: UInt8, flags: Status) {
             let context = setupImplied(opcode: 0x98)

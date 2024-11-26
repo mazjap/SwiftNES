@@ -2,19 +2,24 @@ extension NES.CPU {
     /// Break:
     /// Pushes the program counter and processor status to the stack.
     /// Loads the interrupt vector from 0xFFFE/F into the program counter.
-    /// Sets the break flag status to 1 (in both the active status and the status pushed to the stack).
+    /// Sets the break flag status to 1 (only on the status pushed to the stack).
     func brk() {
         emuLogger.debug("brk")
         
-        registers.status.setFlag(.break, to: true)
+        // PC + 2 is pushed (BRK is treated as a 2-byte instruction even though second byte is ignored)
+        registers.programCounter &+= 1
         
+        // Push PC and status (with B flag set) to stack
         push(UInt8((registers.programCounter >> 8) & 0xFF))
         push(UInt8(registers.programCounter & 0xFF))
-        push(registers.status.rawValue)
+        push(registers.status.rawValue | Registers.Status.break.rawValue) // Status with B flag set (bit 5 should be too, but it shouldn't matter as it's ignored everywhere)
         
+        // Set interrupt disable flag
+        registers.status.setFlag(.interrupt, to: true)
+        
+        // Load interrupt vector
         let lowByte = UInt16(memoryManager.read(from: 0xFFFE))
         let highByte = UInt16(memoryManager.read(from: 0xFFFF))
-        
         registers.programCounter = lowByte | (highByte << 8)
     }
     
@@ -32,7 +37,9 @@ extension NES.CPU {
     /// This operation is not used by any NES program and is implemented here as a `fatalError` to indicate an unreachable state.
     func stp() {
         emuLogger.debug("stp")
-        fatalError("Illegal opcode 'stp/kil/jam' encountered. This is an unreachable state and indicates a severe error in the emulator.")
+        /*big*/ if true {
+            fatalError("Illegal opcode 'stp/kil/jam' encountered. This is an unreachable state and indicates a severe error in the emulator.")
+        }
     }
     
     /// Shift Left Logical OR:
@@ -52,18 +59,39 @@ extension NES.CPU {
         // TODO: - Urgent: Do nothing
     }
     
-    /// Accumulator Shift Left:
-    /// Shifts the accumulator left 1 bit and updates carry, zero, and negative flags.
-    func asl(value: inout UInt8, isAccumulator: Bool = false) {
+    /// Arithmetic Shift Left:
+    /// Shifts the value left 1 bit and updates carry, zero, and negative flags.
+    func asl(value: inout UInt8) {
         emuLogger.debug("asl")
         
         // Check for carry before performing shift
-        let carryFlag = Registers.Status.carry
-        registers.status.setFlag(carryFlag, to: value & .mostSignificantBit != 0)
+        registers.status.setFlag(.carry, to: value & .mostSignificantBit != 0)
         
         value <<= 1
         
         updateZeroNegativeFlags(for: value)
+    }
+    
+    // TODO: - Rejoin two ASL functions (LSR, ROL, ROR too)
+    // For some reason, when passing in the accumulator as the inout parameter of asl,
+    // I get a "simultaneous access" fatal error. My (limited) understanding is that
+    // because accumulator comes from the Registers struct as well as the status,
+    // the Registers struct could possibly be mutated (or read and written to)
+    // simultaneously. That shouldn't be possible here, but I couldn't find a
+    // satisfying work around. I've come to this compromise, two seperate functions,
+    // though I want to find a good solution and rejoin these two functions into one
+    
+    /// Accumulator Shift Left:
+    /// Shifts the accumulator left 1 bit and updates carry, zero, and negative flags.
+    func aslA() {
+        emuLogger.debug("asl")
+        
+        // Check for carry before performing shift
+        registers.status.setFlag(.carry, to: registers.accumulator & .mostSignificantBit != 0)
+        
+        registers.accumulator <<= 1
+        
+        updateZeroNegativeFlags()
     }
     
     /// Push Processor Status:
@@ -84,21 +112,28 @@ extension NES.CPU {
         
         and(value: value)
         
-        let carryFlag = Registers.Status.carry
-        registers.status.setFlag(carryFlag, to: registers.accumulator & .mostSignificantBit != 0)
+        registers.status.setFlag(.carry, to: registers.accumulator & .mostSignificantBit != 0)
     }
     
     /// Branch if Positive:
     /// If the negative flag is clear then add the relative displacement to the program counter to cause a branch to a new location.
-    func bpl(value: UInt8) {
+    /// - Returns: A tuple containing whether a branch occurred and whether a page boundary was crossed
+    func bpl(value: UInt8) -> (didBranch: Bool, didCrossPageBoundary: Bool) {
         emuLogger.debug("bpl")
         
         if !registers.status.readFlag(.negative) {
-            let offset = Int8(bitPattern: value)
-            let newAddress = UInt16(Int16(registers.programCounter) + Int16(offset))
+            let offset = Int16(Int8(bitPattern: value))
+            let newOffsetSigned = Int16(bitPattern: registers.programCounter) &+ offset
+            let newPC = UInt16(bitPattern: newOffsetSigned)
             
-            registers.programCounter = newAddress
+            let willCross = (registers.programCounter & 0xFF00) != (newPC & 0xFF00)
+            
+            registers.programCounter = UInt16(bitPattern: newOffsetSigned)
+            
+            return (true, willCross)
         }
+        
+        return (false, false)
     }
     
     /// Clear Carry Flag:
@@ -113,8 +148,10 @@ extension NES.CPU {
     func jsr(value: UInt16) {
         emuLogger.debug("jsr")
         
-        push(UInt8((registers.programCounter >> 8) & 0xFF))
-        push(UInt8(registers.programCounter & 0xFF))
+        let returnValue = registers.programCounter &- 1
+        
+        push(UInt8((returnValue >> 8) & 0xFF))
+        push(UInt8(returnValue & 0xFF))
         
         registers.programCounter = value
     }
@@ -143,7 +180,7 @@ extension NES.CPU {
     func bit(value: UInt8) {
         emuLogger.debug("bit")
 
-        registers.status.setFlag(.negative, to: (value & .mostSignificantBit) != 0)
+        registers.status.setFlag(.negative, to: (value & 0b10000000) != 0)
         registers.status.setFlag(.overflow, to: (value & 0b01000000) != 0)
         registers.status.setFlag(.zero, to: (registers.accumulator & value) == 0)
     }
@@ -151,16 +188,29 @@ extension NES.CPU {
     /// Rotate Left:
     /// Shifts all bits in the value one place to the left.
     /// Carry flag becomes bit 0 while the old bit 7 becomes the new carry flag.
-    func rol(value: inout UInt8, isAccumulator: Bool = false) {
+    func rol(value: inout UInt8) {
         emuLogger.debug("rol")
         
-        let carryFlag = Registers.Status.carry
         let newCarry = (value & .mostSignificantBit) != 0
         value <<= 1
-        value |= registers.status.readFlag(carryFlag) ? 1 : 0
-        registers.status.setFlag(carryFlag, to: newCarry)
+        value |= registers.status.readFlag(.carry) ? 1 : 0
+        registers.status.setFlag(.carry, to: newCarry)
         
         updateZeroNegativeFlags(for: value)
+    }
+    
+    /// Rotate Left:
+    /// Shifts all bits in the accumulator one place to the left.
+    /// Carry flag becomes bit 0 while the old bit 7 becomes the new carry flag.
+    func rolA() {
+        emuLogger.debug("rol")
+        
+        let newCarry = (registers.accumulator & .mostSignificantBit) != 0
+        registers.accumulator <<= 1
+        registers.accumulator |= registers.status.readFlag(.carry) ? 1 : 0
+        registers.status.setFlag(.carry, to: newCarry)
+        
+        updateZeroNegativeFlags()
     }
     
     /// Pull Processor Status:
@@ -168,20 +218,28 @@ extension NES.CPU {
     func plp() {
         emuLogger.debug("plp")
         
-        registers.status.rawValue = pop()
+        registers.status.rawValue = pop() & ~Registers.Status.break.rawValue
     }
     
     /// Branch if Minus (Negative):
     /// If the negative flag is set then add the relative displacement to the program counter to cause a branch to a new location.
-    func bmi(value: UInt8) {
+    /// - Returns: A tuple containing whether a branch occurred and whether a page boundary was crossed
+    func bmi(value: UInt8) -> (didBranch: Bool, didCrossPageBoundary: Bool) {
         emuLogger.debug("bmi")
         
         if registers.status.readFlag(.negative) {
-            let offset = Int8(bitPattern: value)
-            let newAddress = UInt16(Int16(registers.programCounter) + Int16(offset))
+            let offset = Int16(Int8(bitPattern: value))
+            let newOffsetSigned = Int16(bitPattern: registers.programCounter) &+ offset
+            let newPC = UInt16(bitPattern: newOffsetSigned)
             
-            registers.programCounter = newAddress
+            let willCross = (registers.programCounter & 0xFF00) != (newPC & 0xFF00)
+            
+            registers.programCounter = UInt16(bitPattern: newOffsetSigned)
+            
+            return (true, willCross)
         }
+        
+        return (false, false)
     }
     
     /// Set Carry Flag:
@@ -228,7 +286,7 @@ extension NES.CPU {
     
     /// Logical Shift Right:
     /// Shifts all bits in the value one place to the right, storing the old bit 0 in the carry flag.
-    func lsr(value: inout UInt8, isAccumulator: Bool = false) {
+    func lsr(value: inout UInt8) {
         emuLogger.debug("lsr")
         
         let newCarry = (value & 1) != 0
@@ -237,6 +295,19 @@ extension NES.CPU {
         
         registers.status.setFlag(.carry, to: newCarry)
         updateZeroNegativeFlags(for: value)
+    }
+    
+    /// Logical Shift Right:
+    /// Shifts all accumulator bits in the value one place to the right, storing the old bit 0 in the carry flag.
+    func lsrA() {
+        emuLogger.debug("lsr")
+        
+        let newCarry = (registers.accumulator & 1) != 0
+        
+        registers.accumulator >>= 1
+        
+        registers.status.setFlag(.carry, to: newCarry)
+        updateZeroNegativeFlags()
     }
     
     /// Push Accumulator:
@@ -273,18 +344,23 @@ extension NES.CPU {
     
     /// Branch if Overflow Clear:
     /// If the negative flag is clear then add the relative displacement to the program counter to cause a branch to a new location.
-    func bvc(value: UInt8) {
+    /// - Returns: A tuple containing whether a branch occurred and whether a page boundary was crossed
+    func bvc(value: UInt8) -> (didBranch: Bool, didCrossPageBoundary: Bool) {
         emuLogger.debug("bvc")
         
         if !registers.status.readFlag(.overflow) {
-            // TODO: - Fix potential issue with int conversion:
-            // let offset = UInt16(bitPattern: Int16(Int8(bitPattern: value)))
-            // let newAddress = registers.programCounter + offset
-            let offset = Int8(bitPattern: value)
-            let newAddress = UInt16(Int16(registers.programCounter) + Int16(offset))
+            let offset = Int16(Int8(bitPattern: value))
+            let newOffsetSigned = Int16(bitPattern: registers.programCounter) &+ offset
+            let newPC = UInt16(bitPattern: newOffsetSigned)
             
-            registers.programCounter = newAddress
+            let willCross = (registers.programCounter & 0xFF00) != (newPC & 0xFF00)
+            
+            registers.programCounter = UInt16(bitPattern: newOffsetSigned)
+            
+            return (true, willCross)
         }
+        
+        return (false, false)
     }
     
     /// Clear Interrupt Flag:
@@ -303,7 +379,7 @@ extension NES.CPU {
         let low = UInt16(pop())
         let high = UInt16(pop()) << 8
         
-        let value = high | low
+        let value = (high | low) &+ 1
         
         registers.programCounter = value
     }
@@ -321,8 +397,8 @@ extension NES.CPU {
         
         let newAccumulator = UInt8(sum & 0xFF) // Truncate to 8 bits
         registers.status.setFlag(.zero, to: newAccumulator == 0)
-        registers.status.setFlag(.negative, to: newAccumulator & 0x80 != 0)
-        registers.status.setFlag(.overflow, to: ((registers.accumulator ^ newAccumulator) & (value ^ newAccumulator) & 0x80) != 0)
+        registers.status.setFlag(.negative, to: newAccumulator & .mostSignificantBit != 0)
+        registers.status.setFlag(.overflow, to: ((registers.accumulator ^ newAccumulator) & (value ^ newAccumulator) & .mostSignificantBit) != 0)
         
         registers.accumulator = newAccumulator
     }
@@ -339,16 +415,29 @@ extension NES.CPU {
     /// Rotate Right:
     /// Shifts all bits in the value one place to the right.
     /// Carry flag becomes bit 7 while the old bit 0 becomes the new carry flag.
-    func ror(value: inout UInt8, isAccumulator: Bool = false) {
+    func ror(value: inout UInt8) {
         emuLogger.debug("ror")
         
-        let carryFlag = Registers.Status.carry
         let newCarry = (value & 0x1) != 0
         value >>= 1
-        value |= registers.status.readFlag(carryFlag) ? .mostSignificantBit : 0
-        registers.status.setFlag(carryFlag, to: newCarry)
+        value |= registers.status.readFlag(.carry) ? .mostSignificantBit : 0
+        registers.status.setFlag(.carry, to: newCarry)
         
         updateZeroNegativeFlags(for: value)
+    }
+    
+    /// Rotate Right:
+    /// Shifts all bits in the accumulator one place to the right.
+    /// Carry flag becomes bit 7 while the old bit 0 becomes the new carry flag.
+    func rorA() {
+        emuLogger.debug("ror")
+        
+        let newCarry = (registers.accumulator & 0x1) != 0
+        registers.accumulator >>= 1
+        registers.accumulator |= registers.status.readFlag(.carry) ? .mostSignificantBit : 0
+        registers.status.setFlag(.carry, to: newCarry)
+        
+        updateZeroNegativeFlags()
     }
     
     /// Pull Accumulator:
@@ -381,7 +470,7 @@ extension NES.CPU {
         
         // Update flags
         updateZeroNegativeFlags(for: rotatedResult)
-        registers.status.setFlag(.carry, to: newCarry) // Set C to bit 6
+        
         let vFlag = ((result & 0x40) ^ (result & 0x20)) != 0 // Calculate V as bit 6 XOR bit 5
         registers.status.setFlag(.overflow, to: vFlag)
         
@@ -391,16 +480,23 @@ extension NES.CPU {
     
     /// Branch if Overflow Set:
     /// If the overflow flag is set then add the relative displacement to the program counter to cause a branch to a new location.
-
-    func bvs(value: UInt8) {
+    /// - Returns: A tuple containing whether a branch occurred and whether a page boundary was crossed
+    func bvs(value: UInt8) -> (didBranch: Bool, didCrossPageBoundary: Bool) {
         emuLogger.debug("bvs")
         
         if registers.status.readFlag(.overflow) {
-            let offset = Int8(bitPattern: value)
-            let newAddress = UInt16(Int16(registers.programCounter) + Int16(offset))
+            let offset = Int16(Int8(bitPattern: value))
+            let newOffsetSigned = Int16(bitPattern: registers.programCounter) &+ offset
+            let newPC = UInt16(bitPattern: newOffsetSigned)
             
-            registers.programCounter = newAddress
+            let willCross = (registers.programCounter & 0xFF00) != (newPC & 0xFF00)
+            
+            registers.programCounter = UInt16(bitPattern: newOffsetSigned)
+            
+            return (true, willCross)
         }
+        
+        return (false, false)
     }
     
     /// Set Interrupt Disable:
@@ -460,7 +556,7 @@ extension NES.CPU {
     
     /// Transfer X to Accumulator:
     /// Updates the zero and negative flags based on the result.
-    func txa() {
+    func txa() { // x gon give it to ya
         emuLogger.debug("txa")
         
         registers.accumulator = registers.indexX
@@ -470,7 +566,7 @@ extension NES.CPU {
     /// * AND X + AND oper:
     /// An "Illegal" Opcode.
     /// Unstable - do not use.
-    /// From 'Now Go Bang' - "The value of this constant depends on temperature, the chip series, and maybe other factors"
+    /// From 'Now Go Bang' - "The value of this constant depends on temperature, the chip series, and maybe other factors" 
     func xaa() {
         emuLogger.debug("xaa")
         
@@ -479,15 +575,23 @@ extension NES.CPU {
     
     /// Branch if Carry Clear:
     /// If the carry flag is not set then add the relative displacement to the program counter to cause a branch to a new location.
-    func bcc(value: UInt8) {
+    /// - Returns: A tuple containing whether a branch occurred and whether a page boundary was crossed
+    func bcc(value: UInt8) -> (didBranch: Bool, didCrossPageBoundary: Bool) {
         emuLogger.debug("bcc")
         
         if !registers.status.readFlag(.carry) {
-            let offset = Int8(bitPattern: value)
-            let newAddress = UInt16(Int16(registers.programCounter) + Int16(offset))
+            let offset = Int16(Int8(bitPattern: value))
+            let newOffsetSigned = Int16(bitPattern: registers.programCounter) &+ offset
+            let newPC = UInt16(bitPattern: newOffsetSigned)
             
-            registers.programCounter = newAddress
+            let willCross = (registers.programCounter & 0xFF00) != (newPC & 0xFF00)
+            
+            registers.programCounter = UInt16(bitPattern: newOffsetSigned)
+            
+            return (true, willCross)
         }
+        
+        return (false, false)
     }
     
     /// Stores A & X AND high byte of addr + 1 at addr
@@ -602,15 +706,23 @@ extension NES.CPU {
     
     /// Branch if Carry Set:
     /// If the carry flag is set then add the relative displacement to the program counter to cause a branch to a new location.
-    func bcs(value: UInt8) {
+    /// - Returns: A tuple containing whether a branch occurred and whether a page boundary was crossed
+    func bcs(value: UInt8) -> (didBranch: Bool, didCrossPageBoundary: Bool) {
         emuLogger.debug("bcs")
         
         if registers.status.readFlag(.carry) {
-            let offset = Int8(bitPattern: value)
-            let newAddress = UInt16(Int16(registers.programCounter) + Int16(offset))
+            let offset = Int16(Int8(bitPattern: value))
+            let newOffsetSigned = Int16(bitPattern: registers.programCounter) &+ offset
+            let newPC = UInt16(bitPattern: newOffsetSigned)
             
-            registers.programCounter = newAddress
+            let willCross = (registers.programCounter & 0xFF00) != (newPC & 0xFF00)
+            
+            registers.programCounter = UInt16(bitPattern: newOffsetSigned)
+            
+            return (true, willCross)
         }
+        
+        return (false, false)
     }
     
     /// Clear Overflow Flag:
@@ -626,6 +738,8 @@ extension NES.CPU {
         emuLogger.debug("tsx")
         
         registers.indexX = registers.stackPointer
+        
+        updateZeroNegativeFlags(for: registers.indexX)
     }
     
     /// LDA/TSX oper:
@@ -664,11 +778,11 @@ extension NES.CPU {
     func cmp(value: UInt8) {
         emuLogger.debug("cmp")
         
-        let result = Int(registers.accumulator) - Int(value)
+        let result = registers.accumulator &- value
         
         registers.status.setFlag(.carry, to: registers.accumulator >= value)
         registers.status.setFlag(.zero, to: registers.accumulator == value)
-        registers.status.setFlag(.negative, to: (result & 0x80) != 0)
+        registers.status.setFlag(.negative, to: (result & .mostSignificantBit) != 0)
     }
     
     /// DEC + CPM
@@ -684,7 +798,7 @@ extension NES.CPU {
         
         registers.status.setFlag(.carry, to: registers.accumulator >= value)
         registers.status.setFlag(.zero, to: registers.accumulator == value)
-        registers.status.setFlag(.negative, to: (result & 0x80) != 0)
+        registers.status.setFlag(.negative, to: (result & .mostSignificantBit) != 0)
     }
     
     /// Decrement Memory:
@@ -741,20 +855,28 @@ extension NES.CPU {
         
         registers.status.setFlag(.carry, to: andResult >= value)
         registers.status.setFlag(.zero, to: subtractedResult == 0)
-        registers.status.setFlag(.negative, to: (subtractedResult & 0x80) != 0)
+        registers.status.setFlag(.negative, to: (subtractedResult & .mostSignificantBit) != 0)
     }
     
     /// Branch if Not Equal:
     /// If the zero flag is not set then add the relative displacement to the program counter to cause a branch to a new location.
-    func bne(value: UInt8) {
+    /// - Returns: A tuple containing whether a branch occurred and whether a page boundary was crossed
+    func bne(value: UInt8) -> (didBranch: Bool, didCrossPageBoundary: Bool) {
         emuLogger.debug("bne")
         
         if !registers.status.readFlag(.zero) {
-            let offset = Int8(bitPattern: value)
-            let newAddress = UInt16(Int16(registers.programCounter) + Int16(offset))
+            let offset = Int16(Int8(bitPattern: value))
+            let newOffsetSigned = Int16(bitPattern: registers.programCounter) &+ offset
+            let newPC = UInt16(bitPattern: newOffsetSigned)
             
-            registers.programCounter = newAddress
+            let willCross = (registers.programCounter & 0xFF00) != (newPC & 0xFF00)
+            
+            registers.programCounter = UInt16(bitPattern: newOffsetSigned)
+            
+            return (true, willCross)
         }
+        
+        return (false, false)
     }
     
     /// Clear Decimal Mode:
@@ -781,22 +903,28 @@ extension NES.CPU {
     
     /// Subtract with Carry:
     /// Subtracts the provided byte value and the inverted carry flag from the accumulator.
+    /// (A - M - (1 - C)) is the same as (A + ~M + C)
     /// Updates the zero, carry, overflow, and negative flags based on the result.
-    /// - Parameter value: The byte value to subtract from the accumulator.
+    /// - Parameter value: The byte value to subtract from the accumulator
     func sbc(value: UInt8) {
         emuLogger.debug("sbc")
         
+        let initialAccumulator = registers.accumulator // Save for overflow check
+        
         let inverseCarry = registers.status.readFlag(.carry) ? 0 : 1
-        let result = Int(registers.accumulator) - Int(value) - inverseCarry
+        let fullResult = Int(registers.accumulator) - Int(value) - inverseCarry
         
-        registers.accumulator = UInt8(truncatingIfNeeded: result)
+        // Update accumulator with truncated result
+        registers.accumulator = UInt8(bitPattern: Int8(truncatingIfNeeded: fullResult))
+        
         updateZeroNegativeFlags()
-        registers.status.setFlag(.carry, to: result >= 0)
+        registers.status.setFlag(.carry, to: fullResult >= 0)
         
-        let overflow = (registers.accumulator ^ UInt8(result)) & (UInt8(result) ^ value) & 0x80
-        registers.status.setFlag(.overflow, to: overflow != 0)
+        // Check overflow using inputs and final result
+        let overflow = ((initialAccumulator ^ registers.accumulator) &
+                        (initialAccumulator ^ value) & .mostSignificantBit) != 0
+        registers.status.setFlag(.overflow, to: overflow)
     }
-    
     /// INC oper + SBC oper:
     /// "Illegal" Opcode.
     /// Increments the value at the specified memory location by one, then subtracts the result from the accumulator
@@ -804,19 +932,8 @@ extension NES.CPU {
     func isc(value: inout UInt8) {
         emuLogger.debug("isc")
         
-        value &+= 1
-        
-        let carryValue = registers.status.readFlag(.carry) ? 1 : 0
-        let result = Int(registers.accumulator) - Int(value) - carryValue
-        
-        registers.accumulator -= value + (registers.status.readFlag(.carry) ? 0 : 1)
-        
-        registers.accumulator = UInt8(truncatingIfNeeded: result)
-        updateZeroNegativeFlags()
-        registers.status.setFlag(.carry, to: result >= 0)
-        
-        let overflow = ((registers.accumulator ^ UInt8(result)) & (value ^ UInt8(result)) & 0x80) != 0
-        registers.status.setFlag(.overflow, to: overflow)
+        inc(value: &value)
+        sbc(value: value)
     }
     
     /// Increment Memory:
@@ -843,15 +960,23 @@ extension NES.CPU {
     
     /// Branch if Equal
     /// If the negative flag is clear then add the relative displacement to the program counter to cause a branch to a new location.
-    func beq(value: UInt8) {
+    /// - Returns: A tuple containing whether a branch occurred and whether a page boundary was crossed
+    func beq(value: UInt8) -> (didBranch: Bool, didCrossPageBoundary: Bool) {
         emuLogger.debug("beq")
         
         if registers.status.readFlag(.zero) {
-            let offset = Int8(bitPattern: value)
-            let newAddress = UInt16(Int16(registers.programCounter) + Int16(offset))
+            let offset = Int16(Int8(bitPattern: value))
+            let newOffsetSigned = Int16(bitPattern: registers.programCounter) &+ offset
+            let newPC = UInt16(bitPattern: newOffsetSigned)
             
-            registers.programCounter = newAddress
+            let willCross = (registers.programCounter & 0xFF00) != (newPC & 0xFF00)
+            
+            registers.programCounter = UInt16(bitPattern: newOffsetSigned)
+            
+            return (true, willCross)
         }
+        
+        return (false, false)
     }
     
     /// Set Decimal Flag:

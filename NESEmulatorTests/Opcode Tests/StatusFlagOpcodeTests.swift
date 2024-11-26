@@ -6,7 +6,7 @@ import Testing
 class StatusFlagOpcodeTests: OpcodeTestBase {
     let allStatusFlags = Status(rawValue: 0xFF)
     
-    @Test("BRK - Basic operation ✓")
+    @Test("BRK - Basic operation")
     func testBRK_basic() {
         let context = setupImplied(opcode: 0x00)
         let initialPC = context.cpu.registers.programCounter
@@ -44,7 +44,7 @@ class StatusFlagOpcodeTests: OpcodeTestBase {
         #expect(context.cpu.clockCycleCount == 7, "BRK should take 7 cycles")
     }
 
-    @Test("BRK - RTI restoration ✓")
+    @Test("BRK - RTI restoration")
     func testBRK_RTI() {
         let context = setupImplied(opcode: 0x00)
         let initialPC = context.cpu.registers.programCounter
@@ -67,7 +67,7 @@ class StatusFlagOpcodeTests: OpcodeTestBase {
         #expect(!context.cpu.registers.status.contains(.interrupt), "Interrupt flag should be restored")
     }
 
-    @Test("BRK - With flags set ✓")
+    @Test("BRK - With flags set")
     func testBRK_flags() {
         let context = setupImplied(opcode: 0x00)
         
@@ -91,7 +91,7 @@ class StatusFlagOpcodeTests: OpcodeTestBase {
                "Current status should preserve flags, set interrupt, not break")
     }
     
-    @Test("CLC - implied mode ✓")
+    @Test("CLC - implied mode")
     func CLC_implied() {
         var context = setupImplied(opcode: 0x18)
         
@@ -104,7 +104,7 @@ class StatusFlagOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("CLD - implied mode ✓")
+    @Test("CLD - implied mode")
     func CLD_implied() {
         var context = setupImplied(opcode: 0xD8)
         
@@ -117,7 +117,7 @@ class StatusFlagOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("CLI - implied mode ✓")
+    @Test("CLI - implied mode")
     func CLI_implied() {
         var context = setupImplied(opcode: 0x58)
         
@@ -130,7 +130,7 @@ class StatusFlagOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("CLV - implied mode ✓")
+    @Test("CLV - implied mode")
     func CLV_implied() {
         var context = setupImplied(opcode: 0xB8)
         
@@ -143,7 +143,7 @@ class StatusFlagOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("SEC - implied mode ✓")
+    @Test("SEC - implied mode")
     func SEC_implied() {
         var context = setupImplied(opcode: 0x38)
         
@@ -154,7 +154,7 @@ class StatusFlagOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("SED - implied mode ✓")
+    @Test("SED - implied mode")
     func SED_implied() {
         var context = setupImplied(opcode: 0xF8)
         
@@ -165,7 +165,7 @@ class StatusFlagOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("SEI - implied mode ✓")
+    @Test("SEI - implied mode")
     func SEI_implied() {
         var context = setupImplied(opcode: 0x78)
         
@@ -176,7 +176,7 @@ class StatusFlagOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
     
-    @Test("Flag operations - Multiple flags ✓", arguments: [
+    @Test("Flag operations - Multiple flags", arguments: [
         (UInt8(0x18), UInt8(0x38), Status.carry),
         (UInt8(0xD8), UInt8(0xF8), Status.decimal),
         (UInt8(0x58), UInt8(0x78), Status.interrupt)

@@ -4,7 +4,7 @@ import Testing
 // Shift & Rotate (ASL, LSR, ROL, ROR)
 @Suite("CPU Shift and Rotate Operations")
 class ShiftRotateOpcodeTests: OpcodeTestBase {
-    @Test("ASL - implied mode ✓")
+    @Test("ASL - implied mode")
     func ASL_implied() {
         var context = setupImplied(opcode: 0x0A)
         context.cpu.registers.accumulator = 0b01111111
@@ -14,7 +14,7 @@ class ShiftRotateOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("ASL - zeropage mode ✓")
+    @Test("ASL - zeropage mode")
     func ASL_zeropage() {
         let context = setupZeroPage(opcode: 0x06, zeroPageAddress: 0xFA, value: 0b10000000)
         context.cpu.executeNextInstruction()
@@ -23,7 +23,7 @@ class ShiftRotateOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0xFA) == 0b00000000)
     }
 
-    @Test("ASL - zeropage,x mode ✓")
+    @Test("ASL - zeropage,x mode")
     func ASL_zeropageX() {
         let context = setupZeroPageX(opcode: 0x16, zeroPageAddress: 0x10, xOffset: 0x10, value: 0b01010101)
         context.cpu.executeNextInstruction()
@@ -32,7 +32,7 @@ class ShiftRotateOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x20) == 0b10101010)
     }
 
-    @Test("ASL - absolute mode ✓")
+    @Test("ASL - absolute mode")
     func ASL_absolute() {
         let context = setupAbsolute(opcode: 0x0E, absoluteAddress: 0x1234, value: 0b00111111)
         context.cpu.executeNextInstruction()
@@ -41,7 +41,7 @@ class ShiftRotateOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x1234) == 0b01111110)
     }
 
-    @Test("ASL - absolute,x mode ✓")
+    @Test("ASL - absolute,x mode")
     func ASL_absoluteX() {
         let contextNoCross = setupAbsoluteX(opcode: 0x1E, absoluteAddress: 0x12EF, xOffset: 0x01, value: 0b11000000)
         contextNoCross.cpu.executeNextInstruction()
@@ -57,7 +57,7 @@ class ShiftRotateOpcodeTests: OpcodeTestBase {
         #expect(contextWithCross.cpu.clockCycleCount == contextNoCross.cpu.clockCycleCount) // ASL uses same amount of cycles, even if page boundary is crossed
     }
     
-    @Test("ASL - Flag behavior ✓")
+    @Test("ASL - Flag behavior")
     func testASL_flags() {
         func testASLFlags(value: UInt8) -> (result: UInt8, flags: Status) {
             let context = setupImplied(opcode: 0x0A)
@@ -99,7 +99,7 @@ class ShiftRotateOpcodeTests: OpcodeTestBase {
                "ASL should preserve overflow flag")
     }
     
-    @Test("LSR - implied mode ✓")
+    @Test("LSR - implied mode")
     func LSR_implied() {
         var context = setupImplied(opcode: 0x4A)
         context.cpu.registers.accumulator = 0b11111111
@@ -109,7 +109,7 @@ class ShiftRotateOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("LSR - zeropage mode ✓")
+    @Test("LSR - zeropage mode")
     func LSR_zeropage() {
         let context = setupZeroPage(opcode: 0x46, zeroPageAddress: 0x71, value: 0b11111110)
         context.cpu.executeNextInstruction()
@@ -118,7 +118,7 @@ class ShiftRotateOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x71) == 0b01111111)
     }
 
-    @Test("LSR - zeropage,x mode ✓")
+    @Test("LSR - zeropage,x mode")
     func LSR_zeropageX() {
         let context = setupZeroPageX(opcode: 0x56, zeroPageAddress: 0x60, xOffset: 0x10, value: 0b00000001)
         context.cpu.executeNextInstruction()
@@ -127,7 +127,7 @@ class ShiftRotateOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x70) == 0)
     }
 
-    @Test("LSR - absolute mode ✓")
+    @Test("LSR - absolute mode")
     func LSR_absolute() {
         let context = setupAbsolute(opcode: 0x4E, absoluteAddress: 0x1024, value: 0b10000000)
         context.cpu.executeNextInstruction()
@@ -136,7 +136,7 @@ class ShiftRotateOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x1024) == 0b01000000)
     }
 
-    @Test("LSR - absolute,x mode ✓")
+    @Test("LSR - absolute,x mode")
     func LSR_absoluteX() {
         let contextNoCross = setupAbsoluteX(opcode: 0x5E, absoluteAddress: 0x0F55, xOffset: 0xAA, value: 0b10110100)
         contextNoCross.cpu.executeNextInstruction()
@@ -154,7 +154,7 @@ class ShiftRotateOpcodeTests: OpcodeTestBase {
         #expect(contextWithCross.cpu.clockCycleCount == contextNoCross.cpu.clockCycleCount) // LSR uses same amount of cycles, even if page boundary is crossed
     }
     
-    @Test("LSR - Flag behavior ✓")
+    @Test("LSR - Flag behavior")
     func testLSR_flags() {
         func testLSRFlags(value: UInt8) -> (result: UInt8, flags: Status) {
             let context = setupImplied(opcode: 0x4A)
@@ -196,7 +196,7 @@ class ShiftRotateOpcodeTests: OpcodeTestBase {
                "LSR should preserve overflow flag")
     }
     
-    @Test("ROL - implied mode ✓")
+    @Test("ROL - implied mode")
     func ROL_implied() {
         var context = setupImplied(opcode: 0x2A)
         context.cpu.registers.accumulator = 0b10000000
@@ -206,7 +206,7 @@ class ShiftRotateOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
     
-    @Test("ROL - zeropage mode ✓")
+    @Test("ROL - zeropage mode")
     func ROL_zeropage() {
         let context = setupZeroPage(opcode: 0x26, zeroPageAddress: 0xDF, value: 0b01000000)
         context.cpu.registers.status = Status.carry
@@ -217,7 +217,7 @@ class ShiftRotateOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0xDF) == 0b10000001)
     }
     
-    @Test("ROL - zeropage,x mode ✓")
+    @Test("ROL - zeropage,x mode")
     func ROL_zeropageX() {
         let context = setupZeroPageX(opcode: 0x36, zeroPageAddress: 0x4A, xOffset: 0x06, value: 0b00000111)
         context.cpu.registers.status = Status.carry
@@ -228,7 +228,7 @@ class ShiftRotateOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x50) == 0b00001111)
     }
     
-    @Test("ROL - absolute mode ✓")
+    @Test("ROL - absolute mode")
     func ROL_absolute() {
         let context = setupAbsolute(opcode: 0x2E, absoluteAddress: 0x0100, value: 0b11000101)
         
@@ -238,7 +238,7 @@ class ShiftRotateOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x0100) == 0b10001010)
     }
     
-    @Test("ROL - absolute,x mode ✓")
+    @Test("ROL - absolute,x mode")
     func ROL_absoluteX() {
         let context = setupAbsoluteX(opcode: 0x3E, absoluteAddress: 0x1234, xOffset: 0x10, value: 0b01010101)
         context.cpu.registers.status = Status.carry
@@ -249,7 +249,7 @@ class ShiftRotateOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x1244) == 0b10101011)
     }
     
-    @Test("ROL - absolute,x mode ✓")
+    @Test("ROL - absolute,x mode")
     func ROL_absoluteX_pageCross() {
         let contextNoCross = setupAbsoluteX(opcode: 0x3E, absoluteAddress: 0x1300, xOffset: 0x01, value: 0b00000001)
         contextNoCross.cpu.executeNextInstruction()
@@ -265,7 +265,7 @@ class ShiftRotateOpcodeTests: OpcodeTestBase {
         #expect(contextWithCross.cpu.clockCycleCount == contextNoCross.cpu.clockCycleCount) // ROL uses same amount of cycles, even if page boundary is crossed
     }
     
-    @Test("ROL - Flag behavior ✓")
+    @Test("ROL - Flag behavior")
     func testROL_flags() {
         func testROLFlags(value: UInt8, carryIn: Bool = false) -> (result: UInt8, flags: Status) {
             let context = setupImplied(opcode: 0x2A)
@@ -308,7 +308,7 @@ class ShiftRotateOpcodeTests: OpcodeTestBase {
                "ROL should preserve overflow flag")
     }
     
-    @Test("ROR - implied mode ✓")
+    @Test("ROR - implied mode")
     func ROR_implied() {
         var context = setupImplied(opcode: 0x6A)
         context.cpu.registers.accumulator = 0b00000001
@@ -318,7 +318,7 @@ class ShiftRotateOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
     
-    @Test("ROR - zeropage mode ✓")
+    @Test("ROR - zeropage mode")
     func ROR_zeropage() {
         let context = setupZeroPage(opcode: 0x66, zeroPageAddress: 0x42, value: 0b00000010)
         context.cpu.registers.status = Status.carry
@@ -329,7 +329,7 @@ class ShiftRotateOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x42) == 0b10000001, "Carry-in should set top bit")
     }
     
-    @Test("ROR - zeropage,x mode ✓")
+    @Test("ROR - zeropage,x mode")
     func ROR_zeropageX() {
         let context = setupZeroPageX(opcode: 0x76, zeroPageAddress: 0x10, xOffset: 0x10, value: 0b11111111)
         
@@ -339,7 +339,7 @@ class ShiftRotateOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x20) == 0b01111111, "No carry-in should clear top bit")
     }
 
-    @Test("ROR - absolute mode ✓")
+    @Test("ROR - absolute mode")
     func ROR_absolute() {
         let context = setupAbsolute(opcode: 0x6E, absoluteAddress: 0x0234, value: 0b00000000)
         context.cpu.registers.status = Status.carry
@@ -350,7 +350,7 @@ class ShiftRotateOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x0234) == 0b10000000)
     }
 
-    @Test("ROR - absolute,x mode ✓")
+    @Test("ROR - absolute,x mode")
     func ROR_absoluteX() {
         let contextNoCross = setupAbsoluteX(opcode: 0x7E, absoluteAddress: 0x0432, xOffset: 0x23, value: 0b10101010)
         
@@ -370,7 +370,7 @@ class ShiftRotateOpcodeTests: OpcodeTestBase {
         #expect(contextWithCross.cpu.clockCycleCount == contextNoCross.cpu.clockCycleCount)
     }
     
-    @Test("ROR - Flag behavior ✓")
+    @Test("ROR - Flag behavior")
     func testROR_flags() {
         func testRORFlags(value: UInt8, initialCarry: Bool = false) -> (result: UInt8, flags: Status) {
             let context = setupImplied(opcode: 0x6A)

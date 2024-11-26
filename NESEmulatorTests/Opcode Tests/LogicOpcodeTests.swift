@@ -4,7 +4,7 @@ import Testing
 // Logic Operations (AND, BIT, CMP, CPX, CPY, EOR, ORA)
 @Suite("CPU Logic Operations")
 class LogicOpcodeTests: OpcodeTestBase {
-    @Test("AND - immediate mode ✓")
+    @Test("AND - immediate mode")
     func testAND_immediate() {
         var context = setupImmediate(opcode: 0x29, value: 0b11111110)
         context.cpu.registers.accumulator = 0b00000001
@@ -16,7 +16,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x8001) == 0b11111110, "Memory should remain unchanged")
     }
     
-    @Test("AND - zeropage mode ✓")
+    @Test("AND - zeropage mode")
     func testAND_zeropage() {
         var context = setupZeroPage(opcode: 0x25, zeroPageAddress: 0x20, value: 0b10101010)
         context.cpu.registers.accumulator = 0b10000110
@@ -28,7 +28,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x20) == 0b10101010, "Memory should remain unchanged")
     }
     
-    @Test("AND - zeropage,x mode ✓")
+    @Test("AND - zeropage,x mode")
     func testAND_zeropageX() {
         var context = setupZeroPageX(opcode: 0x35, zeroPageAddress: 0xA0, xOffset: 0x20, value: 0b11100111)
         context.cpu.registers.accumulator = 0b00111100
@@ -40,7 +40,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0xC0) == 0b11100111, "Memory should remain unchanged")
     }
     
-    @Test("AND - absolute mode ✓")
+    @Test("AND - absolute mode")
     func testAND_absolute() {
         var context = setupAbsolute(opcode: 0x2D, absoluteAddress: 0x1111, value: 0b11110000)
         context.cpu.registers.accumulator = 0b11111111
@@ -52,7 +52,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x1111) == 0b11110000, "Memory should remain unchanged")
     }
     
-    @Test("AND - absolute,x mode ✓")
+    @Test("AND - absolute,x mode")
     func testAND_absoluteX() {
         var contextNoCross = setupAbsoluteX(opcode: 0x3D, absoluteAddress: 0x1000, xOffset: 0x01, value: 0b10001000)
         contextNoCross.cpu.registers.accumulator = 0b00000000
@@ -74,7 +74,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         #expect(contextWithCross.cpu.clockCycleCount == contextNoCross.cpu.clockCycleCount + 1)
     }
     
-    @Test("AND - absolute,y mode ✓")
+    @Test("AND - absolute,y mode")
     func testAND_absoluteY() {
         var contextNoCross = setupAbsoluteY(opcode: 0x39, absoluteAddress: 0x1100, yOffset: 0x22, value: 0b11111111)
         contextNoCross.cpu.registers.accumulator = 0b11111111
@@ -96,7 +96,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         #expect(contextWithCross.cpu.clockCycleCount == contextNoCross.cpu.clockCycleCount + 1)
     }
     
-    @Test("AND - (d,x) mode ✓")
+    @Test("AND - (d,x) mode")
     func testAND_indexedIndirect() {
         var context = setupIndexedIndirect(opcode: 0x21, zeroPageAddress: 0x16, xOffset: 0x75, targetAddress: 0x1100, value: 0b11110000)
         context.cpu.registers.accumulator = 0b00001111
@@ -108,7 +108,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x1100) == 0b11110000, "Memory should remain unchanged")
     }
     
-    @Test("AND - (d),y mode ✓")
+    @Test("AND - (d),y mode")
     func testAND_indirectIndexed() {
         var contextNoCross = setupIndirectIndexed(opcode: 0x31, zeroPageAddress: 0x02, yOffset: 0x0D, targetAddress: 0x0987, value: 0b00011000)
         contextNoCross.cpu.registers.accumulator = 0b11010101
@@ -130,7 +130,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         #expect(contextWithCross.cpu.clockCycleCount == contextNoCross.cpu.clockCycleCount + 1)
     }
     
-    @Test("AND - Flag behavior ✓")
+    @Test("AND - Flag behavior")
     func testAND_flags() {
         func testANDFlags(a: UInt8, m: UInt8) -> Status {
             let context = setupImmediate(opcode: 0x29, value: m)
@@ -152,7 +152,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         #expect(test3 == .empty, "No flags should be set for positive non-zero result")
     }
     
-    @Test("BIT - zeropage mode ✓")
+    @Test("BIT - zeropage mode")
     func testBIT_zeropage() {
         var context = setupZeroPage(opcode: 0x24, zeroPageAddress: 0x20, value: 0b11000000)
         context.cpu.registers.accumulator = 0b00000001
@@ -164,7 +164,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         #expect(context.cpu.memoryManager.read(from: 0x20) == 0b11000000, "Memory should remain unchanged")
     }
 
-    @Test("BIT - absolute mode ✓")
+    @Test("BIT - absolute mode")
     func testBIT_absolute() {
         var context = setupAbsolute(opcode: 0x2C, absoluteAddress: 0x1234, value: 0b01000000)
         context.cpu.registers.accumulator = 0b01000000
@@ -176,7 +176,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         #expect(context.cpu.memoryManager.read(from: 0x1234) == 0b01000000, "Memory should remain unchanged")
     }
 
-    @Test("BIT - Flag behavior ✓")
+    @Test("BIT - Flag behavior")
     func testBIT_flags() {
         // Helper to run BIT and return flags
         func testBITFlags(a: UInt8, m: UInt8) -> Status {
@@ -216,7 +216,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
     
-    @Test("CMP - immediate mode ✓")
+    @Test("CMP - immediate mode")
     func testCMP_immediate() {
         var context = setupImmediate(opcode: 0xC9, value: 0b10000000)
         context.cpu.registers.accumulator = 0b10000000
@@ -228,7 +228,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x8001) == 0b10000000, "Memory should remain unchanged")
     }
     
-    @Test("CMP - zeropage mode ✓")
+    @Test("CMP - zeropage mode")
     func testCMP_zeropage() {
         var context = setupZeroPage(opcode: 0xC5, zeroPageAddress: 0x77, value: 0b00000001)
         context.cpu.registers.accumulator = 0b00000001
@@ -240,7 +240,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x77) == 0b00000001, "Memory should remain unchanged")
     }
     
-    @Test("CMP - zeropage,x mode ✓")
+    @Test("CMP - zeropage,x mode")
     func testCMP_zeropageX() {
         var context = setupZeroPageX(opcode: 0xD5, zeroPageAddress: 0x7F, xOffset: 0x01, value: 0b00000001)
         context.cpu.registers.accumulator = 0b00001111
@@ -252,7 +252,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x80) == 0b00000001, "Memory should remain unchanged")
     }
     
-    @Test("CMP - absolute mode ✓")
+    @Test("CMP - absolute mode")
     func testCMP_absolute() {
         var context = setupAbsolute(opcode: 0xCD, absoluteAddress: 0x1551, value: 0b11111111)
         context.cpu.registers.accumulator = 0b00000000
@@ -264,7 +264,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x1551) == 0b11111111, "Memory should remain unchanged")
     }
     
-    @Test("CMP - absolute,x mode ✓")
+    @Test("CMP - absolute,x mode")
     func testCMP_absoluteX() {
         var contextNoCross = setupAbsoluteX(opcode: 0xDD, absoluteAddress: 0x1000, xOffset: 0xFF, value: 0b10101010)
         contextNoCross.cpu.registers.accumulator = 0b10000000
@@ -286,7 +286,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         #expect(contextWithCross.cpu.clockCycleCount == contextNoCross.cpu.clockCycleCount + 1)
     }
     
-    @Test("CMP - absolute,y mode ✓")
+    @Test("CMP - absolute,y mode")
     func testCMP_absoluteY() {
         var contextNoCross = setupAbsoluteY(opcode: 0xD9, absoluteAddress: 0x07ED, yOffset: 0x12, value: 0b00000000)
         contextNoCross.cpu.registers.accumulator = 0b00000000
@@ -308,7 +308,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         #expect(contextWithCross.cpu.clockCycleCount == contextNoCross.cpu.clockCycleCount + 1)
     }
     
-    @Test("CMP - (d,x) mode ✓")
+    @Test("CMP - (d,x) mode")
     func testCMP_indexedIndirect() {
         var context = setupIndexedIndirect(opcode: 0xC1, zeroPageAddress: 0x52, xOffset: 0x55, targetAddress: 0x0567, value: 0b10101010)
         context.cpu.registers.accumulator = 0b00110011
@@ -320,7 +320,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x0567) == 0b10101010, "Memory should remain unchanged")
     }
     
-    @Test("CMP - (d),y mode ✓")
+    @Test("CMP - (d),y mode")
     func testCMP_indirectIndexed() {
         var contextNoCross = setupIndirectIndexed(opcode: 0xD1, zeroPageAddress: 0x10, yOffset: 0x99, targetAddress: 0x0900, value: 0b00000001)
         contextNoCross.cpu.registers.accumulator = 0b00000010
@@ -343,7 +343,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         #expect(contextWithCross.cpu.clockCycleCount == contextNoCross.cpu.clockCycleCount + 1)
     }
     
-    @Test("CMP - Flag behavior ✓")
+    @Test("CMP - Flag behavior")
     func testCMP_flags() {
         // TODO: - Test that only NZC flags are affected
         func testCMPFlags(a: UInt8, m: UInt8) -> Status {
@@ -379,7 +379,7 @@ class LogicOpcodeTests: OpcodeTestBase {
                "Both carry and negative should be set")
     }
     
-    @Test("CPX - immediate mode ✓")
+    @Test("CPX - immediate mode")
     func testCPX_immediate() {
         var context = setupImmediate(opcode: 0xE0, value: 0b10000000)
         context.cpu.registers.indexX = 0b10000000
@@ -391,7 +391,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x8001) == 0b10000000, "Memory should remain unchanged")
     }
     
-    @Test("CPX - zeropage mode ✓")
+    @Test("CPX - zeropage mode")
     func testCPX_zeropage() {
         var context = setupZeroPage(opcode: 0xE4, zeroPageAddress: 0x77, value: 0b10101010)
         context.cpu.registers.indexX = 0b10000000
@@ -403,7 +403,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x77) == 0b10101010, "Memory should remain unchanged")
     }
     
-    @Test("CPX - absolute mode ✓")
+    @Test("CPX - absolute mode")
     func testCPX_absolute() {
         var context = setupAbsolute(opcode: 0xEC, absoluteAddress: 0x1551, value: 0b11111111)
         context.cpu.registers.indexX = 0b00000000
@@ -415,7 +415,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x1551) == 0b11111111, "Memory should remain unchanged")
     }
     
-    @Test("CPX - Flag behavior ✓")
+    @Test("CPX - Flag behavior")
     func testCPX_flags() {
         func testCPXFlags(x: UInt8, m: UInt8) -> Status {
             let context = setupImmediate(opcode: 0xE0, value: m)
@@ -450,7 +450,7 @@ class LogicOpcodeTests: OpcodeTestBase {
                "Both carry and negative should be set")
     }
     
-    @Test("CPY - immediate mode ✓")
+    @Test("CPY - immediate mode")
     func testCPY_immediate() {
         var context = setupImmediate(opcode: 0xC0, value: 0b10000000)
         context.cpu.registers.indexY = 0b10000000
@@ -462,7 +462,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x8001) == 0b10000000, "Memory should remain unchanged")
     }
     
-    @Test("CPY - zeropage mode ✓")
+    @Test("CPY - zeropage mode")
     func testCPY_zeropage() {
         var context = setupZeroPage(opcode: 0xC4, zeroPageAddress: 0x77, value: 0b10101010)
         context.cpu.registers.indexY = 0b10000000
@@ -474,7 +474,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x77) == 0b10101010, "Memory should remain unchanged")
     }
     
-    @Test("CPY - absolute mode ✓")
+    @Test("CPY - absolute mode")
     func testCPY_absolute() {
         var context = setupAbsolute(opcode: 0xCC, absoluteAddress: 0x1551, value: 0b11111111)
         context.cpu.registers.indexY = 0b00000000
@@ -486,7 +486,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x1551) == 0b11111111, "Memory should remain unchanged")
     }
     
-    @Test("CPY - Flag behavior ✓")
+    @Test("CPY - Flag behavior")
     func testCPY_flags() {
         func testCPYFlags(y: UInt8, m: UInt8) -> Status {
             let context = setupImmediate(opcode: 0xC0, value: m)
@@ -521,7 +521,7 @@ class LogicOpcodeTests: OpcodeTestBase {
                "Both carry and negative should be set")
     }
     
-    @Test("EOR - immediate mode ✓")
+    @Test("EOR - immediate mode")
     func testEOR_immediate() {
         var context = setupImmediate(opcode: 0x49, value: 0b11111111)
         context.cpu.registers.accumulator = 0b11111111
@@ -533,7 +533,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x8001) == 0b11111111, "Memory should remain unchanged")
     }
 
-    @Test("EOR - zeropage mode ✓")
+    @Test("EOR - zeropage mode")
     func testEOR_zeropage() {
         var context = setupZeroPage(opcode: 0x45, zeroPageAddress: 0x21, value: 0b11111111)
         context.cpu.registers.accumulator = 0x00000000
@@ -545,7 +545,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x21) == 0b11111111, "Memory should remain unchanged")
     }
 
-    @Test("EOR - zeropage,x mode ✓")
+    @Test("EOR - zeropage,x mode")
     func testEOR_zeropageX() {
         var context = setupZeroPageX(opcode: 0x55, zeroPageAddress: 0x99, xOffset: 0x11, value: 0b10101010)
         context.cpu.registers.accumulator = 0b01010101
@@ -557,7 +557,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0xAA) == 0b10101010, "Memory should remain unchanged")
     }
 
-    @Test("EOR - (d,x) mode ✓")
+    @Test("EOR - (d,x) mode")
     func testEOR_indexedIndirect() {
         var context = setupIndexedIndirect(opcode: 0x41, zeroPageAddress: 0x00, xOffset: 0xFF, targetAddress: 0x0888, value: 0b00001111)
         context.cpu.registers.accumulator = 0b01001110
@@ -569,7 +569,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x0888) == 0b00001111, "Memory should remain unchanged")
     }
 
-    @Test("EOR - (d),y mode ✓")
+    @Test("EOR - (d),y mode")
     func testEOR_indirectIndexed() {
         var contextNoCross = setupIndirectIndexed(opcode: 0x51, zeroPageAddress: 0x88, yOffset: 0x15, targetAddress: 0x0100, value: 0b10101010)
         contextNoCross.cpu.registers.accumulator = 0b10101010
@@ -592,7 +592,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         #expect(contextWithCross.cpu.clockCycleCount == contextNoCross.cpu.clockCycleCount + 1)
     }
 
-    @Test("EOR - absolute mode ✓")
+    @Test("EOR - absolute mode")
     func testEOR_absolute() {
         var context = setupAbsolute(opcode: 0x4D, absoluteAddress: 0x1001, value: 0b10000000)
         context.cpu.registers.accumulator = 0b00000001
@@ -604,7 +604,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x1001) == 0b10000000, "Memory should remain unchanged")
     }
 
-    @Test("EOR - absolute,x mode ✓")
+    @Test("EOR - absolute,x mode")
     func testEOR_absoluteX() {
         var contextNoCross = setupAbsoluteX(opcode: 0x5D, absoluteAddress: 0x09FE, xOffset: 0x01, value: 0b10101010)
         contextNoCross.cpu.registers.accumulator = 0b01010101
@@ -626,7 +626,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         #expect(contextWithCross.cpu.clockCycleCount == contextNoCross.cpu.clockCycleCount + 1)
     }
 
-    @Test("EOR - absolute,y mode ✓")
+    @Test("EOR - absolute,y mode")
     func testEOR_absoluteY() {
         var contextNoCross = setupAbsoluteY(opcode: 0x59, absoluteAddress: 0x0123, yOffset: 0xDC, value: 0b10000000)
         contextNoCross.cpu.registers.accumulator = 0b00000000
@@ -649,7 +649,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         #expect(contextWithCross.cpu.clockCycleCount == contextNoCross.cpu.clockCycleCount + 1)
     }
     
-    @Test("EOR - Flag behavior ✓")
+    @Test("EOR - Flag behavior")
     func testEOR_flags() {
         func testEORFlags(a: UInt8, m: UInt8) -> Status {
             let context = setupImmediate(opcode: 0x49, value: m)
@@ -683,7 +683,7 @@ class LogicOpcodeTests: OpcodeTestBase {
                "EOR should preserve carry and overflow flags")
     }
     
-    @Test("ORA - immediate mode ✓")
+    @Test("ORA - immediate mode")
     func testORA_immediate() {
         var context = setupImmediate(opcode: 0x09, value: 0b11111111)
         context.cpu.registers.accumulator = 0b00000000
@@ -695,7 +695,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x8001) == 0b11111111, "Memory should remain unchanged")
     }
 
-    @Test("ORA - zeropage mode ✓")
+    @Test("ORA - zeropage mode")
     func testORA_zeropage() {
         var context = setupZeroPage(opcode: 0x05, zeroPageAddress: 0x21, value: 0b00000000)
         context.cpu.registers.accumulator = 0x00000000
@@ -707,7 +707,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x21) == 0b00000000, "Memory should remain unchanged")
     }
 
-    @Test("ORA - zeropage,x mode ✓")
+    @Test("ORA - zeropage,x mode")
     func testORA_zeropageX() {
         var context = setupZeroPageX(opcode: 0x15, zeroPageAddress: 0x99, xOffset: 0x11, value: 0b10101010)
         context.cpu.registers.accumulator = 0b01010101
@@ -719,7 +719,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0xAA) == 0b10101010, "Memory should remain unchanged")
     }
 
-    @Test("ORA - (d,x) mode ✓")
+    @Test("ORA - (d,x) mode")
     func testORA_indexedIndirect() {
         var context = setupIndexedIndirect(opcode: 0x01, zeroPageAddress: 0x00, xOffset: 0xFF, targetAddress: 0x0888, value: 0b00001111)
         context.cpu.registers.accumulator = 0b01010000
@@ -731,7 +731,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x0888) == 0b00001111, "Memory should remain unchanged")
     }
 
-    @Test("ORA - (d),y mode ✓")
+    @Test("ORA - (d),y mode")
     func testORA_indirectIndexed() {
         var context = setupIndirectIndexed(opcode: 0x11, zeroPageAddress: 0x88, yOffset: 0x15, targetAddress: 0x0100, value: 0b10101010)
         context.cpu.registers.accumulator = 0b10101010
@@ -743,7 +743,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x0115) == 0b10101010, "Memory should remain unchanged")
     }
 
-    @Test("ORA - absolute mode ✓")
+    @Test("ORA - absolute mode")
     func testORA_absolute() {
         var context = setupAbsolute(opcode: 0x0D, absoluteAddress: 0x1001, value: 0b10100000)
         context.cpu.registers.accumulator = 0b00001111
@@ -755,7 +755,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x1001) == 0b10100000, "Memory should remain unchanged")
     }
 
-    @Test("ORA - absolute,x mode with page crossing ✓")
+    @Test("ORA - absolute,x mode with page crossing")
     func testORA_absoluteX() {
         var contextNoCross = setupAbsoluteX(opcode: 0x1D, absoluteAddress: 0x09EF, xOffset: 0x01, value: 0b10101010)
         contextNoCross.cpu.registers.accumulator = 0b01010101
@@ -777,7 +777,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         #expect(contextWithCross.cpu.clockCycleCount == contextNoCross.cpu.clockCycleCount + 1)
     }
 
-    @Test("ORA - absolute,y mode ✓")
+    @Test("ORA - absolute,y mode")
     func testORA_absoluteY() {
         var contextNoCross = setupAbsoluteY(opcode: 0x19, absoluteAddress: 0x0123, yOffset: 0xDC, value: 0b10000000)
         contextNoCross.cpu.registers.accumulator = 0b00000000
@@ -799,7 +799,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         #expect(contextWithCross.cpu.clockCycleCount == contextNoCross.cpu.clockCycleCount + 1)
     }
     
-    @Test("ORA - Flag behavior ✓")
+    @Test("ORA - Flag behavior")
     func testORA_flags() {
         func testORAFlags(a: UInt8, m: UInt8) -> Status {
             let context = setupImmediate(opcode: 0x09, value: m)

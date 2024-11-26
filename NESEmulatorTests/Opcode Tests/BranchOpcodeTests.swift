@@ -4,7 +4,7 @@ import Testing
 // Branch Operations (BCC, BCS, BEQ, BMI, BNE, BPL, BVC, BVS, JMP, JSR, RTS)
 @Suite("CPU Branch Operations")
 class BranchOpcodeTests: OpcodeTestBase {
-    @Test("BCC - Branch not taken (carry set) ✓")
+    @Test("BCC - Branch not taken (carry set)")
     func testBCC_notTaken() {
         let context = setupRelative(opcode: 0x90, offset: 5, branchTaken: false)
         context.cpu.registers.status.setFlag(.carry, to: true)
@@ -13,7 +13,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("BCC - Branch taken forward ✓")
+    @Test("BCC - Branch taken forward")
     func testBCC_takenForward() {
         let context = setupRelative(opcode: 0x90, offset: 5, branchTaken: true)
         
@@ -22,7 +22,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         #expect(context.cpu.registers.programCounter == context.initialPC + 7)
     }
 
-    @Test("BCC - Branch taken backward ✓")
+    @Test("BCC - Branch taken backward")
     func testBCC_takenBackward() {
         let context = setupRelative(opcode: 0x90, offset: -5, branchTaken: true)
         
@@ -30,7 +30,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("BCC - Branch page boundary forward ✓")
+    @Test("BCC - Branch page boundary forward")
     func testBCC_pageBoundary() {
         // Setup at end of page
         let context = setupRelative(opcode: 0x90, offset: 5, atAddress: 0x08FA, branchTaken: true)
@@ -39,7 +39,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("BCC - Maximum offset values ✓")
+    @Test("BCC - Maximum offset values")
     func testBCC_maxOffsets() {
         // Maximum forward branch (+127 | 0x7F)
         var context = setupRelative(opcode: 0x90, offset: 127, branchTaken: true)
@@ -52,7 +52,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
     
-    @Test("BCS - Branch not taken (carry not set) ✓")
+    @Test("BCS - Branch not taken (carry not set)")
     func testBCS_notTaken() {
         let context = setupRelative(opcode: 0xB0, offset: 5, branchTaken: false)
         
@@ -60,7 +60,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("BCS - Branch taken forward ✓")
+    @Test("BCS - Branch taken forward")
     func testBCS_takenForward() {
         let context = setupRelative(opcode: 0xB0, offset: 5, branchTaken: true)
         context.cpu.registers.status.setFlag(.carry, to: true)
@@ -69,7 +69,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("BCS - Branch taken backward ✓")
+    @Test("BCS - Branch taken backward")
     func testBCS_takenBackward() {
         let context = setupRelative(opcode: 0xB0, offset: -5, branchTaken: true)
         context.cpu.registers.status.setFlag(.carry, to: true)
@@ -78,7 +78,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("BCS - Branch page boundary forward ✓")
+    @Test("BCS - Branch page boundary forward")
     func testBCS_pageBoundary() {
         // Setup at end of page
         let context = setupRelative(opcode: 0xB0, offset: 5, atAddress: 0x80F9, branchTaken: true)
@@ -88,7 +88,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("BCS - Maximum offset values ✓")
+    @Test("BCS - Maximum offset values")
     func testBCS_maxOffsets() {
         // Maximum forward branch (+127 | 0x7F)
         var context = setupRelative(opcode: 0xB0, offset: 127, branchTaken: true)
@@ -103,7 +103,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
     
-    @Test("BEQ - Branch not taken (zero not set) ✓")
+    @Test("BEQ - Branch not taken (zero not set)")
     func testBEQ_notTaken() {
         let context = setupRelative(opcode: 0xF0, offset: 5, branchTaken: false)
         
@@ -111,7 +111,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("BEQ - Branch taken forward ✓")
+    @Test("BEQ - Branch taken forward")
     func testBEQ_takenForward() {
         let context = setupRelative(opcode: 0xF0, offset: 5, branchTaken: true)
         context.cpu.registers.status.setFlag(.zero, to: true)
@@ -120,7 +120,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("BEQ - Branch taken backward ✓")
+    @Test("BEQ - Branch taken backward")
     func testBEQ_takenBackward() {
         let context = setupRelative(opcode: 0xF0, offset: -5, branchTaken: true)
         context.cpu.registers.status.setFlag(.zero, to: true)
@@ -129,7 +129,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("BEQ - Branch page boundary ✓")
+    @Test("BEQ - Branch page boundary")
     func testBEQ_pageBoundary() {
         // Setup at end of page
         let context = setupRelative(opcode: 0xF0, offset: 5, atAddress: 0x80F9, branchTaken: true)
@@ -139,7 +139,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("BEQ - Maximum offset values ✓")
+    @Test("BEQ - Maximum offset values")
     func testBEQ_maxOffsets() {
         // Maximum forward branch (+127 | 0x7F)
         var context = setupRelative(opcode: 0xF0, offset: 127, branchTaken: true)
@@ -154,7 +154,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
     
-    @Test("BMI - Branch not taken (negative not set) ✓")
+    @Test("BMI - Branch not taken (negative not set)")
     func testBMI_notTaken() {
         let context = setupRelative(opcode: 0x30, offset: 5, branchTaken: false)
         
@@ -162,7 +162,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("BMI - Branch taken forward ✓")
+    @Test("BMI - Branch taken forward")
     func testBMI_takenForward() {
         let context = setupRelative(opcode: 0x30, offset: 5, branchTaken: true)
         context.cpu.registers.status.setFlag(.negative, to: true)
@@ -171,7 +171,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("BMI - Branch taken backward ✓")
+    @Test("BMI - Branch taken backward")
     func testBMI_takenBackward() {
         let context = setupRelative(opcode: 0x30, offset: -5, branchTaken: true)
         context.cpu.registers.status.setFlag(.negative, to: true)
@@ -180,7 +180,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("BMI - Branch page boundary ✓")
+    @Test("BMI - Branch page boundary")
     func testBMI_pageBoundary() {
         // Setup at end of page
         let context = setupRelative(opcode: 0x30, offset: 5, atAddress: 0x80F9, branchTaken: true)
@@ -190,7 +190,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("BMI - Maximum offset values ✓")
+    @Test("BMI - Maximum offset values")
     func testBMI_maxOffsets() {
         // Maximum forward branch (+127 | 0x7F)
         var context = setupRelative(opcode: 0x30, offset: 127, branchTaken: true)
@@ -205,7 +205,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
     
-    @Test("BNE - Branch not taken (zero set) ✓")
+    @Test("BNE - Branch not taken (zero set)")
     func testBNE_notTaken() {
         let context = setupRelative(opcode: 0xD0, offset: 5, branchTaken: false)
         context.cpu.registers.status.setFlag(.zero, to: true)
@@ -214,7 +214,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("BNE - Branch taken forward ✓")
+    @Test("BNE - Branch taken forward")
     func testBNE_takenForward() {
         let context = setupRelative(opcode: 0xD0, offset: 5, branchTaken: true)
         
@@ -222,7 +222,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("BNE - Branch taken backward ✓")
+    @Test("BNE - Branch taken backward")
     func testBNE_takenBackward() {
         let context = setupRelative(opcode: 0xD0, offset: -5, branchTaken: true)
         
@@ -230,7 +230,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("BNE - Branch page boundary ✓")
+    @Test("BNE - Branch page boundary")
     func testBNE_pageBoundary() {
         // Setup at end of page
         let context = setupRelative(opcode: 0xD0, offset: 5, atAddress: 0x80F9, branchTaken: true)
@@ -239,7 +239,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("BNE - Maximum offset values ✓")
+    @Test("BNE - Maximum offset values")
     func testBNE_maxOffsets() {
         // Maximum forward branch (+127 | 0x7F)
         var context = setupRelative(opcode: 0xD0, offset: 127, branchTaken: true)
@@ -252,7 +252,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
     
-    @Test("BPL - Branch not taken (negative set) ✓")
+    @Test("BPL - Branch not taken (negative set)")
     func testBPL_notTaken() {
         let context = setupRelative(opcode: 0x10, offset: 5, branchTaken: false)
         context.cpu.registers.status.setFlag(.negative, to: true)
@@ -261,7 +261,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("BPL - Branch taken forward ✓")
+    @Test("BPL - Branch taken forward")
     func testBPL_takenForward() {
         let context = setupRelative(opcode: 0x10, offset: 5, branchTaken: true)
         
@@ -269,7 +269,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("BPL - Branch taken backward ✓")
+    @Test("BPL - Branch taken backward")
     func testBPL_takenBackward() {
         let context = setupRelative(opcode: 0x10, offset: -5, branchTaken: true)
         
@@ -277,7 +277,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("BPL - Branch page boundary ✓")
+    @Test("BPL - Branch page boundary")
     func testBPL_pageBoundary() {
         // Setup at end of page
         let context = setupRelative(opcode: 0x10, offset: 5, atAddress: 0x80F9, branchTaken: true)
@@ -286,7 +286,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("BPL - Maximum offset values ✓")
+    @Test("BPL - Maximum offset values")
     func testBPL_maxOffsets() {
         // Maximum forward branch (+127 | 0x7F)
         var context = setupRelative(opcode: 0x10, offset: 127, branchTaken: true)
@@ -299,7 +299,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
     
-    @Test("BVC - Branch not taken (overflow set) ✓")
+    @Test("BVC - Branch not taken (overflow set)")
     func testBVC_notTaken() {
         let context = setupRelative(opcode: 0x50, offset: 5, branchTaken: false)
         context.cpu.registers.status.setFlag(.overflow, to: true)
@@ -308,7 +308,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("BVC - Branch taken forward ✓")
+    @Test("BVC - Branch taken forward")
     func testBVC_takenForward() {
         let context = setupRelative(opcode: 0x50, offset: 5, branchTaken: true)
         
@@ -316,7 +316,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("BVC - Branch taken backward ✓")
+    @Test("BVC - Branch taken backward")
     func testBVC_takenBackward() {
         let context = setupRelative(opcode: 0x50, offset: -5, branchTaken: true)
         
@@ -324,7 +324,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("BVC - Branch page boundary ✓")
+    @Test("BVC - Branch page boundary")
     func testBVC_pageBoundary() {
         // Setup at end of page
         let context = setupRelative(opcode: 0x50, offset: 5, atAddress: 0x80F9, branchTaken: true)
@@ -333,7 +333,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("BVC - Maximum offset values ✓")
+    @Test("BVC - Maximum offset values")
     func testBVC_maxOffsets() {
         // Maximum forward branch (+127 | 0x7F)
         var context = setupRelative(opcode: 0x50, offset: 127, branchTaken: true)
@@ -346,7 +346,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
     
-    @Test("BVS - Branch not taken (overflow not set) ✓")
+    @Test("BVS - Branch not taken (overflow not set)")
     func testBVS_notTaken() {
         let context = setupRelative(opcode: 0x70, offset: 5, branchTaken: false)
         
@@ -354,7 +354,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("BVS - Branch taken forward ✓")
+    @Test("BVS - Branch taken forward")
     func testBVS_takenForward() {
         let context = setupRelative(opcode: 0x70, offset: 5, branchTaken: true)
         context.cpu.registers.status.setFlag(.overflow, to: true)
@@ -363,7 +363,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("BVS - Branch taken backward ✓")
+    @Test("BVS - Branch taken backward")
     func testBVS_takenBackward() {
         let context = setupRelative(opcode: 0x70, offset: -5, branchTaken: true)
         context.cpu.registers.status.setFlag(.overflow, to: true)
@@ -372,7 +372,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("BVS - Branch page boundary ✓")
+    @Test("BVS - Branch page boundary")
     func testBVS_pageBoundary() {
         // Setup at end of page
         let context = setupRelative(opcode: 0x70, offset: 5, atAddress: 0x80F9, branchTaken: true)
@@ -382,7 +382,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
     
-    @Test("BVS - Maximum offset values ✓")
+    @Test("BVS - Maximum offset values")
     func testBVS_maxOffsets() {
         // Maximum forward branch (+127 | 0x7F)
         var context = setupRelative(opcode: 0x70, offset: 127, branchTaken: true)
@@ -397,7 +397,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
     
-    @Test("JMP - Absolute mode normal operation ✓")
+    @Test("JMP - Absolute mode normal operation")
     func testJMP_absolute() {
         // Test jumping forward from 0x8000
         var context = setupAbsolute(opcode: 0x4C, absoluteAddress: 0x8765, value: 0x00) // Value doesn't matter for JMP
@@ -414,7 +414,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("JMP - Indirect mode normal operation ✓")
+    @Test("JMP - Indirect mode normal operation")
     func testJMP_indirect() {
         var context = setupIndirect(opcode: 0x6C, indirectAddress: 0x1234, targetAddress: 0x3456)
         context.expected.pcStatus = .absolute(0x3456)
@@ -423,7 +423,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("JMP - Indirect page boundary bug ✓")
+    @Test("JMP - Indirect page boundary bug")
     func testJMP_indirectPageBoundary() {
         // Setup pointer at page boundary: $10FF/$1100
         // The bug means high byte is read from $2000 instead of $2100
@@ -439,7 +439,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
 
-    @Test("JSR/RTS - Basic operation ✓")
+    @Test("JSR/RTS - Basic operation")
     func testJSR_RTS_basic() {
         // Setup JSR at $8000 jumping to $1234
         var context = setupAbsolute(opcode: 0x20, absoluteAddress: 0x1234, value: 0x00) // Value doesn't matter for JSR
@@ -466,7 +466,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         #expect(context.cpu.clockCycleCount == 6, "RTS should take 6 cycles")
     }
 
-    @Test("JSR/RTS - Stack operations ✓")
+    @Test("JSR/RTS - Stack operations")
     func testJSR_RTS_stack() {
         // Setup initial stack with some data to ensure we don't corrupt it
         let context = setupAbsolute(opcode: 0x20, absoluteAddress: 0x1234, value: 0x00)
@@ -490,7 +490,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x0100 + UInt16(initialSP + 1)) == 0xBB, "Original stack data should be preserved")
     }
 
-    @Test("JSR/RTS - Nested calls ✓")
+    @Test("JSR/RTS - Nested calls")
     func testJSR_RTS_nested() {
         // Setup first JSR at $8000 -> $1234
         let context = setupAbsolute(opcode: 0x20, absoluteAddress: 0x1234, value: 0x00)
@@ -524,7 +524,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         #expect(context.cpu.registers.stackPointer == initialSP, "Stack should be fully restored")
     }
 
-    @Test("JSR/RTS - Page boundary behavior ✓")
+    @Test("JSR/RTS - Page boundary behavior")
     func testJSR_RTS_pageBoundary() {
         // Test JSR from end of page
         let context = setupAbsolute(opcode: 0x20, absoluteAddress: 0x1234, value: 0x00, atAddress: 0x80FF)
@@ -539,7 +539,7 @@ class BranchOpcodeTests: OpcodeTestBase {
         #expect(context.cpu.registers.programCounter == 0x8102, "RTS should work across page boundary")
     }
     
-    @Test("JSR/RTS - Return address calculation ✓")
+    @Test("JSR/RTS - Return address calculation")
     func testJSR_RTS_addressing() {
         // Setup JSR with known return address
         let context = setupAbsolute(opcode: 0x20, absoluteAddress: 0x5678, value: 0x00, atAddress: 0x1234)

@@ -7,7 +7,7 @@ class ArithmeticOpcodeTests: OpcodeTestBase {
     
     // MARK: - ADC
     
-    @Test("ADC - immediate mode ✓")
+    @Test("ADC - immediate mode")
     func testADC_immediate() {
         var context = setupImmediate(opcode: 0x69, value: 0x42)
         context.cpu.registers.accumulator = 0x01
@@ -19,7 +19,7 @@ class ArithmeticOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x8001) == 0x42, "Memory should remain unchanged")
     }
      
-    @Test("ADC - zeropage mode ✓")
+    @Test("ADC - zeropage mode")
     func testADC_zeropage() {
         var context = setupZeroPage(opcode: 0x65, zeroPageAddress: 0x10, value: 0xA0)
         context.cpu.registers.status = Status.carry
@@ -32,7 +32,7 @@ class ArithmeticOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x10) == 0xA0, "Memory should remain unchanged")
     }
     
-    @Test("ADC - zeropage,x mode ✓")
+    @Test("ADC - zeropage,x mode")
     func testADC_zeropageX() {
         var context = setupZeroPageX(opcode: 0x75, zeroPageAddress: 0xFF, xOffset: 0x01, value: 0x10)
         context.cpu.registers.accumulator = 0x99
@@ -44,7 +44,7 @@ class ArithmeticOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x00) == 0x10, "Memory should remain unchanged")
     }
         
-    @Test("ADC - absolute mode ✓")
+    @Test("ADC - absolute mode")
     func testADC_absolute() {
         var context = setupAbsolute(opcode: 0x6D, absoluteAddress: 0x1000, value: 0xAB)
         context.cpu.registers.status = Status.carry
@@ -57,7 +57,7 @@ class ArithmeticOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x1000) == 0xAB, "Memory should remain unchanged")
     }
         
-    @Test("ADC - absolute,x mode ✓")
+    @Test("ADC - absolute,x mode")
     func testADC_absoluteX() {
         var contextNoCross = setupAbsoluteX(opcode: 0x7D, absoluteAddress: 0x0123, xOffset: 0x02, value: 0xB5)
         contextNoCross.cpu.registers.accumulator = 0x10
@@ -79,7 +79,7 @@ class ArithmeticOpcodeTests: OpcodeTestBase {
         #expect(contextWithCross.cpu.clockCycleCount == contextNoCross.cpu.clockCycleCount + 1)
     }
         
-    @Test("ADC - absolute,y mode ✓")
+    @Test("ADC - absolute,y mode")
     func testADC_absoluteY() {
         var contextNoCross = setupAbsoluteX(opcode: 0x7D, absoluteAddress: 0x0100, xOffset: 0x02, value: 0xAA)
         contextNoCross.cpu.registers.accumulator = 0x10
@@ -101,7 +101,7 @@ class ArithmeticOpcodeTests: OpcodeTestBase {
         #expect(contextWithCross.cpu.clockCycleCount == contextNoCross.cpu.clockCycleCount + 1)
     }
     
-    @Test("ADC - (indirect,x) mode ✓")
+    @Test("ADC - (indirect,x) mode")
     func testADC_indexedIndirect() {
         var context = setupIndexedIndirect(opcode: 0x61, zeroPageAddress: 0x05, xOffset: 0x05, targetAddress: 0x1000, value: 0x25)
         context.cpu.registers.accumulator = 0x10
@@ -113,7 +113,7 @@ class ArithmeticOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x1000) == 0x25, "Memory should remain unchanged")
     }
     
-    @Test("ADC - (indirect),y mode ✓")
+    @Test("ADC - (indirect),y mode")
     func testADC_indirectIndexed() {
         var contextNoCross = setupIndirectIndexed(opcode: 0x71, zeroPageAddress: 0x41, yOffset: 0x10, targetAddress: 0x0800, value: 0xFA)
         contextNoCross.cpu.registers.accumulator = 0x04
@@ -135,7 +135,7 @@ class ArithmeticOpcodeTests: OpcodeTestBase {
         #expect(contextWithCross.cpu.clockCycleCount == contextNoCross.cpu.clockCycleCount + 1)
     }
     
-    @Test("ADC - Flag behavior ✓")
+    @Test("ADC - Flag behavior")
     func testADC_flags() {
         func testADCFlags(a: UInt8, m: UInt8, carryIn: Bool = false) -> Status {
             let context = setupImmediate(opcode: 0x69, value: m)
@@ -173,7 +173,7 @@ class ArithmeticOpcodeTests: OpcodeTestBase {
     
     // MARK: - DEC
     
-    @Test("DEC - zeropage mode ✓")
+    @Test("DEC - zeropage mode")
     func testDEC_zeropage() {
         let context = setupZeroPage(opcode: 0xC6, zeroPageAddress: 0x15, value: 0xAA)
         
@@ -183,7 +183,7 @@ class ArithmeticOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x15) == 0xA9)
     }
     
-    @Test("DEC - Zeropage,x Mode ✓")
+    @Test("DEC - Zeropage,x Mode")
     func testDEC_zeropageX() {
         let context = setupZeroPageX(opcode: 0xD6, zeroPageAddress: 0x20, xOffset: 0x20, value: 0x5A)
         
@@ -193,7 +193,7 @@ class ArithmeticOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x40) == 0x59)
     }
     
-    @Test("DEC - absolute Mode ✓")
+    @Test("DEC - absolute Mode")
     func testDEC_absolute() {
         let context = setupAbsolute(opcode: 0xCE, absoluteAddress: 0x1EE7, value: 0x50)
         
@@ -203,7 +203,7 @@ class ArithmeticOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x1EE7) == 0x4F)
     }
     
-    @Test("DEC - absoluteX Mode ✓")
+    @Test("DEC - absoluteX Mode")
     func testDEC_absoluteX() {
         let context = setupAbsoluteX(opcode: 0xDE, absoluteAddress: 0x1200, xOffset: 0x21, value: 0x02)
         
@@ -213,7 +213,7 @@ class ArithmeticOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x1221) == 0x01)
     }
     
-    @Test("DEC - Flag behavior ✓")
+    @Test("DEC - Flag behavior")
     func testDEC_flags() {
         // Helper to run DEC and return flags and result
         func testDECFlags(m: UInt8) -> (flags: Status, result: UInt8) {
@@ -270,7 +270,7 @@ class ArithmeticOpcodeTests: OpcodeTestBase {
     
     // MARK: - DEX
     
-    @Test("DEX - implied mode ✓")
+    @Test("DEX - implied mode")
     func testDEX_implied() {
         var context = setupImplied(opcode: 0xCA)
         context.cpu.registers.indexX = 0xFF
@@ -280,7 +280,7 @@ class ArithmeticOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
     
-    @Test("DEX - Flag behavior ✓")
+    @Test("DEX - Flag behavior")
     func testDEX_flags() {
         // Helper to run DEX and return flags and result
         func testDEXFlags(x: UInt8) -> (flags: Status, result: UInt8) {
@@ -339,7 +339,7 @@ class ArithmeticOpcodeTests: OpcodeTestBase {
     
     // MARK: - DEY
     
-    @Test("DEY - implied mode ✓")
+    @Test("DEY - implied mode")
     func testDEY_implied() {
         var context = setupImplied(opcode: 0x88)
         context.cpu.registers.indexY = 0xFF
@@ -349,7 +349,7 @@ class ArithmeticOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
     
-    @Test("DEY - Flag behavior ✓")
+    @Test("DEY - Flag behavior")
     func testDEY_flags() {
         // Helper to run DEY and return flags and result
         func testDEYFlags(y: UInt8) -> (flags: Status, result: UInt8) {
@@ -408,7 +408,7 @@ class ArithmeticOpcodeTests: OpcodeTestBase {
     
     // MARK: - INC
     
-    @Test("INC - zeropage mode ✓")
+    @Test("INC - zeropage mode")
     func testINC_zeropage() {
         let context = setupZeroPage(opcode: 0xE6, zeroPageAddress: 0x82, value: 0x84)
         
@@ -418,7 +418,7 @@ class ArithmeticOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x82) == 0x85)
     }
     
-    @Test("INC - zeropageX mode ✓")
+    @Test("INC - zeropageX mode")
     func testINC_zeropageX() {
         let context = setupZeroPageX(opcode: 0xF6, zeroPageAddress: 0x82, xOffset: 0x03, value: 0x48)
         
@@ -428,7 +428,7 @@ class ArithmeticOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x85) == 0x49)
     }
     
-    @Test("INC - absolute mode ✓")
+    @Test("INC - absolute mode")
     func testINC_absolute() {
         let context = setupAbsolute(opcode: 0xEE, absoluteAddress: 0x0987, value: 0x12)
         
@@ -438,7 +438,7 @@ class ArithmeticOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x0987) == 0x13)
     }
     
-    @Test("INC - absoluteX mode ✓")
+    @Test("INC - absoluteX mode")
     func testINC_absoluteX() {
         let context = setupAbsoluteX(opcode: 0xFE, absoluteAddress: 0x0789, xOffset: 0x77, value: 0x21)
         
@@ -448,7 +448,7 @@ class ArithmeticOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x0800) == 0x22)
     }
     
-    @Test("INC - Flag behavior ✓")
+    @Test("INC - Flag behavior")
     func testINC_flags() {
         // Helper to run DEC and return flags and result
         func testINCFlags(m: UInt8) -> (flags: Status, result: UInt8) {
@@ -500,7 +500,7 @@ class ArithmeticOpcodeTests: OpcodeTestBase {
     
     // MARK: - INX
     
-    @Test("INX - implied mode ✓")
+    @Test("INX - implied mode")
     func testINX_implied() {
         var context = setupImplied(opcode: 0xE8)
         context.cpu.registers.indexX = 0xF0
@@ -510,7 +510,7 @@ class ArithmeticOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
     
-    @Test("INX - Flag behavior ✓")
+    @Test("INX - Flag behavior")
     func testINX_flags() {
         // Helper to run DEX and return flags and result
         func testINXFlags(x: UInt8) -> (flags: Status, result: UInt8) {
@@ -563,7 +563,7 @@ class ArithmeticOpcodeTests: OpcodeTestBase {
     
     // MARK: - INY
     
-    @Test("INY - implied mode ✓")
+    @Test("INY - implied mode")
     func testINY_implied() {
         var context = setupImplied(opcode: 0xC8)
         context.cpu.registers.indexY = 0xF0
@@ -573,7 +573,7 @@ class ArithmeticOpcodeTests: OpcodeTestBase {
         verifyCPUState(context: context)
     }
     
-    @Test("INY - Flag behavior ✓")
+    @Test("INY - Flag behavior")
     func testINY_flags() {
         // Helper to run DEX and return flags and result
         func testINYFlags(y: UInt8) -> (flags: Status, result: UInt8) {
@@ -626,7 +626,7 @@ class ArithmeticOpcodeTests: OpcodeTestBase {
     
     // MARK: - SBC
 
-    @Test("SBC - immediate mode ✓")
+    @Test("SBC - immediate mode")
     func testSBC_immediate() {
         var context = setupImmediate(opcode: 0xE9, value: 0x42)
         context.cpu.registers.status = Status.carry
@@ -639,7 +639,7 @@ class ArithmeticOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x8001) == 0x42, "Memory should remain unchanged")
     }
 
-    @Test("SBC - immediate mode 2 (SBC + NOP) ✓")
+    @Test("SBC - immediate mode 2 (SBC + NOP)")
     func testSBC_immediate2() {
         var context = setupImmediate(opcode: 0xEB, value: 0x42)
         context.cpu.registers.accumulator = 0x50
@@ -651,7 +651,7 @@ class ArithmeticOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x8001) == 0x42, "Memory should remain unchanged")
     }
      
-    @Test("SBC - zeropage mode ✓")
+    @Test("SBC - zeropage mode")
     func testSBC_zeropage() {
         var context = setupZeroPage(opcode: 0xE5, zeroPageAddress: 0x10, value: 0x10)
         context.cpu.registers.status = Status.carry
@@ -664,7 +664,7 @@ class ArithmeticOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x10) == 0x10, "Memory should remain unchanged")
     }
 
-    @Test("SBC - zeropage,x mode ✓")
+    @Test("SBC - zeropage,x mode")
     func testSBC_zeropageX() {
         var context = setupZeroPageX(opcode: 0xF5, zeroPageAddress: 0xFF, xOffset: 0x01, value: 0x10)
         context.cpu.registers.accumulator = 0x99
@@ -676,7 +676,7 @@ class ArithmeticOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x00) == 0x10, "Memory should remain unchanged")
     }
         
-    @Test("SBC - absolute mode ✓")
+    @Test("SBC - absolute mode")
     func testSBC_absolute() {
         var context = setupAbsolute(opcode: 0xED, absoluteAddress: 0x1000, value: 0x50)
         context.cpu.registers.status = Status.carry
@@ -689,7 +689,7 @@ class ArithmeticOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x1000) == 0x50, "Memory should remain unchanged")
     }
         
-    @Test("SBC - absolute,x mode ✓")
+    @Test("SBC - absolute,x mode")
     func testSBC_absoluteX() {
         var contextNoCross = setupAbsoluteX(opcode: 0xFD, absoluteAddress: 0x0123, xOffset: 0x10, value: 0x10)
         contextNoCross.cpu.registers.accumulator = 0xB5
@@ -711,7 +711,7 @@ class ArithmeticOpcodeTests: OpcodeTestBase {
         #expect(contextWithCross.cpu.clockCycleCount == contextNoCross.cpu.clockCycleCount + 1)
     }
     
-    @Test("SBC - absolute,y mode ✓")
+    @Test("SBC - absolute,y mode")
     func testSBC_absoluteY() {
         var contextNoCross = setupAbsoluteY(opcode: 0xF9, absoluteAddress: 0x1200, yOffset: 0x02, value: 0xB5)
         contextNoCross.cpu.registers.accumulator = 0x10
@@ -733,7 +733,7 @@ class ArithmeticOpcodeTests: OpcodeTestBase {
         #expect(contextWithCross.cpu.clockCycleCount == contextNoCross.cpu.clockCycleCount + 1)
     }
 
-    @Test("SBC - (indirect,x) mode ✓")
+    @Test("SBC - (indirect,x) mode")
     func testSBC_indexedIndirect() {
         var context = setupIndexedIndirect(opcode: 0xE1, zeroPageAddress: 0x05, xOffset: 0x05, targetAddress: 0x1000, value: 0x10)
         context.cpu.registers.accumulator = 0x25
@@ -745,7 +745,7 @@ class ArithmeticOpcodeTests: OpcodeTestBase {
         #expect(context.mmu.read(from: 0x1000) == 0x10, "Memory should remain unchanged")
     }
 
-    @Test("SBC - (indirect),y mode ✓")
+    @Test("SBC - (indirect),y mode")
     func testSBC_indirectIndexed() {
         var contextNoCross = setupIndirectIndexed(opcode: 0xF1, zeroPageAddress: 0x41, yOffset: 0x11, targetAddress: 0x0810, value: 0x05)
         contextNoCross.cpu.registers.accumulator = 0xFF
@@ -767,7 +767,7 @@ class ArithmeticOpcodeTests: OpcodeTestBase {
         #expect(contextWithCross.cpu.clockCycleCount == contextNoCross.cpu.clockCycleCount + 1)
     }
 
-    @Test("SBC - Flag behavior ✓")
+    @Test("SBC - Flag behavior")
     func testSBC_flags() {
         // Helper to run SBC and return flags
         func testSBCFlags(a: UInt8, m: UInt8, carryIn: Bool = true) -> (
