@@ -33,6 +33,7 @@
 		0E9CE1432BBF6ECF00F884E5 /* StackManipulationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9CE1422BBF6ECF00F884E5 /* StackManipulationTests.swift */; };
 		0E9CE1452BC07F0300F884E5 /* OpcodeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9CE1442BC07F0300F884E5 /* OpcodeTests.swift */; };
 		0E9CE1472BC07F4C00F884E5 /* CPUInitializationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9CE1462BC07F4C00F884E5 /* CPUInitializationTests.swift */; };
+		0EE63FF92CD22A0300C13035 /* NES.CPU+InstructionTimings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EE63FF82CD22A0300C13035 /* NES.CPU+InstructionTimings.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -74,6 +75,7 @@
 		0E9CE1422BBF6ECF00F884E5 /* StackManipulationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StackManipulationTests.swift; sourceTree = "<group>"; };
 		0E9CE1442BC07F0300F884E5 /* OpcodeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpcodeTests.swift; sourceTree = "<group>"; };
 		0E9CE1462BC07F4C00F884E5 /* CPUInitializationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CPUInitializationTests.swift; sourceTree = "<group>"; };
+		0EE63FF82CD22A0300C13035 /* NES.CPU+InstructionTimings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NES.CPU+InstructionTimings.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -154,6 +156,7 @@
 			children = (
 				0E9512EA2BB5DBA100E9CA83 /* NES+CPU.swift */,
 				0E9512F82BB6029400E9CA83 /* NES.CPU+Registers.swift */,
+				0EE63FF82CD22A0300C13035 /* NES.CPU+InstructionTimings.swift */,
 				0E95131F2BBB9DBC00E9CA83 /* NES.CPU.Registers+Status.swift */,
 				0E9512F62BB5E04C00E9CA83 /* NES.CPU+Opcode.swift */,
 				0E9512FE2BB6302000E9CA83 /* NES.CPU+OpcodeImpl.swift */,
@@ -321,6 +324,7 @@
 				0E61F8382BC4DA5B008B90E6 /* NESError.swift in Sources */,
 				0E9512DD2BB5D88400E9CA83 /* ContentView.swift in Sources */,
 				0E9512EB2BB5DBA100E9CA83 /* NES+CPU.swift in Sources */,
+				0EE63FF92CD22A0300C13035 /* NES.CPU+InstructionTimings.swift in Sources */,
 				0E9512F52BB5DC1D00E9CA83 /* NES+InputHandler.swift in Sources */,
 				0E9512DB2BB5D88400E9CA83 /* NESEmulatorApp.swift in Sources */,
 				0E9513042BB7F55300E9CA83 /* NES.CPU+AddressingModes.swift in Sources */,
