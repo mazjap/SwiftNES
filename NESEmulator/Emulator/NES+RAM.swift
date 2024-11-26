@@ -19,7 +19,7 @@ extension NES {
         
         func access(at address: UInt16, modify: (inout UInt8) -> Void) {
             guard address < memory.count else {
-                fatalError("Memory out of bounds")
+                fatalError("Memory access out of bounds")
             }
             
             modify(&memory[Int(address)])
@@ -41,9 +41,9 @@ extension NES.CPU {
     /// - Note: The stack wraps from $0100 through $01FF.
     ///   Stack pointer decrements after each push, wrapping from $00 to $FF.
     func push(_ value: UInt8) {
-        registers.stackPointer &-= 1 // Will naturally wrap from 0x00 to 0xFF
         let stackAddr = 0x100 + UInt16(registers.stackPointer)
         memoryManager.write(value, to: stackAddr)
+        registers.stackPointer &-= 1 // Will naturally wrap from 0x00 to 0xFF
     }
     
     /// Pops a value from the stack.
@@ -52,9 +52,9 @@ extension NES.CPU {
     /// - Note: The stack wraps from $0100 through $01FF.
     ///   Stack pointer increments after each pop, wrapping from $FF to $00.
     func pop() -> UInt8 {
+        registers.stackPointer &+= 1 // Will naturally wrap from 0xFF to 0x00
         let stackAddr = 0x100 + UInt16(registers.stackPointer)
         let value = memoryManager.read(from: stackAddr)
-        registers.stackPointer &+= 1 // Will naturally wrap from 0xFF to 0x00
         return value
     }
     
@@ -62,7 +62,7 @@ extension NES.CPU {
     /// - Returns: The value at the current stack pointer
     /// - Note: Does not modify the stack pointer
     func peek() -> UInt8 {
-        let stackAddr = 0x100 + UInt16(registers.stackPointer)
+        let stackAddr = 0x100 + UInt16(registers.stackPointer &+ 1)
         return memoryManager.read(from: stackAddr)
     }
 }
