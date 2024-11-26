@@ -2,9 +2,12 @@ import Foundation
 import OSLog
 
 extension Logger {
-    private static var subsystem = Bundle.main.bundleIdentifier ?? "com.mazjap.NESEmulator"
-    
-    static let emu = Logger(subsystem: subsystem, category: "emulatorCPUOperations")
+    static let emu = {
+        let subsystem = Bundle.main.bundleIdentifier ?? "com.mazjap.NESEmulator"
+        let category = "emulatorCPUOperations"
+        
+        return Logger(subsystem: subsystem, category: category)
+    }()
 }
 
 let emuLogger = Logger.emu
