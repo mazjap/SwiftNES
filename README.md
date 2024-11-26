@@ -36,18 +36,27 @@ Please ensure that you have Swift installed on your machine. This project uses S
 
 The following features are currently implemented:
 
-- Basic CPU emulation (MOS 6502)
-- Basic memory management unit (MMU)
+- CPU emulation (MOS 6502)
+- Memory management unit (MMU)
 
 ### Missing Features
 
 The emulator is still in development, and several key components are not yet implemented:
 
-- Some opcode implmentations
-- Picture Processing Unit (PPU) for graphics rendering
-- Audio Processing Unit (APU) for sound
-- Support for multiple cartridge mappers
-- Additional debugging tools
+- [ ] Picture Processing Unit (PPU) to render graphics
+  - [ ] Need to do some research & testing (SwiftUI Canvas vs MTKView)
+- [ ] Audio Processing Unit (APU) to output sound signals
+  - [ ] Use `AVAudioEngine` to translate NES signals to audio
+- [ ] Multiple cartridge mapper support
+- [ ] Additional debugging tools
+- Highly unstable instructions as described by [masswerk](https://www.masswerk.at/nowgobang/2021/6502-illegal-opcodes) (which I currently do not plan to implement)
+
+I may consider adding:
+- An assembler
+- A dissasembler
+- A CPU emulation UI as a debug/testing tool to
+  - visualize memory & registers and how they change
+  - manipulate memory & registers as the program runs
 
 ## Contributing
 
@@ -55,7 +64,7 @@ Please note that this is a personal project designed for educational purposes, a
 
 ## License
 
-This project is released under the MIT License. See the `LICENSE` file for more information.
+This project is released under the MIT License. Attribution, while not required, is appreciated. See the [LICENSE file](./LICENSE) for more information.
 
 ## Acknowledgments
 
