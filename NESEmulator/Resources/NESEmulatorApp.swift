@@ -4,7 +4,7 @@ import SwiftUI
 struct NESEmulatorApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            SnakeTestView()
         }
     }
 }

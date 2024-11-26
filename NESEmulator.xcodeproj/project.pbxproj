@@ -42,6 +42,8 @@
 		0E9CE1452BC07F0300F884E5 /* ProgramFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9CE1442BC07F0300F884E5 /* ProgramFlowTests.swift */; };
 		0E9CE1472BC07F4C00F884E5 /* CPUInitializationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9CE1462BC07F4C00F884E5 /* CPUInitializationTests.swift */; };
 		0EB75FD42C01D23D0035CF7C /* cpu_dummy_reads.nes in Resources */ = {isa = PBXBuildFile; fileRef = 0EB75FD32C01D23D0035CF7C /* cpu_dummy_reads.nes */; };
+		0ECB7E4F2CF683BC0002150C /* SnakeTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ECB7E4E2CF683BC0002150C /* SnakeTest.swift */; };
+		0ED6CE772CEBB66000BBF245 /* NativeColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ED6CE762CEBB66000BBF245 /* NativeColor.swift */; };
 		0EE63FF92CD22A0300C13035 /* NES.CPU+InstructionTimings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EE63FF82CD22A0300C13035 /* NES.CPU+InstructionTimings.swift */; };
 		0EE640E72CD750FD00C13035 /* Convenience.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EE640E62CD750FD00C13035 /* Convenience.swift */; };
 		0EE640E92CD7587F00C13035 /* CommonIllegalOpcodeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EE640E82CD7587F00C13035 /* CommonIllegalOpcodeTests.swift */; };
@@ -96,6 +98,8 @@
 		0E9CE1442BC07F0300F884E5 /* ProgramFlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgramFlowTests.swift; sourceTree = "<group>"; };
 		0E9CE1462BC07F4C00F884E5 /* CPUInitializationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CPUInitializationTests.swift; sourceTree = "<group>"; };
 		0EB75FD32C01D23D0035CF7C /* cpu_dummy_reads.nes */ = {isa = PBXFileReference; lastKnownFileType = file; path = cpu_dummy_reads.nes; sourceTree = "<group>"; };
+		0ECB7E4E2CF683BC0002150C /* SnakeTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnakeTest.swift; sourceTree = "<group>"; };
+		0ED6CE762CEBB66000BBF245 /* NativeColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeColor.swift; sourceTree = "<group>"; };
 		0EE63FF82CD22A0300C13035 /* NES.CPU+InstructionTimings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NES.CPU+InstructionTimings.swift"; sourceTree = "<group>"; };
 		0EE640E62CD750FD00C13035 /* Convenience.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Convenience.swift; sourceTree = "<group>"; };
 		0EE640E82CD7587F00C13035 /* CommonIllegalOpcodeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommonIllegalOpcodeTests.swift; sourceTree = "<group>"; };
@@ -140,6 +144,7 @@
 			isa = PBXGroup;
 			children = (
 				0E8181552BDC0EB80065E3FF /* Extensions */,
+				0ED6CE762CEBB66000BBF245 /* NativeColor.swift */,
 			);
 			path = Helpers;
 			sourceTree = "<group>";
@@ -237,6 +242,7 @@
 			isa = PBXGroup;
 			children = (
 				0E9512DC2BB5D88400E9CA83 /* ContentView.swift */,
+				0ECB7E4E2CF683BC0002150C /* SnakeTest.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -373,6 +379,8 @@
 				0E9512DB2BB5D88400E9CA83 /* NESEmulatorApp.swift in Sources */,
 				0E9513042BB7F55300E9CA83 /* NES.CPU+AddressingModes.swift in Sources */,
 				0E9512E92BB5D89300E9CA83 /* NES.swift in Sources */,
+				0ED6CE772CEBB66000BBF245 /* NativeColor.swift in Sources */,
+				0ECB7E4F2CF683BC0002150C /* SnakeTest.swift in Sources */,
 				0E9512ED2BB5DBC300E9CA83 /* NES+PPU.swift in Sources */,
 				0E9512F72BB5E04C00E9CA83 /* NES.CPU+Opcode.swift in Sources */,
 				0E9512EF2BB5DBD400E9CA83 /* NES+APU.swift in Sources */,
@@ -554,12 +562,12 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.mazjap.NESEmulator;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -590,12 +598,12 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.mazjap.NESEmulator;
 				PRODUCT_NAME = "$(TARGET_NAME)";
