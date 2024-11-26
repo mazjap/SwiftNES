@@ -1,96 +1,84 @@
-import XCTest
+import Testing
 @testable import NESEmulator
 
-final class StackManipulationTests: XCTestCase {
-    var nes: NES?
-    
-    override func setUpWithError() throws {
-        let nes = NES()
+@Suite("CPU Stack Operations")
+class StackManipulationTests {
+    @Test("Stack pointer decrements when pushed")
+    func testStackPointerDecrementOnPush() async throws {
+        let mmu = NES.MMU()
+        let cpu = NES.CPU(memoryManager: mmu)
+        let initialSP = cpu.registers.stackPointer
         
-        nes.cpu.push(0x1F)
-        nes.cpu.push(0x2F)
-        nes.cpu.push(0xFF)
+        cpu.push(0x42)
         
-        self.nes = nes
+        #expect(cpu.registers.stackPointer == initialSP &- 1,
+               "Stack pointer should decrement after push")
     }
     
-    func testStackPointerIsDecrementedWhenPushed() throws {
-        let cpu = nes!.cpu
+    @Test("Stack pointer increments when popped")
+    func testStackPointerIncrementOnPop() async throws {
+        let mmu = NES.MMU()
+        let cpu = NES.CPU(memoryManager: mmu)
         
-        let stackPointerBeforePush = cpu.registers.stackPointer
-        
-        cpu.push(0xF1)
-        
-        XCTAssertEqual(stackPointerBeforePush &- 1, cpu.registers.stackPointer, "Stack pointer did not decrement when performing a push")
-    }
-    
-    func testStackPointerIsIncrementedWhenPopped() throws {
-        let cpu = nes!.cpu
-        
-        let stackPointerBeforePop = cpu.registers.stackPointer
-        
+        cpu.push(0x42)
+        let beforePop = cpu.registers.stackPointer
         _ = cpu.pop()
         
-        XCTAssertEqual(stackPointerBeforePop &+ 1, cpu.registers.stackPointer, "Stack pointer did not increment when performing a pop")
-    }
-    
-    func testPeek() throws {
-        let cpu = nes!.cpu
-        
-        XCTAssertEqual(cpu.peek(), 0xFF)
-    }
-    
-    func testPushToStack() throws {
-        let cpu = nes!.cpu
-        
-        let valueToPush: UInt8 = 0x55
-        cpu.push(valueToPush)
-        
-        XCTAssertEqual(cpu.peek(), valueToPush)
-    }
-    
-    func testPopSequence() {
-        let cpu = nes!.cpu
-        
-        XCTAssertEqual(cpu.pop(), 0xFF)
-        XCTAssertEqual(cpu.pop(), 0x2F)
-        XCTAssertEqual(cpu.pop(), 0x1F)
+        #expect(cpu.registers.stackPointer == beforePop &+ 1,
+               "Stack pointer should increment after pop")
     }
     
     // Not technically a stack overflow, just a stack wrap (but stackOverflow makes me feel like a haxor 😎)
-    func testStackOverflow() throws {
-        let cpu = nes!.cpu
-        cpu.registers.stackPointer = 0
-        cpu.push(0x25)
-        XCTAssertEqual(cpu.registers.stackPointer, 0xFF, "Stack pointer incorrectly wrapped")
+    @Test("Stack handles full page wrap correctly")
+    func testStackOverflow() async throws {
+        let mmu = NES.MMU()
+        let cpu = NES.CPU(memoryManager: mmu)
+        
+        // Fill the entire stack page
+        cpu.registers.stackPointer = 0xFF
+        for i: UInt8 in 0...0xFF {
+            cpu.push(i)
+        }
+        
+        #expect(cpu.registers.stackPointer == 0xFF,
+               "Stack pointer should wrap to 0xFF after 256 pushes")
+        
+        // Verify values were stored correctly
+        for i: UInt8 in (0...0xFF).reversed() {
+            let value = cpu.pop()
+            #expect(value == i, "Stack values should be preserved across wrap")
+        }
+        
+        #expect(cpu.registers.stackPointer == 0xFF,
+               "Stack pointer should return to 0xFF after emptying")
     }
     
-    func testStackUnderflow() throws {
-        let cpu = nes!.cpu
+    @Test("Stack peek reads correct value")
+    func testStackPeek() async throws {
+        let mmu = NES.MMU()
+        let cpu = NES.CPU(memoryManager: mmu)
         
-        // Clear stack's test data inserted in setup function
-        _ = cpu.pop()
-        _ = cpu.pop()
-        _ = cpu.pop()
+        cpu.push(0x42)
+        let peekValue = cpu.peek()
+        let popValue = cpu.pop()
         
-        XCTAssertEqual(cpu.registers.stackPointer, 0xFD)
-        
-        _ = cpu.pop()
-        _ = cpu.pop()
-        _ = cpu.pop()
-        
-        XCTAssertEqual(cpu.registers.stackPointer, 0x00)
+        #expect(peekValue == 0x42, "Peek should read correct value")
+        #expect(peekValue == popValue, "Peek should read same value as subsequent pop")
     }
     
-    func testStackManipulation() throws {
-        let cpu = nes!.cpu
+    @Test("Stack operations verify range")
+    func testStackAddressing() async throws {
+        let mmu = NES.MMU()
+        let cpu = NES.CPU(memoryManager: mmu)
         
-        let preManipulationStackPointer = cpu.registers.stackPointer
+        // Push a value and verify it's in stack page
+        cpu.push(0x42)
         
-        cpu.registers.indexX = 0x88
-        cpu.txs() // Not yet implemented
+        let stackAddr = 0x100 + UInt16(cpu.registers.stackPointer + 1)
+        let stackValue = mmu.read(from: stackAddr)
         
-        XCTAssertNotEqual(preManipulationStackPointer, cpu.registers.stackPointer)
-        XCTAssertEqual(cpu.registers.stackPointer, cpu.registers.indexX)
+        #expect(stackAddr >= 0x100 && stackAddr <= 0x1FF,
+               "Stack operations should stay within stack page")
+        #expect(stackValue == 0x42, "Stack value should be stored at correct address")
     }
 }

@@ -11,6 +11,15 @@
 		0E61F8382BC4DA5B008B90E6 /* NESError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E61F8372BC4DA5B008B90E6 /* NESError.swift */; };
 		0E61F83A2BC4E3F0008B90E6 /* Memory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E61F8392BC4E3F0008B90E6 /* Memory.swift */; };
 		0E61F83C2BC662F0008B90E6 /* NES+MMU.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E61F83B2BC662F0008B90E6 /* NES+MMU.swift */; };
+		0E7415722CCA221B00144036 /* OpcodeTestBase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E7415712CCA221B00144036 /* OpcodeTestBase.swift */; };
+		0E7415742CCA2FBA00144036 /* ArithmeticOpcodeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E7415732CCA2FBA00144036 /* ArithmeticOpcodeTests.swift */; };
+		0E7415762CCA302A00144036 /* LogicOpcodeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E7415752CCA302A00144036 /* LogicOpcodeTests.swift */; };
+		0E7415782CCA304B00144036 /* ShiftRotateOpcodeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E7415772CCA304B00144036 /* ShiftRotateOpcodeTests.swift */; };
+		0E74157A2CCA306C00144036 /* MemoryOpcodeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E7415792CCA306C00144036 /* MemoryOpcodeTests.swift */; };
+		0E74157C2CCA307F00144036 /* BranchOpcodeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E74157B2CCA307F00144036 /* BranchOpcodeTests.swift */; };
+		0E74157E2CCA30A100144036 /* StatusFlagOpcodeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E74157D2CCA30A100144036 /* StatusFlagOpcodeTests.swift */; };
+		0E7415802CCA30B300144036 /* StackOpcodeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E74157F2CCA30B300144036 /* StackOpcodeTests.swift */; };
+		0E7415822CCA30D100144036 /* RareIllegalOpcodeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E7415812CCA30D100144036 /* RareIllegalOpcodeTests.swift */; };
 		0E8181532BDC0C7B0065E3FF /* FixedWidthInteger+MostSignificantBit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E8181522BDC0C7B0065E3FF /* FixedWidthInteger+MostSignificantBit.swift */; };
 		0E9512DB2BB5D88400E9CA83 /* NESEmulatorApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9512DA2BB5D88400E9CA83 /* NESEmulatorApp.swift */; };
 		0E9512DD2BB5D88400E9CA83 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9512DC2BB5D88400E9CA83 /* ContentView.swift */; };
@@ -29,11 +38,13 @@
 		0E9513012BB77D3200E9CA83 /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9513002BB77D3200E9CA83 /* Logger.swift */; };
 		0E9513042BB7F55300E9CA83 /* NES.CPU+AddressingModes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9513032BB7F55300E9CA83 /* NES.CPU+AddressingModes.swift */; };
 		0E9513202BBB9DBC00E9CA83 /* NES.CPU.Registers+Status.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E95131F2BBB9DBC00E9CA83 /* NES.CPU.Registers+Status.swift */; };
-		0E9CE13C2BBE6E8400F884E5 /* AddressingModeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9CE13B2BBE6E8400F884E5 /* AddressingModeTests.swift */; };
 		0E9CE1432BBF6ECF00F884E5 /* StackManipulationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9CE1422BBF6ECF00F884E5 /* StackManipulationTests.swift */; };
-		0E9CE1452BC07F0300F884E5 /* OpcodeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9CE1442BC07F0300F884E5 /* OpcodeTests.swift */; };
+		0E9CE1452BC07F0300F884E5 /* ProgramFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9CE1442BC07F0300F884E5 /* ProgramFlowTests.swift */; };
 		0E9CE1472BC07F4C00F884E5 /* CPUInitializationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9CE1462BC07F4C00F884E5 /* CPUInitializationTests.swift */; };
+		0EB75FD42C01D23D0035CF7C /* cpu_dummy_reads.nes in Resources */ = {isa = PBXBuildFile; fileRef = 0EB75FD32C01D23D0035CF7C /* cpu_dummy_reads.nes */; };
 		0EE63FF92CD22A0300C13035 /* NES.CPU+InstructionTimings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EE63FF82CD22A0300C13035 /* NES.CPU+InstructionTimings.swift */; };
+		0EE640E72CD750FD00C13035 /* Convenience.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EE640E62CD750FD00C13035 /* Convenience.swift */; };
+		0EE640E92CD7587F00C13035 /* CommonIllegalOpcodeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EE640E82CD7587F00C13035 /* CommonIllegalOpcodeTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -51,6 +62,16 @@
 		0E61F8372BC4DA5B008B90E6 /* NESError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NESError.swift; sourceTree = "<group>"; };
 		0E61F8392BC4E3F0008B90E6 /* Memory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Memory.swift; sourceTree = "<group>"; };
 		0E61F83B2BC662F0008B90E6 /* NES+MMU.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NES+MMU.swift"; sourceTree = "<group>"; };
+		0E7415712CCA221B00144036 /* OpcodeTestBase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpcodeTestBase.swift; sourceTree = "<group>"; };
+		0E7415732CCA2FBA00144036 /* ArithmeticOpcodeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArithmeticOpcodeTests.swift; sourceTree = "<group>"; };
+		0E7415752CCA302A00144036 /* LogicOpcodeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogicOpcodeTests.swift; sourceTree = "<group>"; };
+		0E7415772CCA304B00144036 /* ShiftRotateOpcodeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShiftRotateOpcodeTests.swift; sourceTree = "<group>"; };
+		0E7415792CCA306C00144036 /* MemoryOpcodeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryOpcodeTests.swift; sourceTree = "<group>"; };
+		0E74157B2CCA307F00144036 /* BranchOpcodeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BranchOpcodeTests.swift; sourceTree = "<group>"; };
+		0E74157D2CCA30A100144036 /* StatusFlagOpcodeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusFlagOpcodeTests.swift; sourceTree = "<group>"; };
+		0E74157F2CCA30B300144036 /* StackOpcodeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StackOpcodeTests.swift; sourceTree = "<group>"; };
+		0E7415812CCA30D100144036 /* RareIllegalOpcodeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RareIllegalOpcodeTests.swift; sourceTree = "<group>"; };
+		0E7416772CD0463500144036 /* README.md */ = {isa = PBXFileReference; explicitFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		0E8181522BDC0C7B0065E3FF /* FixedWidthInteger+MostSignificantBit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FixedWidthInteger+MostSignificantBit.swift"; sourceTree = "<group>"; };
 		0E9512D72BB5D88400E9CA83 /* NESEmulator.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NESEmulator.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0E9512DA2BB5D88400E9CA83 /* NESEmulatorApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NESEmulatorApp.swift; sourceTree = "<group>"; };
@@ -71,11 +92,13 @@
 		0E9513032BB7F55300E9CA83 /* NES.CPU+AddressingModes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NES.CPU+AddressingModes.swift"; sourceTree = "<group>"; };
 		0E95131F2BBB9DBC00E9CA83 /* NES.CPU.Registers+Status.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NES.CPU.Registers+Status.swift"; sourceTree = "<group>"; };
 		0E9CE1392BBE6E8400F884E5 /* NESEmulatorTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NESEmulatorTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		0E9CE13B2BBE6E8400F884E5 /* AddressingModeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddressingModeTests.swift; sourceTree = "<group>"; };
 		0E9CE1422BBF6ECF00F884E5 /* StackManipulationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StackManipulationTests.swift; sourceTree = "<group>"; };
-		0E9CE1442BC07F0300F884E5 /* OpcodeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpcodeTests.swift; sourceTree = "<group>"; };
+		0E9CE1442BC07F0300F884E5 /* ProgramFlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgramFlowTests.swift; sourceTree = "<group>"; };
 		0E9CE1462BC07F4C00F884E5 /* CPUInitializationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CPUInitializationTests.swift; sourceTree = "<group>"; };
+		0EB75FD32C01D23D0035CF7C /* cpu_dummy_reads.nes */ = {isa = PBXFileReference; lastKnownFileType = file; path = cpu_dummy_reads.nes; sourceTree = "<group>"; };
 		0EE63FF82CD22A0300C13035 /* NES.CPU+InstructionTimings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NES.CPU+InstructionTimings.swift"; sourceTree = "<group>"; };
+		0EE640E62CD750FD00C13035 /* Convenience.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Convenience.swift; sourceTree = "<group>"; };
+		0EE640E82CD7587F00C13035 /* CommonIllegalOpcodeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommonIllegalOpcodeTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -96,6 +119,23 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0E7415832CCA312900144036 /* Opcode Tests */ = {
+			isa = PBXGroup;
+			children = (
+				0E7415712CCA221B00144036 /* OpcodeTestBase.swift */,
+				0E7415732CCA2FBA00144036 /* ArithmeticOpcodeTests.swift */,
+				0E7415752CCA302A00144036 /* LogicOpcodeTests.swift */,
+				0E7415772CCA304B00144036 /* ShiftRotateOpcodeTests.swift */,
+				0E7415792CCA306C00144036 /* MemoryOpcodeTests.swift */,
+				0E74157B2CCA307F00144036 /* BranchOpcodeTests.swift */,
+				0E74157D2CCA30A100144036 /* StatusFlagOpcodeTests.swift */,
+				0E74157F2CCA30B300144036 /* StackOpcodeTests.swift */,
+				0EE640E82CD7587F00C13035 /* CommonIllegalOpcodeTests.swift */,
+				0E7415812CCA30D100144036 /* RareIllegalOpcodeTests.swift */,
+			);
+			path = "Opcode Tests";
+			sourceTree = "<group>";
+		};
 		0E8181542BDC0EB10065E3FF /* Helpers */ = {
 			isa = PBXGroup;
 			children = (
@@ -115,6 +155,7 @@
 		0E9512CE2BB5D88400E9CA83 = {
 			isa = PBXGroup;
 			children = (
+				0E7416772CD0463500144036 /* README.md */,
 				0E9512D92BB5D88400E9CA83 /* NESEmulator */,
 				0E9CE13A2BBE6E8400F884E5 /* NESEmulatorTests */,
 				0E9512D82BB5D88400E9CA83 /* Products */,
@@ -211,9 +252,11 @@
 		0E9CE13A2BBE6E8400F884E5 /* NESEmulatorTests */ = {
 			isa = PBXGroup;
 			children = (
-				0E9CE13B2BBE6E8400F884E5 /* AddressingModeTests.swift */,
+				0EE640E62CD750FD00C13035 /* Convenience.swift */,
+				0E7415832CCA312900144036 /* Opcode Tests */,
 				0E9CE1422BBF6ECF00F884E5 /* StackManipulationTests.swift */,
-				0E9CE1442BC07F0300F884E5 /* OpcodeTests.swift */,
+				0E9CE1442BC07F0300F884E5 /* ProgramFlowTests.swift */,
+				0EB75FD32C01D23D0035CF7C /* cpu_dummy_reads.nes */,
 				0E9CE1462BC07F4C00F884E5 /* CPUInitializationTests.swift */,
 			);
 			path = NESEmulatorTests;
@@ -309,6 +352,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0EB75FD42C01D23D0035CF7C /* cpu_dummy_reads.nes in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -348,8 +392,18 @@
 			buildActionMask = 2147483647;
 			files = (
 				0E9CE1472BC07F4C00F884E5 /* CPUInitializationTests.swift in Sources */,
-				0E9CE1452BC07F0300F884E5 /* OpcodeTests.swift in Sources */,
-				0E9CE13C2BBE6E8400F884E5 /* AddressingModeTests.swift in Sources */,
+				0E7415742CCA2FBA00144036 /* ArithmeticOpcodeTests.swift in Sources */,
+				0E7415802CCA30B300144036 /* StackOpcodeTests.swift in Sources */,
+				0EE640E72CD750FD00C13035 /* Convenience.swift in Sources */,
+				0E9CE1452BC07F0300F884E5 /* ProgramFlowTests.swift in Sources */,
+				0E7415762CCA302A00144036 /* LogicOpcodeTests.swift in Sources */,
+				0E7415722CCA221B00144036 /* OpcodeTestBase.swift in Sources */,
+				0E74157E2CCA30A100144036 /* StatusFlagOpcodeTests.swift in Sources */,
+				0E74157A2CCA306C00144036 /* MemoryOpcodeTests.swift in Sources */,
+				0EE640E92CD7587F00C13035 /* CommonIllegalOpcodeTests.swift in Sources */,
+				0E7415822CCA30D100144036 /* RareIllegalOpcodeTests.swift in Sources */,
+				0E74157C2CCA307F00144036 /* BranchOpcodeTests.swift in Sources */,
+				0E7415782CCA304B00144036 /* ShiftRotateOpcodeTests.swift in Sources */,
 				0E9CE1432BBF6ECF00F884E5 /* StackManipulationTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
