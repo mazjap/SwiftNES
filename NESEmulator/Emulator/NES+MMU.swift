@@ -39,17 +39,17 @@ extension NES {
             case 0x4020...0xFFFF:
                 // Handled by Cartridges mapper
                 guard let cartridge else {
-                    emuLogger.error("Read request failed: Cartridge is nil for address: \(address)")
+                    emuLogger.error("Read request failed: Cartridge is nil for address: \(address) (\(String(address, radix: 16)))")
                     modify(&defaultReturn)
                     return
                 }
                 
                 var copy = cartridge.read(from: address)
-                
                 modify(&copy)
+                cartridge.write(copy, to: address)
             default:
                 // Switch's cases are exhaustive, but swift doesn't check for types that aren't enum, tuple, or the specific Bool struct (https://forums.swift.org/t/switch-on-int-with-exhaustive-cases-still-needs-default/49548)
-                fatalError("Switch wasn't exhaustive for \(address) (\(String(address, radix: 16)) 😬")
+                fatalError("Switch wasn't exhaustive for \(address) (\(String(address, radix: 16))) 👁️👄👁️")
             }
         }
         
@@ -82,10 +82,10 @@ extension NES {
                     return
                 }
                 
-                cartridge.write(value, to: address)
-            default:
-                fatalError("Switch wasn't exhaustive for \(address) (\(String(address, radix: 16)) 😬")
-            }
-        }
-    }
-}
+                cartridge.write(value, to: address)                                       //        _______
+            default:                                                                      //       /       \
+                fatalError("Switch wasn't exhaustive for \(address) (\(String(address, radix: 16))) 👁️👄👁️")
+            }                                                                             //      |\       /|
+        }                                                                                 //        ‾T‾‾‾T‾
+    }                                                                                     //         ⅃   L
+}                                                                                         //  I am an ascii art god
