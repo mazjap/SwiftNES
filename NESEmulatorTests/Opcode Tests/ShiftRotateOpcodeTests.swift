@@ -1,5 +1,5 @@
 import Testing
-@testable import NESEmulator
+import NESEmulator
 
 // Shift & Rotate (ASL, LSR, ROL, ROR)
 @Suite("CPU Shift and Rotate Operations")

@@ -1,5 +1,5 @@
 import Testing
-@testable import NESEmulator
+import NESEmulator
 
 // Branch Operations (BCC, BCS, BEQ, BMI, BNE, BPL, BVC, BVS, JMP, JSR, RTS)
 @Suite("CPU Branch Operations")

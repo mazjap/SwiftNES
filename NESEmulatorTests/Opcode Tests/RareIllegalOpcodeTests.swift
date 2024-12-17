@@ -1,5 +1,5 @@
 import Testing
-@testable import NESEmulator
+import NESEmulator
 
 // Rarely Used (But Stable) Illegal Operations (ANC, ALR, ARR, AXS)
 @Suite("CPU Rare Illegal Operations")

@@ -1,5 +1,5 @@
 import Testing
-@testable import NESEmulator
+import NESEmulator
 
 // Stack Operations (PHA, PHP, PLA, PLP, RTI)
 @Suite("CPU Stack Operations")

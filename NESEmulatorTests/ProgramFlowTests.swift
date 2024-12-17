@@ -1,6 +1,6 @@
 import Testing
 import Foundation
-@testable import NESEmulator
+import NESEmulator
 
 @Suite("Opcode Flow Tests")
 class ProgramFlowTests {

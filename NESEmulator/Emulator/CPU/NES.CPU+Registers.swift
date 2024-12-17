@@ -1,34 +1,34 @@
 import Foundation
 
 extension NES.CPU {
-    struct Registers {
+    public struct Registers: Sendable {
         /// Program Counter (PC) - 16-bit register that holds the memory address of the next
         /// instruction to be executed.
-        var programCounter: UInt16
+        public var programCounter: UInt16
         
         /// Accumulator (A) - 8-bit register used for arithmetic and logic operations. Primary
         /// register for ALU operations, data transfer, and memory access.
-        var accumulator: UInt8
+        public var accumulator: UInt8
         
         /// Index Register X (X) - 8-bit register primarily used for:
         /// - Indexing memory addresses
         /// - Counter in loops
         /// - Offset calculations
-        var indexX: UInt8
+        public var indexX: UInt8
         
         /// Index Register Y (Y) - 8-bit register primarily used for:
         /// - Indexing memory addresses
         /// - Counter in loops
         /// - Offset calculations
-        var indexY: UInt8
+        public var indexY: UInt8
         
         /// Stack Pointer (SP) - 8-bit register that points to the next free location on the stack.
         /// Stack is located in page 1 ($0100-$01FF) and grows downward.
-        var stackPointer: UInt8
+        public var stackPointer: UInt8
         
         /// Status Register (P) - 8-bit register containing processor status flags. Controls
         /// program flow and reflects the results of CPU operations.
-        var status: Status
+        public var status: Status
         
         /// Creates a new Registers instance with the initial state of the NES CPU registers.
         ///
@@ -44,7 +44,7 @@ extension NES.CPU {
         ///     standard power-up state, leaving 3 bytes of headroom at the top of the stack.
         ///   - processorStatus: Status Register (P) initial flags. Defaults to .zero (clear
         ///     flags), though some bits may be set depending on the power-up sequence.
-        init(
+        public init(
             programCounter: UInt16 = 0xFFFC,
             accumulator: UInt8 = 0,
             indexX: UInt8 = 0,
@@ -78,7 +78,7 @@ extension NES.CPU.Registers {
     ///   - processorStatus: Status Register (P) initial flags. Defaults to 0 (clear
     ///     flags), though some bits may be set depending on the power-up sequence.
     @_disfavoredOverload
-    init(
+    public init(
         programCounter: UInt16 = 0xFFFC,
         accumulator: UInt8 = 0,
         indexX: UInt8 = 0,

@@ -5,11 +5,11 @@ extension NES {
     /// - PPU registers (0x2000-0x3FFF, mirrored every 8 bytes)
     /// - APU and I/O registers (0x4000-0x4017)
     /// - Cartridge space (0x4020-0xFFFF)
-    class MMU: Memory {
+    public class MMU: Memory {
         var internalRAM: RandomAccessMemory
-        var cartridge: Cartridge?
+        public var cartridge: Cartridge?
         
-        init(internalRAM: RandomAccessMemory = .init(), cartridge: Cartridge? = nil) {
+        public init(internalRAM: RandomAccessMemory = .init(size: 0x0800), cartridge: Cartridge? = nil) {
             self.internalRAM = internalRAM
             self.cartridge = cartridge
         }
@@ -53,14 +53,14 @@ extension NES {
             }
         }
         
-        func read(from address: UInt16) -> UInt8 {
+        public func read(from address: UInt16) -> UInt8 {
             var value: UInt8 = 0
             access(at: address) { value = $0 }
             
             return value
         }
         
-        func write(_ value: UInt8, to address: UInt16) {
+        public func write(_ value: UInt8, to address: UInt16) {
             switch address {
             case ...0x1FFF:
                 // Internal RAM and its mirrors

@@ -1,16 +1,15 @@
 import Foundation
 
-typealias NES = NintendoEntertainmentSystem
+public typealias NES = NintendoEntertainmentSystem
 
-@MainActor
-class NintendoEntertainmentSystem {
-    var cpu: CPU
-    var ppu: PPU
-    var apu: APU
-    var memoryManager: MMU
-    var input: InputHandler
+public class NintendoEntertainmentSystem {
+    public var cpu: CPU
+    public var ppu: PPU
+    public var apu: APU
+    public var memoryManager: MMU
+    public var input: InputHandler
     
-    init(cartridge: Cartridge? = nil) {
+    public init(cartridge: Cartridge? = nil) {
         let memoryManager = MMU(cartridge: cartridge)
         
         self.cpu = CPU(memoryManager: memoryManager)
@@ -25,7 +24,7 @@ class NintendoEntertainmentSystem {
         // - Configure input handling
     }
     
-    func run() throws {
+    public func run() throws {
         guard memoryManager.cartridge != nil else { throw NESError.cartridge(.noCartridge) }
         
         while true {
@@ -37,7 +36,8 @@ class NintendoEntertainmentSystem {
         }
     }
     
-    func runWithCallback(_ callback: @escaping () -> Void) async throws {
+    @MainActor
+    public func runWithCallback(_ callback: @escaping @MainActor () async -> Void) async throws {
         let snakeCode: [UInt8] = [
             0x20, 0x06, 0x06, 0x20, 0x38, 0x06, 0x20, 0x0d, 0x06, 0x20, 0x2a, 0x06, 0x60, 0xa9, 0x02, 0x85,
             0x02, 0xa9, 0x04, 0x85, 0x03, 0xa9, 0x11, 0x85, 0x10, 0xa9, 0x10, 0x85, 0x12, 0xa9, 0x0f, 0x85,
@@ -73,7 +73,7 @@ class NintendoEntertainmentSystem {
             ppu.step(cpuCycles)
             apu.step(cpuCycles)
             // Handle other components as needed
-            callback()
+            await callback()
             
             try? await Task.sleep(for: .microseconds(20), tolerance: .microseconds(1), clock: .continuous)
         }

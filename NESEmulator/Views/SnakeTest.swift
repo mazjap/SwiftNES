@@ -4,7 +4,7 @@ struct SnakeTestView: View {
     @State private var keysPressed = Set<KeyEquivalent>()
     @State private var cycle = 0
     @State private var color: Color = .clear
-    let emulator = NES()
+    @MainActor let emulator = NES()
     
     var body: some View {
         Canvas { context, size in

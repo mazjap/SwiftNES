@@ -1,4 +1,4 @@
-protocol Mapper: Memory {
+public protocol Mapper: Memory {
     var prgROM: [UInt8] { get }
     var chrROM: [UInt8] { get }
     

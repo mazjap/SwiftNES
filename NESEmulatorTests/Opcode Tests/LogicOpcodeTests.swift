@@ -1,5 +1,5 @@
 import Testing
-@testable import NESEmulator
+import NESEmulator
 
 // Logic Operations (AND, BIT, CMP, CPX, CPY, EOR, ORA)
 @Suite("CPU Logic Operations")
@@ -161,7 +161,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         context.cpu.executeNextInstruction()
         verifyCPUState(context: context)
         
-        #expect(context.cpu.memoryManager.read(from: 0x20) == 0b11000000, "Memory should remain unchanged")
+        #expect(context.mmu.read(from: 0x20) == 0b11000000, "Memory should remain unchanged")
     }
 
     @Test("BIT - absolute mode")
@@ -173,7 +173,7 @@ class LogicOpcodeTests: OpcodeTestBase {
         context.cpu.executeNextInstruction()
         verifyCPUState(context: context)
         
-        #expect(context.cpu.memoryManager.read(from: 0x1234) == 0b01000000, "Memory should remain unchanged")
+        #expect(context.mmu.read(from: 0x1234) == 0b01000000, "Memory should remain unchanged")
     }
 
     @Test("BIT - Flag behavior")

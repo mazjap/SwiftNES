@@ -1,4 +1,4 @@
-@testable import NESEmulator
+import NESEmulator
 
 typealias Status = NES.CPU.Registers.Status
 

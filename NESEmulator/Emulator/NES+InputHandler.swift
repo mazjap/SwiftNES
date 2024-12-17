@@ -1,5 +1,5 @@
 extension NES {
-    class InputHandler {
+    public class InputHandler {
         
     }
 }

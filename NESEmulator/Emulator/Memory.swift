@@ -1,4 +1,4 @@
-protocol Memory {
+public protocol Memory {
     func read(from address: UInt16) -> UInt8
     func write(_ value: UInt8, to address: UInt16)
 }

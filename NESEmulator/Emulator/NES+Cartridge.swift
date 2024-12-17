@@ -1,8 +1,8 @@
 extension NES {
-    class Cartridge {
-        let mapper: Mapper
+    public class Cartridge {
+        var mapper: Mapper
         
-        init(mapper: Mapper) {
+        public init(mapper: Mapper) {
             self.mapper = mapper
         }
     }
@@ -48,11 +48,19 @@ extension NES.Cartridge {
 // MARK: - Convenience Functions
 
 extension NES.Cartridge: Memory {
-    func read(from address: UInt16) -> UInt8 {
+    public func read(from address: UInt16) -> UInt8 {
         mapper.read(from: address)
     }
     
-    func write(_ value: UInt8, to address: UInt16) {
+    public func access(at address: UInt16, modify: (inout UInt8) -> Void) {
+        guard address < mapper.prgSize else {
+            fatalError("Memory access out of bounds")
+        }
+        
+        modify(&mapper[UInt16(address)])
+    }
+    
+    public func write(_ value: UInt8, to address: UInt16) {
         mapper.write(value, to: address)
     }
 }
