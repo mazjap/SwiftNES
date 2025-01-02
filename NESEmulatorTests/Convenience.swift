@@ -15,7 +15,7 @@ extension NES.Cartridge {
         var prgROM: [UInt8]
         var chrROM: [UInt8]
         
-        var prgStart: UInt16 = 0x4200
+        var prgStart: UInt16 = 0x4020
         var prgEnd: UInt16 = 0xFFFF
         
         init(prgROM: [UInt8] = Array(repeating: 0, count: 0xFFFF - 0x4200 + 1), chrROM: [UInt8] = []) {

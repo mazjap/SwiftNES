@@ -5,7 +5,7 @@ extension NES {
         public let size: UInt16
         private(set) var memory: [UInt8]
         
-        public init(size: UInt16 = 2048) {
+        public init(size: UInt16 = 0x800) {
             self.size = size
             self.memory = [UInt8](repeating: 0, count: Int(size))
         }

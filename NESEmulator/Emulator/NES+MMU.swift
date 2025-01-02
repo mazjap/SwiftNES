@@ -9,7 +9,7 @@ extension NES {
         var internalRAM: RandomAccessMemory
         public var cartridge: Cartridge?
         
-        public init(internalRAM: RandomAccessMemory = .init(size: 0x0800), cartridge: Cartridge? = nil) {
+        public init(internalRAM: RandomAccessMemory = .init(), cartridge: Cartridge? = nil) {
             self.internalRAM = internalRAM
             self.cartridge = cartridge
         }
@@ -26,7 +26,8 @@ extension NES {
             switch address {
             case 0x0000...0x1FFF:
                 // Internal RAM and its mirrors
-                internalRAM.access(at: address & 0x07FF, modify: modify)
+                let resolvedAddress = address & 0x07FF
+                internalRAM.access(at: resolvedAddress, modify: modify)
             case 0x2000...0x3FFF:
                 // TODO: - Retreive from PPU registers (only 8 bytes, subsequent bytes are mirrored)
                 modify(&defaultReturn)
@@ -64,7 +65,8 @@ extension NES {
             switch address {
             case ...0x1FFF:
                 // Internal RAM and its mirrors
-                internalRAM.write(value, to: address & 0x07FF)
+                let resolvedAddress = address & 0x07FF
+                internalRAM.write(value, to: resolvedAddress)
             case 0x2000...0x3FFF:
                 // TODO: - Retreive from PPU registers (only 8 bytes, subsequent bytes are mirrored)
                 break
