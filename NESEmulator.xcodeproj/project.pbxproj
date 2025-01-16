@@ -47,6 +47,7 @@
 		0EE640E72CD750FD00C13035 /* Convenience.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EE640E62CD750FD00C13035 /* Convenience.swift */; };
 		0EE640E92CD7587F00C13035 /* CommonIllegalOpcodeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EE640E82CD7587F00C13035 /* CommonIllegalOpcodeTests.swift */; };
 		0EFCF4112D38D6820003B253 /* MemoryManagementTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EFCF4102D38D6820003B253 /* MemoryManagementTests.swift */; };
+		0EFCF4132D38DA920003B253 /* InterruptTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EFCF4122D38DA920003B253 /* InterruptTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -103,6 +104,7 @@
 		0EE640E62CD750FD00C13035 /* Convenience.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Convenience.swift; sourceTree = "<group>"; };
 		0EE640E82CD7587F00C13035 /* CommonIllegalOpcodeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommonIllegalOpcodeTests.swift; sourceTree = "<group>"; };
 		0EFCF4102D38D6820003B253 /* MemoryManagementTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryManagementTests.swift; sourceTree = "<group>"; };
+		0EFCF4122D38DA920003B253 /* InterruptTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InterruptTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -258,6 +260,7 @@
 			isa = PBXGroup;
 			children = (
 				0EFCF4102D38D6820003B253 /* MemoryManagementTests.swift */,
+				0EFCF4122D38DA920003B253 /* InterruptTests.swift */,
 				0EE640E62CD750FD00C13035 /* Convenience.swift */,
 				0E7415832CCA312900144036 /* Opcode Tests */,
 				0E9CE1422BBF6ECF00F884E5 /* StackManipulationTests.swift */,
@@ -413,6 +416,7 @@
 				0E74157C2CCA307F00144036 /* BranchOpcodeTests.swift in Sources */,
 				0E7415782CCA304B00144036 /* ShiftRotateOpcodeTests.swift in Sources */,
 				0E9CE1432BBF6ECF00F884E5 /* StackManipulationTests.swift in Sources */,
+				0EFCF4132D38DA920003B253 /* InterruptTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
