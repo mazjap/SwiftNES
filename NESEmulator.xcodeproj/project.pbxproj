@@ -48,6 +48,7 @@
 		0EE640E92CD7587F00C13035 /* CommonIllegalOpcodeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EE640E82CD7587F00C13035 /* CommonIllegalOpcodeTests.swift */; };
 		0EFCF4112D38D6820003B253 /* MemoryManagementTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EFCF4102D38D6820003B253 /* MemoryManagementTests.swift */; };
 		0EFCF4132D38DA920003B253 /* InterruptTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EFCF4122D38DA920003B253 /* InterruptTests.swift */; };
+		0EFCF4172D398D790003B253 /* NES.CPU+Interrupts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EFCF4162D398D790003B253 /* NES.CPU+Interrupts.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -105,6 +106,7 @@
 		0EE640E82CD7587F00C13035 /* CommonIllegalOpcodeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommonIllegalOpcodeTests.swift; sourceTree = "<group>"; };
 		0EFCF4102D38D6820003B253 /* MemoryManagementTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryManagementTests.swift; sourceTree = "<group>"; };
 		0EFCF4122D38DA920003B253 /* InterruptTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InterruptTests.swift; sourceTree = "<group>"; };
+		0EFCF4162D398D790003B253 /* NES.CPU+Interrupts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NES.CPU+Interrupts.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -208,6 +210,7 @@
 				0E95131F2BBB9DBC00E9CA83 /* NES.CPU.Registers+Status.swift */,
 				0E9512FE2BB6302000E9CA83 /* NES.CPU+OpcodeImpl.swift */,
 				0E9513032BB7F55300E9CA83 /* NES.CPU+AddressingModes.swift */,
+				0EFCF4162D398D790003B253 /* NES.CPU+Interrupts.swift */,
 			);
 			path = CPU;
 			sourceTree = "<group>";
@@ -391,6 +394,7 @@
 				0E9512FF2BB6302000E9CA83 /* NES.CPU+OpcodeImpl.swift in Sources */,
 				0E8181532BDC0C7B0065E3FF /* FixedWidthInteger+MostSignificantBit.swift in Sources */,
 				0E9512F92BB6029400E9CA83 /* NES.CPU+Registers.swift in Sources */,
+				0EFCF4172D398D790003B253 /* NES.CPU+Interrupts.swift in Sources */,
 				0E61F8362BC4C814008B90E6 /* NES.Cartridge+Mapper.swift in Sources */,
 				0E9513202BBB9DBC00E9CA83 /* NES.CPU.Registers+Status.swift in Sources */,
 				0E61F83C2BC662F0008B90E6 /* NES+MMU.swift in Sources */,
