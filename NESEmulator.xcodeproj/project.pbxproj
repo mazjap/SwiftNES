@@ -46,6 +46,7 @@
 		0EE63FF92CD22A0300C13035 /* NES.CPU+InstructionTimings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EE63FF82CD22A0300C13035 /* NES.CPU+InstructionTimings.swift */; };
 		0EE640E72CD750FD00C13035 /* Convenience.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EE640E62CD750FD00C13035 /* Convenience.swift */; };
 		0EE640E92CD7587F00C13035 /* CommonIllegalOpcodeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EE640E82CD7587F00C13035 /* CommonIllegalOpcodeTests.swift */; };
+		0EFCF4112D38D6820003B253 /* MemoryManagementTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EFCF4102D38D6820003B253 /* MemoryManagementTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -101,6 +102,7 @@
 		0EE63FF82CD22A0300C13035 /* NES.CPU+InstructionTimings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NES.CPU+InstructionTimings.swift"; sourceTree = "<group>"; };
 		0EE640E62CD750FD00C13035 /* Convenience.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Convenience.swift; sourceTree = "<group>"; };
 		0EE640E82CD7587F00C13035 /* CommonIllegalOpcodeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommonIllegalOpcodeTests.swift; sourceTree = "<group>"; };
+		0EFCF4102D38D6820003B253 /* MemoryManagementTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryManagementTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -255,6 +257,7 @@
 		0E9CE13A2BBE6E8400F884E5 /* NESEmulatorTests */ = {
 			isa = PBXGroup;
 			children = (
+				0EFCF4102D38D6820003B253 /* MemoryManagementTests.swift */,
 				0EE640E62CD750FD00C13035 /* Convenience.swift */,
 				0E7415832CCA312900144036 /* Opcode Tests */,
 				0E9CE1422BBF6ECF00F884E5 /* StackManipulationTests.swift */,
@@ -395,6 +398,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0EFCF4112D38D6820003B253 /* MemoryManagementTests.swift in Sources */,
 				0E9CE1472BC07F4C00F884E5 /* CPUInitializationTests.swift in Sources */,
 				0E7415742CCA2FBA00144036 /* ArithmeticOpcodeTests.swift in Sources */,
 				0E7415802CCA30B300144036 /* StackOpcodeTests.swift in Sources */,
