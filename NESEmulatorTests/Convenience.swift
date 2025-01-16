@@ -5,10 +5,18 @@ typealias Status = NES.CPU.Registers.Status
 extension NES.Cartridge {
     class MapperTest: Mapper {
         func read(from address: UInt16) -> UInt8 {
-            prgROM[Int(address - prgStart)]
+            guard address >= prgStart && address <= prgEnd else {
+                fatalError("Address out of bounds")
+            }
+            
+            return prgROM[Int(address - prgStart)]
         }
         
         func write(_ value: UInt8, to address: UInt16) {
+            guard address >= prgStart && address <= prgEnd else {
+                fatalError("Address out of bounds")
+            }
+            
             prgROM[Int(address - prgStart)] = value
         }
         
@@ -16,11 +24,12 @@ extension NES.Cartridge {
         var chrROM: [UInt8]
         
         var prgStart: UInt16 = 0x4020
-        var prgEnd: UInt16 = 0xFFFF
+        var prgEnd: UInt16
         
-        init(prgROM: [UInt8] = Array(repeating: 0, count: 0xFFFF - 0x4200 + 1), chrROM: [UInt8] = []) {
-            self.prgROM = prgROM
-            self.chrROM = chrROM
+        init(prgRomSize: UInt16 = 0xBFDF) {
+            self.prgEnd = prgStart + prgRomSize
+            self.prgROM = Array(repeating: 0, count: Int(prgRomSize) + 1)
+            self.chrROM = []
         }
     }
 }
