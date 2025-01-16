@@ -33,16 +33,8 @@ extension ExpectedState {
     }
 }
 
-/// Test context holding CPU state for a single test
-struct CPUTestContext {
-    let cpu: NES.CPU
-    let mmu: NES.MMU
-    let initialPC: UInt16
-    var expected: ExpectedState
-}
-
 /// Base class providing CPU test functionality
-class OpcodeTestBase {
+class OpcodeTestBase: TestBase {
     // Helper to get timing info for a specific opcode
     func getInstructionTiming(opcode: UInt8, pageCrossed: Bool = false, branchTaken: Bool = false) -> UInt8 {
         guard let timing = NES.CPU.instructionTimings[opcode] else {
@@ -57,14 +49,6 @@ class OpcodeTestBase {
             cycles += 1
         }
         return cycles
-    }
-    
-    /// Creates a fresh CPU and MMU for each test
-    func createTestCPU(atAddress: UInt16 = 0x8000) -> (cpu: NES.CPU, mmu: NES.MMU) {
-        let nes = NES(cartridge: NES.Cartridge(mapper: NES.Cartridge.MapperTest()))
-        nes.cpu.registers.programCounter = atAddress
-        
-        return (nes.cpu, nes.memoryManager)
     }
     
     // MARK: - Addressing Mode Setup Functions
