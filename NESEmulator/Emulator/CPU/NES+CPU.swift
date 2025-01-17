@@ -2,6 +2,7 @@ extension NES {
     public class CPU {
         let memoryManager: MMU
         var irqPending = false
+        var nmiPending = false
         public var registers: Registers
         public internal(set) var clockCycleCount: UInt8
         
@@ -112,7 +113,9 @@ extension NES {
             
             clockCycleCount = timingForInstruction.cycleCount(pageCrossed: pageCrossed, branchOccurred: branchOccurred)
             
-            if irqPending {
+            if nmiPending {
+                handleNMI()
+            } else if irqPending {
                 handleIRQ()
             }
             
