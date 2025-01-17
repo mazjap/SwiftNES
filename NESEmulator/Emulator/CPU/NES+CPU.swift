@@ -6,10 +6,12 @@ extension NES {
         public var registers: Registers
         public internal(set) var clockCycleCount: UInt8
         
-        public init(memoryManager: MMU, registers: Registers = Registers(), clockCycleCount: UInt8 = 0) {
+        public init(memoryManager: MMU) {
             self.memoryManager = memoryManager
-            self.registers = registers
-            self.clockCycleCount = clockCycleCount
+            self.registers = Registers()
+            self.clockCycleCount = 0
+            
+            reset()
         }
         
         func getNextByte() -> UInt8 {
@@ -120,6 +122,26 @@ extension NES {
             }
             
             return clockCycleCount
+        }
+        
+        public func reset() {
+            // Set initial register states
+            registers.status = .interrupt
+            registers.stackPointer = 0xFD
+            registers.accumulator = 0
+            registers.indexX = 0
+            registers.indexY = 0
+            
+            // Clear any pending interrupts
+            irqPending = false
+            nmiPending = false
+            
+            // Load reset vector
+            let low = memoryManager.read(from: 0xFFFC)
+            let high = memoryManager.read(from: 0xFFFD)
+            registers.programCounter = UInt16(high) << 8 | UInt16(low)
+            
+            clockCycleCount = 7
         }
         
         // TODO: - Consider other implementations...

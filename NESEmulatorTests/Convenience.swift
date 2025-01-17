@@ -1,4 +1,4 @@
-import NESEmulator
+@testable import NESEmulator
 
 typealias Status = NES.CPU.Registers.Status
 
@@ -34,6 +34,14 @@ extension NES.Cartridge {
     }
 }
 
+extension NES.CPU {
+    convenience init(memoryManager: NES.MMU, registers: Registers, clockCycleCount: UInt8) {
+        self.init(memoryManager: memoryManager)
+        self.registers = registers
+        self.clockCycleCount = clockCycleCount
+    }
+}
+
 extension NES.MMU {
     convenience init(usingTestMapper: Bool) {
         self.init(cartridge: .init(mapper: NES.Cartridge.MapperTest()))
@@ -44,6 +52,7 @@ class TestBase {
     /// Creates a fresh CPU and MMU for each test
     func createTestCPU(atAddress: UInt16 = 0x8000) -> (cpu: NES.CPU, mmu: NES.MMU) {
         let nes = NES(cartridge: NES.Cartridge(mapper: NES.Cartridge.MapperTest()))
+        nes.cpu.registers.status = .empty
         nes.cpu.registers.programCounter = atAddress
         
         return (nes.cpu, nes.memoryManager)

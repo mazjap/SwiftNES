@@ -33,24 +33,19 @@ extension NES.CPU {
         /// Creates a new Registers instance with the initial state of the NES CPU registers.
         ///
         /// - Parameters:
-        ///   - programCounter: Program Counter (PC) initial value. Defaults to 0xFFFC,
-        ///     which points to the reset vector location in memory where the CPU looks for the
-        ///     program entry point.
-        ///   - accumulator: Accumulator (A) initial value. Defaults to 0, the standard
-        ///     power-up state.
-        ///   - indexX: Index Register X initial value. Defaults to 0, the standard power-up state.
-        ///   - indexY: Index Register Y initial value. Defaults to 0, the standard power-up state.
-        ///   - stackPointer: Stack Pointer (SP) initial value. Defaults to 0xFD, which is the
-        ///     standard power-up state, leaving 3 bytes of headroom at the top of the stack.
-        ///   - processorStatus: Status Register (P) initial flags. Defaults to .zero (clear
-        ///     flags), though some bits may be set depending on the power-up sequence.
+        ///   - programCounter: Program Counter (PC) initial value.
+        ///   - accumulator: Accumulator (A) initial value.
+        ///   - indexX: Index Register X initial value.
+        ///   - indexY: Index Register Y initial value.
+        ///   - stackPointer: Stack Pointer (SP) initial value.
+        ///   - processorStatus: Status Register (P) initial flags.
         public init(
-            programCounter: UInt16 = 0xFFFC,
-            accumulator: UInt8 = 0,
-            indexX: UInt8 = 0,
-            indexY: UInt8 = 0,
-            stackPointer: UInt8 = 0xFD,
-            processorStatus: Status = .empty
+            programCounter: UInt16,
+            accumulator: UInt8,
+            indexX: UInt8,
+            indexY: UInt8,
+            stackPointer: UInt8,
+            processorStatus: Status
         ) {
             self.programCounter = programCounter
             self.accumulator = accumulator
@@ -66,25 +61,20 @@ extension NES.CPU.Registers {
     /// Creates a new Registers instance with the initial state of the NES CPU registers.
     ///
     /// - Parameters:
-    ///   - programCounter: Program Counter (PC) initial value. Defaults to 0xFFFC,
-    ///     which points to the reset vector location in memory where the CPU looks for the
-    ///     program entry point.
-    ///   - accumulator: Accumulator (A) initial value. Defaults to 0, the standard
-    ///     power-up state.
-    ///   - indexX: Index Register X initial value. Defaults to 0, the standard power-up state.
-    ///   - indexY: Index Register Y initial value. Defaults to 0, the standard power-up state.
-    ///   - stackPointer: Stack Pointer (SP) initial value. Defaults to 0xFD, which is the
-    ///     standard power-up state, leaving 3 bytes of headroom at the top of the stack.
-    ///   - processorStatus: Status Register (P) initial flags. Defaults to 0 (clear
-    ///     flags), though some bits may be set depending on the power-up sequence.
+    ///   - programCounter: Program Counter (PC) initial value.
+    ///   - accumulator: Accumulator (A) initial value.
+    ///   - indexX: Index Register X initial value.
+    ///   - indexY: Index Register Y initial value.
+    ///   - stackPointer: Stack Pointer (SP) initial value.
+    ///   - processorStatus: Status Register (P) initial flags.
     @_disfavoredOverload
     public init(
-        programCounter: UInt16 = 0xFFFC,
-        accumulator: UInt8 = 0,
-        indexX: UInt8 = 0,
-        indexY: UInt8 = 0,
-        stackPointer: UInt8 = 0xFD,
-        processorStatus: UInt8 = 0
+        programCounter: UInt16,
+        accumulator: UInt8,
+        indexX: UInt8,
+        indexY: UInt8,
+        stackPointer: UInt8,
+        processorStatus: UInt8
     ) {
         self.init(
             programCounter: programCounter,
@@ -95,6 +85,18 @@ extension NES.CPU.Registers {
             processorStatus: Status(
                 rawValue: processorStatus
             )
+        )
+    }
+    
+    /// Creates a new Registers instance with all properties set to zero.
+    public init() {
+        self.init(
+            programCounter: 0,
+            accumulator: 0,
+            indexX: 0,
+            indexY: 0,
+            stackPointer: 0,
+            processorStatus: 0
         )
     }
 }

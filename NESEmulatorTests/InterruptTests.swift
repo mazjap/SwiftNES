@@ -228,6 +228,9 @@ class InterruptTests: TestBase {
     func testResetPriority() {
         let context = setupCPUState()
         
+        // Set up initial state
+        context.mmu.write(0xEA, to: 0x10FC) // NOP implied
+        
         context.cpu.registers.accumulator = 0xFF
         context.cpu.registers.indexX = 0xFF
         context.cpu.registers.indexY = 0xFF
