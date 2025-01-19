@@ -37,7 +37,7 @@
 		0E9513012BB77D3200E9CA83 /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9513002BB77D3200E9CA83 /* Logger.swift */; };
 		0E9513042BB7F55300E9CA83 /* NES.CPU+AddressingModes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9513032BB7F55300E9CA83 /* NES.CPU+AddressingModes.swift */; };
 		0E9513202BBB9DBC00E9CA83 /* NES.CPU.Registers+Status.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E95131F2BBB9DBC00E9CA83 /* NES.CPU.Registers+Status.swift */; };
-		0E9CE1432BBF6ECF00F884E5 /* StackManipulationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9CE1422BBF6ECF00F884E5 /* StackManipulationTests.swift */; };
+		0E9CE1432BBF6ECF00F884E5 /* StackTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9CE1422BBF6ECF00F884E5 /* StackTests.swift */; };
 		0E9CE1452BC07F0300F884E5 /* ProgramFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9CE1442BC07F0300F884E5 /* ProgramFlowTests.swift */; };
 		0E9CE1472BC07F4C00F884E5 /* CPUInitializationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9CE1462BC07F4C00F884E5 /* CPUInitializationTests.swift */; };
 		0EB75FD42C01D23D0035CF7C /* cpu_dummy_reads.nes in Resources */ = {isa = PBXBuildFile; fileRef = 0EB75FD32C01D23D0035CF7C /* cpu_dummy_reads.nes */; };
@@ -95,7 +95,7 @@
 		0E9513032BB7F55300E9CA83 /* NES.CPU+AddressingModes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NES.CPU+AddressingModes.swift"; sourceTree = "<group>"; };
 		0E95131F2BBB9DBC00E9CA83 /* NES.CPU.Registers+Status.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NES.CPU.Registers+Status.swift"; sourceTree = "<group>"; };
 		0E9CE1392BBE6E8400F884E5 /* NESEmulatorTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NESEmulatorTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		0E9CE1422BBF6ECF00F884E5 /* StackManipulationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StackManipulationTests.swift; sourceTree = "<group>"; };
+		0E9CE1422BBF6ECF00F884E5 /* StackTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StackTests.swift; sourceTree = "<group>"; };
 		0E9CE1442BC07F0300F884E5 /* ProgramFlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgramFlowTests.swift; sourceTree = "<group>"; };
 		0E9CE1462BC07F4C00F884E5 /* CPUInitializationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CPUInitializationTests.swift; sourceTree = "<group>"; };
 		0EB75FD32C01D23D0035CF7C /* cpu_dummy_reads.nes */ = {isa = PBXFileReference; lastKnownFileType = file; path = cpu_dummy_reads.nes; sourceTree = "<group>"; };
@@ -266,7 +266,7 @@
 				0EFCF4122D38DA920003B253 /* InterruptTests.swift */,
 				0EE640E62CD750FD00C13035 /* Convenience.swift */,
 				0E7415832CCA312900144036 /* Opcode Tests */,
-				0E9CE1422BBF6ECF00F884E5 /* StackManipulationTests.swift */,
+				0E9CE1422BBF6ECF00F884E5 /* StackTests.swift */,
 				0E9CE1442BC07F0300F884E5 /* ProgramFlowTests.swift */,
 				0EB75FD32C01D23D0035CF7C /* cpu_dummy_reads.nes */,
 				0E9CE1462BC07F4C00F884E5 /* CPUInitializationTests.swift */,
@@ -419,7 +419,7 @@
 				0E7415822CCA30D100144036 /* RareIllegalOpcodeTests.swift in Sources */,
 				0E74157C2CCA307F00144036 /* BranchOpcodeTests.swift in Sources */,
 				0E7415782CCA304B00144036 /* ShiftRotateOpcodeTests.swift in Sources */,
-				0E9CE1432BBF6ECF00F884E5 /* StackManipulationTests.swift in Sources */,
+				0E9CE1432BBF6ECF00F884E5 /* StackTests.swift in Sources */,
 				0EFCF4132D38DA920003B253 /* InterruptTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

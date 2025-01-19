@@ -2,7 +2,7 @@ import Testing
 import NESEmulator
 
 @Suite("CPU Stack Operations")
-class StackManipulationTests {
+class StackTests {
     @Test("Stack pointer decrements when pushed")
     func testStackPointerDecrementOnPush() async throws {
         let mmu = NES.MMU()
