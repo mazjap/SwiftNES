@@ -40,6 +40,7 @@
 		0E9CE1432BBF6ECF00F884E5 /* StackTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9CE1422BBF6ECF00F884E5 /* StackTests.swift */; };
 		0E9CE1452BC07F0300F884E5 /* ProgramFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9CE1442BC07F0300F884E5 /* ProgramFlowTests.swift */; };
 		0E9CE1472BC07F4C00F884E5 /* CPUInitializationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9CE1462BC07F4C00F884E5 /* CPUInitializationTests.swift */; };
+		0EB5FCB12D42F56600C89365 /* CPURegisterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EB5FCB02D42F56600C89365 /* CPURegisterTests.swift */; };
 		0EB75FD42C01D23D0035CF7C /* cpu_dummy_reads.nes in Resources */ = {isa = PBXBuildFile; fileRef = 0EB75FD32C01D23D0035CF7C /* cpu_dummy_reads.nes */; };
 		0ECB7E4F2CF683BC0002150C /* SnakeTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ECB7E4E2CF683BC0002150C /* SnakeTest.swift */; };
 		0ED6CE772CEBB66000BBF245 /* NativeColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ED6CE762CEBB66000BBF245 /* NativeColor.swift */; };
@@ -98,6 +99,7 @@
 		0E9CE1422BBF6ECF00F884E5 /* StackTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StackTests.swift; sourceTree = "<group>"; };
 		0E9CE1442BC07F0300F884E5 /* ProgramFlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgramFlowTests.swift; sourceTree = "<group>"; };
 		0E9CE1462BC07F4C00F884E5 /* CPUInitializationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CPUInitializationTests.swift; sourceTree = "<group>"; };
+		0EB5FCB02D42F56600C89365 /* CPURegisterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CPURegisterTests.swift; sourceTree = "<group>"; };
 		0EB75FD32C01D23D0035CF7C /* cpu_dummy_reads.nes */ = {isa = PBXFileReference; lastKnownFileType = file; path = cpu_dummy_reads.nes; sourceTree = "<group>"; };
 		0ECB7E4E2CF683BC0002150C /* SnakeTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnakeTest.swift; sourceTree = "<group>"; };
 		0ED6CE762CEBB66000BBF245 /* NativeColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeColor.swift; sourceTree = "<group>"; };
@@ -267,6 +269,7 @@
 				0EE640E62CD750FD00C13035 /* Convenience.swift */,
 				0E7415832CCA312900144036 /* Opcode Tests */,
 				0E9CE1422BBF6ECF00F884E5 /* StackTests.swift */,
+				0EB5FCB02D42F56600C89365 /* CPURegisterTests.swift */,
 				0E9CE1442BC07F0300F884E5 /* ProgramFlowTests.swift */,
 				0EB75FD32C01D23D0035CF7C /* cpu_dummy_reads.nes */,
 				0E9CE1462BC07F4C00F884E5 /* CPUInitializationTests.swift */,
@@ -416,6 +419,7 @@
 				0E74157E2CCA30A100144036 /* StatusFlagOpcodeTests.swift in Sources */,
 				0E74157A2CCA306C00144036 /* MemoryOpcodeTests.swift in Sources */,
 				0EE640E92CD7587F00C13035 /* CommonIllegalOpcodeTests.swift in Sources */,
+				0EB5FCB12D42F56600C89365 /* CPURegisterTests.swift in Sources */,
 				0E7415822CCA30D100144036 /* RareIllegalOpcodeTests.swift in Sources */,
 				0E74157C2CCA307F00144036 /* BranchOpcodeTests.swift in Sources */,
 				0E7415782CCA304B00144036 /* ShiftRotateOpcodeTests.swift in Sources */,
