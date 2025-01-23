@@ -1,7 +1,7 @@
 import Foundation
 
 extension NES.CPU {
-    public struct Registers: Sendable {
+    struct Registers: Sendable {
         /// Program Counter (PC) - 16-bit register that holds the memory address of the next
         /// instruction to be executed.
         public var programCounter: UInt16

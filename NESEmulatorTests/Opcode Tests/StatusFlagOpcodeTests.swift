@@ -1,5 +1,5 @@
 import Testing
-import NESEmulator
+@testable import NESEmulator
 
 // Status Flag Operations (BRK, CLC, CLD, CLI, CLV, SEC, SED, SEI)
 @Suite("CPU Status Flag Operations")

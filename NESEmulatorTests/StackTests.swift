@@ -1,5 +1,5 @@
 import Testing
-import NESEmulator
+@testable import NESEmulator
 
 @Suite("CPU Stack Operations")
 class StackTests {

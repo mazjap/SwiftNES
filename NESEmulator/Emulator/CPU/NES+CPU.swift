@@ -3,7 +3,7 @@ extension NES {
         let memoryManager: MMU
         var irqPending = false
         var nmiPending = false
-        public var registers: Registers
+        var registers: Registers
         public internal(set) var clockCycleCount: UInt8
         
         public init(memoryManager: MMU) {

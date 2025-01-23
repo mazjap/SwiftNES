@@ -1,5 +1,5 @@
 import Testing
-import NESEmulator
+@testable import NESEmulator
 
 @Suite("CPU Initialization State Tests")
 class CPUInitializationTests {

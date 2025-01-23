@@ -1,5 +1,5 @@
 import Testing
-import NESEmulator
+@testable import NESEmulator
 
 // Logic Operations (AND, BIT, CMP, CPX, CPY, EOR, ORA)
 @Suite("CPU Logic Operations")

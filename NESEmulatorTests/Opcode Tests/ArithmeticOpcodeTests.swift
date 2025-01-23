@@ -1,5 +1,5 @@
 import Testing
-import NESEmulator
+@testable import NESEmulator
 
 // Arithmetic Operations (ADC, SBC, INC, DEC, INX, INY, DEX, DEY)
 @Suite("CPU Arithmetic Operations")

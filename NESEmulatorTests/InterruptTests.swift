@@ -1,5 +1,5 @@
-import NESEmulator
 import Testing
+@testable import NESEmulator
 
 @Suite("CPU Interrupt Tests")
 class InterruptTests: TestBase {

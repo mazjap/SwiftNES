@@ -1,5 +1,5 @@
 import Testing
-import NESEmulator
+@testable import NESEmulator
 
 // Memory Operations (LDA, LDX, LDY, NOP, STA, STX, STY, TAX, TAY, TSX, TXA, TXS, TYA)
 @Suite("CPU Memory Operations")
