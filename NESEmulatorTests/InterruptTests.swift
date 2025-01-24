@@ -208,15 +208,15 @@ class InterruptTests: TestBase {
         context.cpu.push(0x42)
         context.cpu.push(0x43)
         
+        let stackPointerBeforeReset = context.cpu.registers.stackPointer
+        context.cpu.registers.status.setFlag(.interrupt, to: false)
+        
         context.cpu.reset()
         
         #expect(context.cpu.registers.programCounter == 0x10FC,
                "Reset should load PC from reset vector")
-        #expect(context.cpu.registers.accumulator == 0, "Accumulator should be cleared")
-        #expect(context.cpu.registers.indexX == 0, "X register should be cleared")
-        #expect(context.cpu.registers.indexY == 0, "Y register should be cleared")
-        #expect(context.cpu.registers.stackPointer == 0xFD, "Stack pointer should be set to 0xFD")
-        #expect(context.cpu.registers.status == Status.interrupt, "Only interrupt flag should be set")
+        #expect(context.cpu.registers.stackPointer == stackPointerBeforeReset &- 3, "Stack pointer should be decremented by 3")
+        #expect(context.cpu.registers.status.contains(.interrupt), "Interrupt flag should be set")
         
         let originalStackValue = context.mmu.read(from: 0x01FF)
         #expect(originalStackValue == 0x42, "Stack contents should not be affected")
@@ -243,11 +243,8 @@ class InterruptTests: TestBase {
         context.cpu.reset()
         
         #expect(context.cpu.registers.programCounter == 0x10FC, "Reset should load PC from reset vector, not IRQ or NMI vectors")
-        #expect(context.cpu.registers.stackPointer == 0xFD, "Reset should set SP to 0xFD without pushing to stack")
-        #expect(context.cpu.registers.status == Status.interrupt, "Only interrupt flag should be set")
-        #expect(context.cpu.registers.accumulator == 0, "Reset should clear accumulator")
-        #expect(context.cpu.registers.indexX == 0, "Reset should clear X register")
-        #expect(context.cpu.registers.indexY == 0, "Reset should clear Y register")
+        #expect(context.cpu.registers.stackPointer == 0xFC, "Reset should decrement SP to 0xFC without pushing to stack")
+        #expect(context.cpu.registers.status.contains(.interrupt), "Interrupt flag should be set")
         
         context.cpu.executeNextInstruction()
         #expect(context.cpu.registers.programCounter != 0x10FA && context.cpu.registers.programCounter != 0x10FE, "IRQ and NMI should be cleared by reset")

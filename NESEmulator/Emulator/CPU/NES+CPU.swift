@@ -126,11 +126,8 @@ extension NES {
         
         public func reset() {
             // Set initial register states
-            registers.status = .interrupt
-            registers.stackPointer = 0xFD
-            registers.accumulator = 0
-            registers.indexX = 0
-            registers.indexY = 0
+            registers.status.setFlag(.interrupt, to: true)
+            registers.stackPointer &-= 3
             
             // Clear any pending interrupts
             irqPending = false
