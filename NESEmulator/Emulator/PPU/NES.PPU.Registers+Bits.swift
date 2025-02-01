@@ -33,7 +33,7 @@ extension NES.PPU.Registers {
         /// false: 8x8, true: 8x16
         static let spriteSize = PPUCtrl(rawValue: 1 << 5)
         
-        /// PPU master/slave select
+        /// PPU master/slave select (rarely used; most emulators ignore this)
         /// false: read backdrop from EXT pins, true: output color on EXT pins
         static let ppuMasterSlave = PPUCtrl(rawValue: 1 << 6)
         
@@ -43,7 +43,7 @@ extension NES.PPU.Registers {
         
         /// Converts base nametable selection to actual memory address
         var nametableBaseAddress: UInt16 {
-            UInt16(baseNametableOption) * 0x400
+            UInt16(baseNametableOption) * 0x400 + 0x2000
         }
         
         /// Amount to increment VRAM address by after PPUDATA access
@@ -101,6 +101,7 @@ extension NES.PPU.Registers {
         var rawValue: UInt8
         
         /// More than 8 sprites on current scanline
+        /// - Note: Hardware implementation is buggy/unreliable
         static let spriteOverflow = PPUStatus(rawValue: 1 << 5)
         
         /// Sprite 0 hit occurred
