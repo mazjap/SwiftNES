@@ -35,5 +35,108 @@ extension NES.PPU {
         /// OAM DMA Register ($4014) write-only
         /// Writing to this register initiates a DMA transfer from CPU memory to OAM
         var oamDma: UInt8
+        
+        private var writeToggle = false  // Toggles between high/low byte
+        private var lastDataBusValue: UInt8 = 0 // Used when accessing write-only registers
+        
+        init(ctrl: PPUCtrl, mask: PPUMask, status: PPUStatus, oamAddr: UInt8, oamData: UInt8, scroll: UInt16, addr: UInt16, data: UInt8, oamDma: UInt8, writeToggle: Bool = false) {
+            self.ctrl = ctrl
+            self.mask = mask
+            self.status = status
+            self.oamAddr = oamAddr
+            self.oamData = oamData
+            self.scroll = scroll
+            self.addr = addr
+            self.data = data
+            self.oamDma = oamDma
+            self.writeToggle = writeToggle
+        }
+    }
+}
+
+// MARK: - Convenience
+
+extension NES.PPU.Registers {
+    private var scrollX: UInt8 {
+        get {
+            UInt8(scroll & 0xFF)
+        }
+        set {
+            scroll = (scroll & 0xFF00) | UInt16(newValue)
+        }
+    }
+    
+    private var scrollY: UInt8 {
+        get {
+            UInt8(scroll >> 8)
+        }
+        set {
+            scroll = (scroll & 0xFF) | (UInt16(newValue) << 8)
+        }
+    }
+    
+    private var addrHigh: UInt8 {
+        get {
+            UInt8(addr >> 8)
+        }
+        set {
+            addr = (addr & 0xFF) | (UInt16(newValue) << 8)
+        }
+    }
+    
+    private var addrLow: UInt8 {
+        get {
+            UInt8(addr & 0xFF)
+        }
+        set {
+            addr = (addr & 0xFF00) | UInt16(newValue)
+        }
+    }
+    
+    mutating func read(from register: UInt8) -> UInt8 {
+        let value = switch register {
+        // Write-only registers return last data bus value
+        case 0x00, 0x01, 0x03, 0x05, 0x06: lastDataBusValue
+        case 0x02: status.readAndClear()
+        case 0x04: oamData
+        case 0x07: data // TODO: - Implement PPUData buffer
+        default: fatalError("Read request to non-existent PPU Register: \(String(format: "%02x", register))")
+        }
+        
+        lastDataBusValue = value
+        return value
+    }
+    
+    mutating func write(_ value: UInt8, to register: UInt8) {
+        lastDataBusValue = value
+        
+        switch register {
+        case 0x00: ctrl.rawValue = value
+        case 0x01: mask.rawValue = value
+        case 0x02:
+            // Status register is read-only
+            emuLogger.warning("Attempted write to read-only PPU status register")
+            return
+        case 0x03: oamAddr = value
+        case 0x04: oamData = value
+        case 0x05:
+            if writeToggle {
+                scrollY = value
+            } else {
+                scrollX = value
+            }
+            
+            writeToggle.toggle()
+        case 0x06:
+            if writeToggle {
+                addrHigh = value
+            } else {
+                addrLow = value
+            }
+            
+            writeToggle.toggle()
+        case 0x07: data = value // TODO: - Implement PPUData buffer
+        default: fatalError("Read request to non-existent PPU Register: \(String(format: "%02x", register))")
+        }
     }
 }
