@@ -11,11 +11,11 @@ public class NintendoEntertainmentSystem {
     
     public init(cartridge: Cartridge? = nil) {
         let memoryManager = MMU(cartridge: cartridge)
+        self.memoryManager = memoryManager
         
         self.cpu = CPU(memoryManager: memoryManager)
         self.ppu = PPU()
         self.apu = APU()
-        self.memoryManager = memoryManager
         self.input = InputHandler()
         
         // TODO: - Post init steps:
@@ -34,6 +34,14 @@ public class NintendoEntertainmentSystem {
             apu.step(cpuCycles)
             // Handle other components as needed
         }
+    }
+    
+    public func reset() {
+        cpu.reset()
+        ppu.reset()
+        apu.reset()
+        
+        // TODO: - Possibly reset memoryManager & input
     }
     
     @MainActor

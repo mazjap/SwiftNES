@@ -10,8 +10,6 @@ extension NES {
             self.memoryManager = memoryManager
             self.registers = Registers()
             self.clockCycleCount = 0
-            
-            reset()
         }
         
         func getNextByte() -> UInt8 {

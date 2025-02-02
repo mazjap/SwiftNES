@@ -3,5 +3,9 @@ extension NES {
         func step(_ cycleCount: UInt8) {
             // TODO: - Implement me
         }
+        
+        func reset() {
+            // TODO: - Implement me
+        }
     }
 }
