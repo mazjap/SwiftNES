@@ -49,22 +49,24 @@ extension NES.MMU {
 }
 
 class TestBase {
-    /// Creates a fresh CPU and MMU for each test
-    func createTestCPU(atAddress: UInt16 = 0x8000) -> (cpu: NES.CPU, mmu: NES.MMU) {
+    /// Creates a fresh NES for each test
+    func createTestNES(withPcAtAddress: UInt16 = 0x8000) -> NES {
         let nes = NES(cartridge: NES.Cartridge(mapper: NES.Cartridge.MapperTest()))
         nes.cpu.registers.status = .empty
-        nes.cpu.registers.programCounter = atAddress
+        nes.cpu.registers.programCounter = withPcAtAddress
         
-        return (nes.cpu, nes.memoryManager)
+        return nes
     }
 }
 
 /// Test context holding CPU state for a single test
 struct CPUTestContext {
-    let cpu: NES.CPU
-    let mmu: NES.MMU
+    let nes: NES
     let initialPC: UInt16
     var expected: ExpectedState
+    
+    var cpu: NES.CPU { nes.cpu }
+    var mmu: NES.MMU { nes.memoryManager }
     
     /// Uses the cpu's current stack pointer to check the current stack item offset by 1 + `back`
     /// - Parameter back: The offset to apply to the current stack pointer. Defaults to 0

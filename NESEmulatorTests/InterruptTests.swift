@@ -7,19 +7,18 @@ class InterruptTests: TestBase {
     // MARK: - Convenience
     
     func setupCPUState(pc: UInt16 = 0x8000) -> CPUTestContext {
-        let (cpu, mmu) = createTestCPU(atAddress: pc)
+        let nes = createTestNES(withPcAtAddress: pc)
         
         // Initialize test vectors
-        mmu.write(0xFA, to: 0xFFFA) // NMI low
-        mmu.write(0x10, to: 0xFFFB) // NMI high
-        mmu.write(0xFC, to: 0xFFFC) // Reset low
-        mmu.write(0x10, to: 0xFFFD) // Reset high
-        mmu.write(0xFE, to: 0xFFFE) // IRQ low
-        mmu.write(0x10, to: 0xFFFF) // IRQ high
+        nes.memoryManager.write(0xFA, to: 0xFFFA) // NMI low
+        nes.memoryManager.write(0x10, to: 0xFFFB) // NMI high
+        nes.memoryManager.write(0xFC, to: 0xFFFC) // Reset low
+        nes.memoryManager.write(0x10, to: 0xFFFD) // Reset high
+        nes.memoryManager.write(0xFE, to: 0xFFFE) // IRQ low
+        nes.memoryManager.write(0x10, to: 0xFFFF) // IRQ high
         
         return CPUTestContext(
-            cpu: cpu,
-            mmu: mmu,
+            nes: nes,
             initialPC: pc,
             expected: ExpectedState(cycles: 0, pcIncrement: 0)
         )

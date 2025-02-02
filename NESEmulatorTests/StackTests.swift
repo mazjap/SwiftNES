@@ -83,6 +83,7 @@ class StackTests {
     func testStackAddressing() async throws {
         let mmu = NES.MMU()
         let cpu = NES.CPU(memoryManager: mmu)
+        cpu.reset()
         
         // Push a value and verify it's in stack page
         cpu.push(0x42)

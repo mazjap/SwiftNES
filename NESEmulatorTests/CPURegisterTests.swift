@@ -7,10 +7,9 @@ class CPURegisterTests: TestBase {
     // MARK: - Convenience
     
     func setupCPUState(pc: UInt16 = 0x8000) -> CPUTestContext {
-        let (cpu, mmu) = createTestCPU(atAddress: pc)
+        let nes = createTestNES(withPcAtAddress: pc)
         return CPUTestContext(
-            cpu: cpu,
-            mmu: mmu,
+            nes: nes,
             initialPC: pc,
             expected: ExpectedState(cycles: 0, pcIncrement: 0)
         )

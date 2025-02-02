@@ -5,15 +5,16 @@ import Testing
 class CPUInitializationTests {
     @Test("Registers have correct initial values")
     func testRegistersState() {
+        let mapper = NES.Cartridge.MapperTest()
+        
+        // Set reset vector to load 0x8000 before NES initialization
+        mapper.write(0x00, to: 0xFFFC)
+        mapper.write(0x80, to: 0xFFFD)
+        
+        let nes = NES(cartridge: NES.Cartridge(mapper: mapper))
+        let cpu = nes.cpu
+        
         // Test initialization
-        let mmu = NES.MMU(usingTestMapper: true)
-        
-        // Set reset vector to load 0x8000
-        mmu.write(0x00, to: 0xFFFC)
-        mmu.write(0x80, to: 0xFFFD)
-        
-        let cpu = NES.CPU(memoryManager: mmu)
-        
         #expect(cpu.registers.accumulator == 0, "Accumulator should be set to 0 on power up")
         #expect(cpu.registers.indexX == 0, "Index X should be set to 0 on power up")
         #expect(cpu.registers.indexY == 0, "Index Y should be set to 0 on power up")

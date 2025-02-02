@@ -56,14 +56,13 @@ class OpcodeTestBase: TestBase {
     /// Sets up immediate mode addressing
     /// Example: LDA #$44 (A9 44)
     func setupImmediate(opcode: UInt8, value: UInt8, atAddress: UInt16 = 0x8000) -> CPUTestContext {
-        let (cpu, mmu) = createTestCPU(atAddress: atAddress)
+        let nes = createTestNES(withPcAtAddress: atAddress)
         
-        mmu.write(opcode, to: atAddress)
-        mmu.write(value, to: atAddress + 1)
+        nes.memoryManager.write(opcode, to: atAddress)
+        nes.memoryManager.write(value, to: atAddress + 1)
         
         return CPUTestContext(
-            cpu: cpu,
-            mmu: mmu,
+            nes: nes,
             initialPC: atAddress,
             expected: ExpectedState(
                 cycles: getInstructionTiming(opcode: opcode),
@@ -75,15 +74,14 @@ class OpcodeTestBase: TestBase {
     /// Sets up zero page addressing
     /// Example: LDA $44 (A5 44)
     func setupZeroPage(opcode: UInt8, zeroPageAddress: UInt8, value: UInt8, atAddress: UInt16 = 0x8000) -> CPUTestContext {
-        let (cpu, mmu) = createTestCPU(atAddress: atAddress)
+        let nes = createTestNES(withPcAtAddress: atAddress)
         
-        mmu.write(opcode, to: atAddress)
-        mmu.write(zeroPageAddress, to: atAddress + 1)
-        mmu.write(value, to: UInt16(zeroPageAddress))
+        nes.memoryManager.write(opcode, to: atAddress)
+        nes.memoryManager.write(zeroPageAddress, to: atAddress + 1)
+        nes.memoryManager.write(value, to: UInt16(zeroPageAddress))
         
         return CPUTestContext(
-            cpu: cpu,
-            mmu: mmu,
+            nes: nes,
             initialPC: atAddress,
             expected: ExpectedState(
                 cycles: getInstructionTiming(opcode: opcode),
@@ -95,16 +93,15 @@ class OpcodeTestBase: TestBase {
     /// Sets up zero page,X addressing
     /// Example: LDA $44,X (B5 44)
     func setupZeroPageX(opcode: UInt8, zeroPageAddress: UInt8, xOffset: UInt8, value: UInt8, atAddress: UInt16 = 0x8000) -> CPUTestContext {
-        let (cpu, mmu) = createTestCPU(atAddress: atAddress)
+        let nes = createTestNES(withPcAtAddress: atAddress)
         
-        mmu.write(opcode, to: atAddress)
-        mmu.write(zeroPageAddress, to: atAddress + 1)
-        mmu.write(value, to: UInt16((zeroPageAddress &+ xOffset) & 0xFF))
-        cpu.registers.indexX = xOffset
+        nes.memoryManager.write(opcode, to: atAddress)
+        nes.memoryManager.write(zeroPageAddress, to: atAddress + 1)
+        nes.memoryManager.write(value, to: UInt16((zeroPageAddress &+ xOffset) & 0xFF))
+        nes.cpu.registers.indexX = xOffset
         
         return CPUTestContext(
-            cpu: cpu,
-            mmu: mmu,
+            nes: nes,
             initialPC: atAddress,
             expected: ExpectedState(
                 cycles: getInstructionTiming(opcode: opcode),
@@ -116,16 +113,15 @@ class OpcodeTestBase: TestBase {
     /// Sets up zero page,Y addressing
     /// Example: LDX $44,Y (B6 44)
     func setupZeroPageY(opcode: UInt8, zeroPageAddress: UInt8, yOffset: UInt8, value: UInt8, atAddress: UInt16 = 0x8000) -> CPUTestContext {
-        let (cpu, mmu) = createTestCPU(atAddress: atAddress)
+        let nes = createTestNES(withPcAtAddress: atAddress)
         
-        mmu.write(opcode, to: atAddress)
-        mmu.write(zeroPageAddress, to: atAddress + 1)
-        mmu.write(value, to: UInt16((zeroPageAddress &+ yOffset) & 0xFF))
-        cpu.registers.indexY = yOffset
+        nes.memoryManager.write(opcode, to: atAddress)
+        nes.memoryManager.write(zeroPageAddress, to: atAddress + 1)
+        nes.memoryManager.write(value, to: UInt16((zeroPageAddress &+ yOffset) & 0xFF))
+        nes.cpu.registers.indexY = yOffset
         
         return CPUTestContext(
-            cpu: cpu,
-            mmu: mmu,
+            nes: nes,
             initialPC: atAddress,
             expected: ExpectedState(
                 cycles: getInstructionTiming(opcode: opcode),
@@ -137,16 +133,15 @@ class OpcodeTestBase: TestBase {
     /// Sets up absolute addressing
     /// Example: LDA $4400 (AD 00 44)
     func setupAbsolute(opcode: UInt8, absoluteAddress: UInt16, value: UInt8, atAddress: UInt16 = 0x8000) -> CPUTestContext {
-        let (cpu, mmu) = createTestCPU(atAddress: atAddress)
+        let nes = createTestNES(withPcAtAddress: atAddress)
         
-        mmu.write(opcode, to: atAddress)
-        mmu.write(UInt8(absoluteAddress & 0xFF), to: atAddress + 1)
-        mmu.write(UInt8(absoluteAddress >> 8), to: atAddress + 2)
-        mmu.write(value, to: absoluteAddress)
+        nes.memoryManager.write(opcode, to: atAddress)
+        nes.memoryManager.write(UInt8(absoluteAddress & 0xFF), to: atAddress + 1)
+        nes.memoryManager.write(UInt8(absoluteAddress >> 8), to: atAddress + 2)
+        nes.memoryManager.write(value, to: absoluteAddress)
         
         return CPUTestContext(
-            cpu: cpu,
-            mmu: mmu,
+            nes: nes,
             initialPC: atAddress,
             expected: ExpectedState(
                 cycles: getInstructionTiming(opcode: opcode),
@@ -158,20 +153,19 @@ class OpcodeTestBase: TestBase {
     /// Sets up absolute,X addressing
     /// Example: LDA $4400,X (BD 00 44)
     func setupAbsoluteX(opcode: UInt8, absoluteAddress: UInt16, xOffset: UInt8, value: UInt8, atAddress: UInt16 = 0x8000) -> CPUTestContext {
-        let (cpu, mmu) = createTestCPU(atAddress: atAddress)
+        let nes = createTestNES(withPcAtAddress: atAddress)
         
-        mmu.write(opcode, to: atAddress)
-        mmu.write(UInt8(absoluteAddress & 0xFF), to: atAddress + 1)
-        mmu.write(UInt8(absoluteAddress >> 8), to: atAddress + 2)
-        mmu.write(value, to: absoluteAddress &+ UInt16(xOffset))
-        cpu.registers.indexX = xOffset
+        nes.memoryManager.write(opcode, to: atAddress)
+        nes.memoryManager.write(UInt8(absoluteAddress & 0xFF), to: atAddress + 1)
+        nes.memoryManager.write(UInt8(absoluteAddress >> 8), to: atAddress + 2)
+        nes.memoryManager.write(value, to: absoluteAddress &+ UInt16(xOffset))
+        nes.cpu.registers.indexX = xOffset
         
         // Check if page boundary is crossed
         let pageCrossed = (absoluteAddress & 0xFF00) != ((absoluteAddress &+ UInt16(xOffset)) & 0xFF00)
         
         return CPUTestContext(
-            cpu: cpu,
-            mmu: mmu,
+            nes: nes,
             initialPC: atAddress,
             expected: ExpectedState(
                 cycles: getInstructionTiming(opcode: opcode, pageCrossed: pageCrossed),
@@ -183,20 +177,19 @@ class OpcodeTestBase: TestBase {
     /// Sets up absolute,Y addressing
     /// Example: LDA $4400,Y (B9 00 44)
     func setupAbsoluteY(opcode: UInt8, absoluteAddress: UInt16, yOffset: UInt8, value: UInt8, atAddress: UInt16 = 0x8000) -> CPUTestContext {
-        let (cpu, mmu) = createTestCPU(atAddress: atAddress)
+        let nes = createTestNES(withPcAtAddress: atAddress)
         
-        mmu.write(opcode, to: atAddress)
-        mmu.write(UInt8(absoluteAddress & 0xFF), to: atAddress + 1)
-        mmu.write(UInt8(absoluteAddress >> 8), to: atAddress + 2)
-        mmu.write(value, to: absoluteAddress &+ UInt16(yOffset))
-        cpu.registers.indexY = yOffset
+        nes.memoryManager.write(opcode, to: atAddress)
+        nes.memoryManager.write(UInt8(absoluteAddress & 0xFF), to: atAddress + 1)
+        nes.memoryManager.write(UInt8(absoluteAddress >> 8), to: atAddress + 2)
+        nes.memoryManager.write(value, to: absoluteAddress &+ UInt16(yOffset))
+        nes.cpu.registers.indexY = yOffset
         
         // Check if page boundary is crossed
         let pageCrossed = (absoluteAddress & 0xFF00) != ((absoluteAddress &+ UInt16(yOffset)) & 0xFF00)
         
         return CPUTestContext(
-            cpu: cpu,
-            mmu: mmu,
+            nes: nes,
             initialPC: atAddress,
             expected: ExpectedState(
                 cycles: getInstructionTiming(opcode: opcode, pageCrossed: pageCrossed),
@@ -208,20 +201,19 @@ class OpcodeTestBase: TestBase {
     /// (indirect,X) - Example: LDA ($44,X)
     /// First adds X to zero-page address, then gets target from that location
     func setupIndexedIndirect(opcode: UInt8, zeroPageAddress: UInt8, xOffset: UInt8, targetAddress: UInt16, value: UInt8, atAddress: UInt16 = 0x8000) -> CPUTestContext {
-        let (cpu, mmu) = createTestCPU(atAddress: atAddress)
+        let nes = createTestNES(withPcAtAddress: atAddress)
         
-        mmu.write(opcode, to: atAddress)
-        mmu.write(zeroPageAddress, to: atAddress + 1)
+        nes.memoryManager.write(opcode, to: atAddress)
+        nes.memoryManager.write(zeroPageAddress, to: atAddress + 1)
         
         let effectiveZPAddress = (zeroPageAddress &+ xOffset) & 0xFF
-        mmu.write(UInt8(targetAddress & 0xFF), to: UInt16(effectiveZPAddress))
-        mmu.write(UInt8(targetAddress >> 8), to: UInt16(effectiveZPAddress &+ 1))
-        mmu.write(value, to: targetAddress)
-        cpu.registers.indexX = xOffset
+        nes.memoryManager.write(UInt8(targetAddress & 0xFF), to: UInt16(effectiveZPAddress))
+        nes.memoryManager.write(UInt8(targetAddress >> 8), to: UInt16(effectiveZPAddress &+ 1))
+        nes.memoryManager.write(value, to: targetAddress)
+        nes.cpu.registers.indexX = xOffset
         
         return CPUTestContext(
-            cpu: cpu,
-            mmu: mmu,
+            nes: nes,
             initialPC: atAddress,
             expected: ExpectedState(
                 cycles: getInstructionTiming(opcode: opcode),
@@ -233,22 +225,21 @@ class OpcodeTestBase: TestBase {
     /// (indirect),Y - Example: LDA ($44),Y
     /// First gets base address from zero-page, then adds Y to target
     func setupIndirectIndexed(opcode: UInt8, zeroPageAddress: UInt8, yOffset: UInt8, targetAddress: UInt16, value: UInt8, atAddress: UInt16 = 0x8000) -> CPUTestContext {
-        let (cpu, mmu) = createTestCPU(atAddress: atAddress)
+        let nes = createTestNES(withPcAtAddress: atAddress)
         
-        mmu.write(opcode, to: atAddress)
-        mmu.write(zeroPageAddress, to: atAddress + 1)
+        nes.memoryManager.write(opcode, to: atAddress)
+        nes.memoryManager.write(zeroPageAddress, to: atAddress + 1)
         
-        mmu.write(UInt8(targetAddress & 0xFF), to: UInt16(zeroPageAddress))
-        mmu.write(UInt8(targetAddress >> 8), to: UInt16(zeroPageAddress &+ 1))
-        mmu.write(value, to: targetAddress &+ UInt16(yOffset))
-        cpu.registers.indexY = yOffset
+        nes.memoryManager.write(UInt8(targetAddress & 0xFF), to: UInt16(zeroPageAddress))
+        nes.memoryManager.write(UInt8(targetAddress >> 8), to: UInt16(zeroPageAddress &+ 1))
+        nes.memoryManager.write(value, to: targetAddress &+ UInt16(yOffset))
+        nes.cpu.registers.indexY = yOffset
         
         // Check if page boundary is crossed
         let pageCrossed = (targetAddress & 0xFF00) != ((targetAddress &+ UInt16(yOffset)) & 0xFF00)
         
         return CPUTestContext(
-            cpu: cpu,
-            mmu: mmu,
+            nes: nes,
             initialPC: atAddress,
             expected: ExpectedState(
                 cycles: getInstructionTiming(opcode: opcode, pageCrossed: pageCrossed),
@@ -260,14 +251,14 @@ class OpcodeTestBase: TestBase {
     /// Sets up indirect addressing (JMP only)
     /// Example: JMP ($4400) (6C 00 44)
     func setupIndirect(opcode: UInt8, indirectAddress: UInt16, targetAddress: UInt16, atAddress: UInt16 = 0x8000) -> CPUTestContext {
-        let (cpu, mmu) = createTestCPU(atAddress: atAddress)
+        let nes = createTestNES(withPcAtAddress: atAddress)
         
-        mmu.write(opcode, to: atAddress)
-        mmu.write(UInt8(indirectAddress & 0xFF), to: atAddress + 1)
-        mmu.write(UInt8(indirectAddress >> 8), to: atAddress + 2)
+        nes.memoryManager.write(opcode, to: atAddress)
+        nes.memoryManager.write(UInt8(indirectAddress & 0xFF), to: atAddress + 1)
+        nes.memoryManager.write(UInt8(indirectAddress >> 8), to: atAddress + 2)
         
         // Write low byte at the indirect address
-        mmu.write(UInt8(targetAddress & 0xFF), to: indirectAddress)
+        nes.memoryManager.write(UInt8(targetAddress & 0xFF), to: indirectAddress)
         
         // Handle 6502 indirect jump bug when address is at page boundary
         let highByteAddr = if (indirectAddress & 0xFF) == 0xFF {
@@ -275,11 +266,10 @@ class OpcodeTestBase: TestBase {
         } else {
             indirectAddress + 1
         }
-        mmu.write(UInt8(targetAddress >> 8), to: highByteAddr)
+        nes.memoryManager.write(UInt8(targetAddress >> 8), to: highByteAddr)
         
         return CPUTestContext(
-            cpu: cpu,
-            mmu: mmu,
+            nes: nes,
             initialPC: atAddress,
             expected: ExpectedState(
                 cycles: getInstructionTiming(opcode: opcode),
@@ -291,13 +281,12 @@ class OpcodeTestBase: TestBase {
     /// Sets up implied addressing (no operands)
     /// Example: TAX (AA)
     func setupImplied(opcode: UInt8, atAddress: UInt16 = 0x8000) -> CPUTestContext {
-        let (cpu, mmu) = createTestCPU(atAddress: atAddress)
+        let nes = createTestNES(withPcAtAddress: atAddress)
         
-        mmu.write(opcode, to: atAddress)
+        nes.memoryManager.write(opcode, to: atAddress)
         
         return CPUTestContext(
-            cpu: cpu,
-            mmu: mmu,
+            nes: nes,
             initialPC: atAddress,
             expected: ExpectedState(
                 cycles: getInstructionTiming(opcode: opcode),
@@ -309,10 +298,10 @@ class OpcodeTestBase: TestBase {
     /// Sets up relative addressing (for branch instructions)
     /// Example: BNE $44 (D0 44)
     func setupRelative(opcode: UInt8, offset: Int8, atAddress: UInt16 = 0x8000, branchTaken: Bool) -> CPUTestContext {
-        let (cpu, mmu) = createTestCPU(atAddress: atAddress)
+        let nes = createTestNES(withPcAtAddress: atAddress)
         
-        mmu.write(opcode, to: atAddress)
-        mmu.write(UInt8(bitPattern: offset), to: atAddress + 1)
+        nes.memoryManager.write(opcode, to: atAddress)
+        nes.memoryManager.write(UInt8(bitPattern: offset), to: atAddress + 1)
         
         // The pcIncrement should be conditional on branchTaken
         let operationIncrements: Int16 = 2
@@ -321,8 +310,7 @@ class OpcodeTestBase: TestBase {
         let pageCrossed = (atAddress & 0xFF00) != (UInt16(bitPattern: Int16(bitPattern: atAddress) &+ operationIncrements &+ offset) & 0xFF00)
         
         return CPUTestContext(
-            cpu: cpu,
-            mmu: mmu,
+            nes: nes,
             initialPC: atAddress,
             expected: ExpectedState(
                 cycles: getInstructionTiming(opcode: opcode, pageCrossed: pageCrossed, branchTaken: branchTaken),
@@ -334,13 +322,12 @@ class OpcodeTestBase: TestBase {
     /// Sets up accumulator addressing (for operations that work on accumulator)
     /// Example: LSR A (4A)
     func setupAccumulator(opcode: UInt8, atAddress: UInt16 = 0x8000) -> CPUTestContext {
-        let (cpu, mmu) = createTestCPU(atAddress: atAddress)
+        let nes = createTestNES(withPcAtAddress: atAddress)
         
-        mmu.write(opcode, to: atAddress)
+        nes.memoryManager.write(opcode, to: atAddress)
         
         return CPUTestContext(
-            cpu: cpu,
-            mmu: mmu,
+            nes: nes,
             initialPC: atAddress,
             expected: ExpectedState(
                 cycles: getInstructionTiming(opcode: opcode),
