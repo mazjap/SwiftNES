@@ -18,6 +18,15 @@ public class NintendoEntertainmentSystem {
         self.apu = APU()
         self.input = InputHandler()
         
+        memoryManager.readPPURegister = { [unowned ppu] register in
+            ppu.registers.read(from: register)
+        }
+        memoryManager.writePPURegister = { [unowned ppu] value, register in
+            ppu.registers.write(value, to: register)
+        }
+        
+        self.reset()
+        
         // TODO: - Post init steps:
         // - Initialize components and load ROM
         // - Set up memory mapping

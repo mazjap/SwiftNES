@@ -8,10 +8,19 @@ extension NES {
     public class MMU: Memory {
         var internalRAM: RandomAccessMemory
         public var cartridge: Cartridge?
+        var readPPURegister: ((_ register: UInt8) -> UInt8)?
+        var writePPURegister: ((_ value: UInt8, _ register: UInt8) -> Void)?
         
-        public init(internalRAM: RandomAccessMemory = .init(), cartridge: Cartridge? = nil) {
+        public init(
+            internalRAM: RandomAccessMemory = .init(),
+            cartridge: Cartridge? = nil,
+            readPPURegister: ((_ register: UInt8) -> UInt8)? = nil,
+            writePPURegister: ((_ value: UInt8, _ register: UInt8) -> Void)? = nil
+        ) {
             self.internalRAM = internalRAM
             self.cartridge = cartridge
+            self.readPPURegister = readPPURegister
+            self.writePPURegister = writePPURegister
         }
         
         /// Accesses memory at the specified address and allows modification of the value.
@@ -26,11 +35,18 @@ extension NES {
             switch address {
             case 0x0000...0x1FFF:
                 // Internal RAM and its mirrors
-                let resolvedAddress = address & 0x07FF
-                internalRAM.access(at: resolvedAddress, modify: modify)
+                internalRAM.access(at: MemoryMap.resolveRamAddress(address: address), modify: modify)
             case 0x2000...0x3FFF:
-                // TODO: - Retreive from PPU registers (only 8 bytes, subsequent bytes are mirrored)
-                modify(&defaultReturn)
+                guard let readPPURegister, let writePPURegister else {
+                    emuLogger.error("Received access/modify request to PPU register, but no PPU register access handlers were provided")
+                    return
+                }
+                
+                let resolvedAddress = MemoryMap.resolvePpuRegister(address: address)
+                
+                var currentValue = readPPURegister(resolvedAddress)
+                modify(&currentValue)
+                writePPURegister(currentValue, resolvedAddress)
             case 0x4000...0x4017:
                 // TODO: - Retreive from APU and IO registers
                 modify(&defaultReturn)
@@ -50,10 +66,13 @@ extension NES {
                 cartridge.write(copy, to: address)
             default:
                 // Switch's cases are exhaustive, but swift doesn't check for types that aren't enum, tuple, or the specific Bool struct (https://forums.swift.org/t/switch-on-int-with-exhaustive-cases-still-needs-default/49548)
+                                                                                          //        _______
+                                                                                          //       /       \
                 fatalError("Switch wasn't exhaustive for \(address) (\(String(address, radix: 16))) 👁️👄👁️")
-            }
-        }
-        
+            }                                                                             //      |\       /|
+        }                                                                                 //        ‾T‾‾‾T‾
+                                                                                          //         ⅃   L
+                                                                                          //  I am an ascii art god
         public func read(from address: UInt16) -> UInt8 {
             var value: UInt8 = 0
             access(at: address) { value = $0 }
@@ -62,32 +81,7 @@ extension NES {
         }
         
         public func write(_ value: UInt8, to address: UInt16) {
-            switch address {
-            case ...0x1FFF:
-                // Internal RAM and its mirrors
-                let resolvedAddress = address & 0x07FF
-                internalRAM.write(value, to: resolvedAddress)
-            case 0x2000...0x3FFF:
-                // TODO: - Retreive from PPU registers (only 8 bytes, subsequent bytes are mirrored)
-                break
-            case 0x4000...0x4017:
-                // TODO: - Retreive from APU and IO registers
-                break
-            case 0x4018...0x401F:
-                // APU and IO functionality that is normally disabled
-                break
-            case 0x4020...0xFFFF:
-                // Writes to this range are often used for mapper control (bank switching)
-                // Pass it off to the cartridge for proper mapping
-                guard let cartridge else {
-                    emuLogger.error("Cartridge is nil for write to address \(address) (\(String(address, radix: 16))")
-                    return
-                }
-                
-                cartridge.write(value, to: address)                                       //        _______
-            default:                                                                      //       /       \
-                fatalError("Switch wasn't exhaustive for \(address) (\(String(address, radix: 16))) 👁️👄👁️")
-            }                                                                             //      |\       /|
-        }                                                                                 //        ‾T‾‾‾T‾
-    }                                                                                     //         ⅃   L
-}                                                                                         //  I am an ascii art god
+            access(at: address) { $0 = value }
+        }
+    }
+}

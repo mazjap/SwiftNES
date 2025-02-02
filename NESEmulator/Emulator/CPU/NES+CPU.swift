@@ -1,6 +1,6 @@
 extension NES {
     public class CPU {
-        let memoryManager: MMU
+        var memoryManager: CPUMemoryAccess
         var irqPending = false
         var nmiPending = false
         var registers: Registers
