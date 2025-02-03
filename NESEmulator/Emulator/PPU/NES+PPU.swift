@@ -26,5 +26,13 @@ extension NES {
         func reset() {
             // TODO: - Implement me
         }
+        
+        func read(from register: UInt8) -> UInt8 {
+            registers.read(from: register)
+        }
+        
+        func write(_ value: UInt8, to register: UInt8) {
+            registers.write(value, to: register)
+        }
     }
 }

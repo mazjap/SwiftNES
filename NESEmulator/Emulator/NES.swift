@@ -19,10 +19,10 @@ public class NintendoEntertainmentSystem {
         self.input = InputHandler()
         
         memoryManager.readPPURegister = { [unowned ppu] register in
-            ppu.registers.read(from: register)
+            ppu.read(from: register)
         }
         memoryManager.writePPURegister = { [unowned ppu] value, register in
-            ppu.registers.write(value, to: register)
+            ppu.write(value, to: register)
         }
         
         self.reset()
@@ -39,8 +39,16 @@ public class NintendoEntertainmentSystem {
         while true {
             // Emulation loop
             let cpuCycles = cpu.executeNextInstruction()
-            ppu.step(cpuCycles)
-            apu.step(cpuCycles)
+            
+            // PPU steps 3 times per cpu step
+            for _ in 0..<cpuCycles * 3 {
+                ppu.step(cpuCycles)
+            }
+            
+            for _ in 0..<cpuCycles {
+                apu.step(cpuCycles)
+            }
+            
             // Handle other components as needed
         }
     }
