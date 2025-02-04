@@ -14,7 +14,7 @@ public class NintendoEntertainmentSystem {
         self.memoryManager = memoryManager
         
         self.cpu = CPU(memoryManager: memoryManager)
-        self.ppu = PPU()
+        self.ppu = PPU(memoryManager: memoryManager)
         self.apu = APU()
         self.input = InputHandler()
         

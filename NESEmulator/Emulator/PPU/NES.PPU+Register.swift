@@ -1,5 +1,7 @@
 extension NES.PPU {
     struct Registers {
+        private let memory: Memory
+        
         /// Control Register ($2000) write-only
         /// Controls basic PPU operations and configures PPU memory access patterns
         var ctrl: PPUCtrl
@@ -18,8 +20,10 @@ extension NES.PPU {
         
         /// OAM Data Register ($2004) read/write
         /// Read/write data from/to OAM at the address specified by OAMADDR
-        var oamData: UInt8
-        
+        var oamData: UInt8 {
+            get { memory.readOAM(from: oamAddr) }
+            set { memory.writeOAM(newValue, to: oamAddr) }
+        }
         /// Scroll Register ($2005) write-only x2
         /// Controls fine scrolling of the background
         var scroll: UInt16
@@ -30,7 +34,10 @@ extension NES.PPU {
         
         /// PPU Data Register ($2007) read/write
         /// Read/write data from/to VRAM at the address specified by PPUADDR
-        var data: UInt8
+        var data: UInt8 {
+            get { memory.read(from: addr) }
+            set { memory.write(newValue, to: addr) }
+        }
         
         /// OAM DMA Register ($4014) write-only
         /// Writing to this register initiates a DMA transfer from CPU memory to OAM
@@ -39,15 +46,14 @@ extension NES.PPU {
         private var writeToggle = false  // Toggles between high/low byte
         private var lastDataBusValue: UInt8 = 0 // Used when accessing write-only registers
         
-        init(ctrl: PPUCtrl, mask: PPUMask, status: PPUStatus, oamAddr: UInt8, oamData: UInt8, scroll: UInt16, addr: UInt16, data: UInt8, oamDma: UInt8, writeToggle: Bool = false) {
+        init(memory: Memory, ctrl: PPUCtrl, mask: PPUMask, status: PPUStatus, oamAddr: UInt8, scroll: UInt16, addr: UInt16, oamDma: UInt8, writeToggle: Bool = false) {
+            self.memory = memory
             self.ctrl = ctrl
             self.mask = mask
             self.status = status
             self.oamAddr = oamAddr
-            self.oamData = oamData
             self.scroll = scroll
             self.addr = addr
-            self.data = data
             self.oamDma = oamDma
             self.writeToggle = writeToggle
         }
