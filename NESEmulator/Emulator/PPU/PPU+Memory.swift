@@ -19,7 +19,12 @@ extension NES.PPU {
         func read(from address: UInt16) -> UInt8 {
             switch address & 0x3FFF {  // Mirror everything above $3FFF
             case 0x0000...0x1FFF:  // Pattern Tables
-                return cartridge?.read(from: address) ?? 0
+                guard let cartridge else {
+                    emuLogger.error("Attempted to read pattern table with no cartridge present")
+                    return 0
+                }
+                
+                return cartridge.read(from: address)
             case 0x2000...0x2FFF:  // Nametables
                 return vram[Int(address & 0x7FF)]  // Mirror every 2KB
             case 0x3000...0x3EFF:  // Nametable mirrors
@@ -33,14 +38,20 @@ extension NES.PPU {
                     paletteRam[paletteAddr]
                 }
             default:
-                fatalError("Unhandled PPU memory read")
+                emuLogger.error("PPU attempted to read from invalid address: \(String(format: "0x%04X", address))")
+                return 0
             }
         }
         
         func write(_ value: UInt8, to address: UInt16) {
             switch address & 0x3FFF {
             case 0x0000...0x1FFF: // Pattern Tables
-                cartridge?.write(value, to: address)
+                guard let cartridge else {
+                    emuLogger.error("Attempted to write to pattern table with no cartridge present")
+                    return
+                }
+                
+                cartridge.write(value, to: address)
             case 0x2000...0x2FFF: // Nametables
                 vram[Int(address & 0x7FF)] = value
             case 0x3000...0x3EFF: // Nametable mirrors
@@ -53,7 +64,7 @@ extension NES.PPU {
                     paletteRam[paletteAddr] = value
                 }
             default:
-                fatalError("Unhandled PPU memory write")
+                emuLogger.error("PPU attempted to write \(String(format: "0x%02X", value)) to invalid address: \(String(format: "0x%04X", address))")
             }
         }
         
