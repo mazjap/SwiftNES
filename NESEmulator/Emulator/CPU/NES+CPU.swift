@@ -1,6 +1,6 @@
 extension NES {
     public class CPU {
-        var memoryManager: CPUMemoryAccess
+        unowned var memoryManager: MMU
         var irqPending = false
         var nmiPending = false
         var registers: Registers
