@@ -34,9 +34,30 @@ extension NES.PPU {
         
         /// PPU Data Register ($2007) read/write
         /// Read/write data from/to VRAM at the address specified by PPUADDR
+        /// Reading from non-palette memory returns the contents of an internal buffer,
+        /// which is then filled with the newly read value.
+        /// Reading from palette memory returns the value immediately and fills the
+        /// buffer with the corresponding nametable data.
         var data: UInt8 {
-            get { memory.read(from: addr) }
-            set { memory.write(newValue, to: addr) }
+            mutating get {
+                let memoryValue = memory.read(from: addr)
+                
+                // Increment address before any potential read buffering
+                addr += ctrl.vramAddressIncrement
+                
+                if addr < 0x3F00 { // Not palette data - return last buffered value, store new value in buffer
+                    let bufferedValue = ppuDataReadBuffer
+                    ppuDataReadBuffer = memoryValue
+                    return bufferedValue
+                } else { // Palette data - return new value, but also store in buffer
+                    ppuDataReadBuffer = memory.read(from: addr & 0x2FFF)
+                    return memoryValue
+                }
+            }
+            set {
+                memory.write(newValue, to: addr)
+                addr += ctrl.vramAddressIncrement
+            }
         }
         
         /// OAM DMA Register ($4014) write-only
@@ -45,6 +66,7 @@ extension NES.PPU {
         
         private var writeToggle = false  // Toggles between high/low byte
         private var lastDataBusValue: UInt8 = 0 // Used when accessing write-only registers
+        private var ppuDataReadBuffer: UInt8 = 0 // Last pulled value from memory
         
         init(memory: Memory, ctrl: PPUCtrl, mask: PPUMask, status: PPUStatus, oamAddr: UInt8, scroll: UInt16, addr: UInt16, oamDma: UInt8, writeToggle: Bool = false) {
             self.memory = memory
@@ -100,14 +122,18 @@ extension NES.PPU.Registers {
     }
     
     mutating func read(from register: UInt8) -> UInt8 {
-        let value = switch register {
-        // Write-only registers return last data bus value
-        case 0x00, 0x01, 0x03, 0x05, 0x06: lastDataBusValue
-        case 0x02: status.readAndClear()
-        case 0x04: oamData
-        case 0x07: data // TODO: - Implement PPUData buffer
-        default: fatalError("Read request to non-existent PPU Register: \(String(format: "%02x", register))")
-        }
+        let value = {
+            switch register {
+                // Write-only registers return last data bus value
+                case 0x00, 0x01, 0x03, 0x05, 0x06:
+                    emuLogger.notice("Attempted read from write-only PPU status register")
+                    return lastDataBusValue
+                case 0x02: return status.readAndClear()
+                case 0x04: return oamData
+                case 0x07: return data
+                default: fatalError("Read request to non-existent PPU Register: \(String(format: "%02x", register))")
+            }
+        }()
         
         lastDataBusValue = value
         return value
@@ -141,7 +167,7 @@ extension NES.PPU.Registers {
             }
             
             writeToggle.toggle()
-        case 0x07: data = value // TODO: - Implement PPUData buffer
+        case 0x07: data = value
         default: fatalError("Read request to non-existent PPU Register: \(String(format: "%02x", register))")
         }
     }
