@@ -14,7 +14,9 @@ public class NintendoEntertainmentSystem {
         self.memoryManager = memoryManager
         
         self.cpu = CPU(memoryManager: memoryManager)
-        self.ppu = PPU(memoryManager: memoryManager)
+        self.ppu = PPU(memoryManager: memoryManager, setNMI: { [unowned cpu] in
+            cpu.triggerNMI()
+        })
         self.apu = APU()
         self.input = InputHandler()
         

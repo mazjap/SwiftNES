@@ -1,16 +1,18 @@
 extension NES {
     public class PPU {
-        private var registers: Registers
-        private var cycle: Int = 0
-        private var scanline: Int = 0
-        private var frame: Int = 0
-        private var isOddFrame: Bool = false
-        private var memory: Memory
+        var registers: Registers
+        var cycle: Int = 0 // 0-340 pixels per scanline
+        var scanline: Int = 0 // 0-261 scanlines per frame
+        var frame: Int = 0
+        var isOddFrame: Bool = false // Used for skipped cycle on odd frames
+        var memory: Memory
+        var setNMI: () -> Void
         
-        init(memoryManager: MMU) {
+        init(memoryManager: MMU, setNMI: @escaping () -> Void) {
             let memory = Memory(cartridge: memoryManager.cartridge)
             
             self.memory = memory
+            self.setNMI = setNMI
             
             self.registers = Registers(
                 memory: memory,
@@ -25,7 +27,33 @@ extension NES {
         }
         
         func step(_ cycleCount: UInt8) {
-            // TODO: - Implement me
+            if scanline == -1 && cycle == 1 {
+                // Clear VBlank, sprite 0, overflow flags
+                registers.status.rawValue = 0
+            }
+            
+            if scanline >= 0 && scanline < 240 {
+                // Handle visible scanlines
+            } else if scanline == 241 && cycle == 1 {
+                // Set VBlank flag and trigger NMI if enabled
+                registers.status.insert(.vblank)
+                if registers.ctrl.contains(.generateNMI) {
+                    // Signal NMI to CPU
+                    setNMI()
+                }
+            }
+            
+            // Advance PPU state
+            cycle += 1
+            if cycle > 340 {
+                cycle = 0
+                scanline += 1
+                if scanline > 261 {
+                    scanline = -1
+                    frame += 1
+                    isOddFrame = !isOddFrame
+                }
+            }
         }
         
         func reset() {
