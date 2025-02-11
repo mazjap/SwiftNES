@@ -1,32 +1,42 @@
 # SwiftNES
 
-A Nintendo Entertainment System (NES) emulator written in Swift. The goal of this project is to deepen my understanding of system architecture, assembly language, and the inner workings of the NES by accurately replicating its functionality.
+A Nintendo Entertainment System (NES) emulator core written in Swift. This package provides the core emulation functionality for the SwiftNES Frontend. The goal of this project is to deepen understanding of system architecture, assembly language, and the inner workings of the NES by accurately replicating its functionality.
 
-## Current State of the Project
+## Features
 
-The following features are currently implemented:
+### Currently implemented
 
-- CPU emulation (MOS 6502)
-- Memory management unit (MMU)
+- Complete MOS 6502 CPU emulation with:
+  - All official opcodes
+  - Cycle-accurate timing
+  - Memory management unit (MMU)
+  - Full test suite
+- Initial cartridge support with Mapper 0
 
-### Missing Features
+### Under Development
 
 The emulator is still in development, and several key components are not yet implemented:
 
-- [ ] Picture Processing Unit (PPU) to render graphics
-  - [ ] Need to do some research & testing (SwiftUI Canvas vs MTKView)
-- [ ] Audio Processing Unit (APU) to output sound signals
-  - [ ] Use `AVAudioEngine` to translate NES signals to audio
-- [ ] Multiple cartridge mapper support
-- [ ] Additional debugging tools
-- Highly unstable instructions as described by [masswerk](https://www.masswerk.at/nowgobang/2021/6502-illegal-opcodes) (which I currently do not plan to implement)
+- [ ] Picture Processing Unit (PPU)
+  - [ ] Core rendering pipeline
+  - [ ] Background and sprite rendering
+  - [ ] Palette management
 
-I may consider adding:
-- An assembler
-- A dissasembler
-- A CPU emulation UI as a debug/testing tool to
-  - visualize memory & registers and how they change
-  - manipulate memory & registers as the program runs
+- [ ] Audio Processing Unit (APU)
+  - [ ] Waveform generation
+  - [ ] Audio mixing
+  - [ ] Channel emulation
+
+- [ ] Extended cartridge support
+  - [ ] Multiple mapper implementations
+  - [ ] Battery-backed save support
+
+- [ ] Debug tooling
+  - [ ] Assembler
+  - [ ] Dissasembler
+  - [ ] Memory visualizer & manipulator
+
+- Highly unstable instructions as described by [masswerk](https://www.masswerk.at/nowgobang/2021/6502-illegal-opcodes) (which I currently do not plan to implement)
   
 ## Technical Implementation Details
 
@@ -46,51 +56,90 @@ The original NES runs at 60.1 FPS, but this emulator will target 60 FPS to match
 - Input polling: Controller input will be sampled at instruction boundaries rather than individual cycles
 - DMA transfers: These will appear to happen instantly from the CPU's perspective rather than taking the correct number of cycles, though the cycle count will still be appropriately added to the timing
 
-## Build and Run Instructions
+## Installation
 
-Please ensure that you have Swift installed on your machine. This project uses Swift 6, and it's recommended to use the same version or newer.
+### Requirements
 
-To build and run the emulator, follow these steps:
+- iOS 14.0+
+- macOS 11.0+
+- watchOS 7.0+
+- visionOS 1.0+
+- tvOS 14.0+
+- Swift 6.0+
 
-1. **Clone the repository:**
+### Swift Package Manager
 
-   `git clone https://github.com/mazjap/SwiftNES.git`
+#### Add to your app
 
-3. **Navigate to the project directory:**
+1. In Xcode, open your project and navigate to File → Swift Packages → Add Package Dependency...
+2. Paste the repository URL (https://github.com/mazjap/SwiftNES.git) and click Next.
+3. For Rules, select Version (Up to Next Major) and click Next.
+4. Click Finish.
 
-   `cd ./SwiftNES`
+[More information](https://developer.apple.com/documentation/xcode/adding-package-dependencies-to-your-app)
 
-4. **Open the project with Xcode:**
+#### Add to your package
 
-   `open ./NESEmulator.xcodeproj`
+Add SwiftNES Core as a dependency in your Package.swift file:
+```swift
+dependencies: [
+    .package(url: "https://github.com/mazjap/SwiftNES.git", branch: "main")
+]
+```
 
-5. **Change the Team used to sign the project:**
+Then add it to your target dependencies:
+```swift
+targets: [
+    .target(
+        name: "YourTarget",
+        dependencies: ["SwiftNES"]
+    )
+]
+```
 
-   <img src="./src/setup.jpg" />
+## Basic Usage
 
-6. **Change the run destination and run the project:**
-   
-   Keyboard shortcut: `command+r`
+```swift
+import SwiftNES
 
-   OR
-   
-   Play icon in the top left of Xcode
+// Load a ROM
+let romData = // ... load your ROM data ...
+let cartridge = try NES.Cartridge(data: romData)
+
+// Initialize the emulator
+let nes = NES(cartridge: cartridge)
+
+// Run the emulator
+try nes.run()
+```
+
+## Project Structure
+
+- Sources/SwiftNES/
+  - Emulator/
+    - CPU/ - 6502 CPU implementation
+    - PPU/ - Graphics processing
+  - Helpers/
+  - Managers/
 
 ## Contributing
 
-Please note that this is a personal project designed for educational purposes, and as such, contributions are not currently being accepted. However, any feedback or suggestions are welcome!
+While this is primarily a personal educational project and not accepting direct contributions, feedback and suggestions are welcome through:
+- Opening issues
+- Suggesting improvements
+- Reporting bugs
 
 ## License
 
-This project is released under the MIT License. Attribution, while not required, is appreciated. See the [LICENSE file](./LICENSE) for more information.
+This project is released under the MIT License. See the [LICENSE file](./LICENSE) for more information. Attribution, while not required, is appreciated.
 
 ## Acknowledgments
 
-Thanks to the people behind these projects for their extensive documentation:
+Thanks to these resources for their extensive documentation:
 
-  1. [NESDev](https://www.nesdev.org/)
-  2. [Masswerk](https://www.masswerk.at/nowgobang/2021/6502-illegal-opcodes)
-  3. [Emulator101](http://www.emulator101.com/6502-addressing-modes.html)
-  4. [Cdot Wiki](https://wiki.cdot.senecapolytechnic.ca/wiki/6502_Addressing_Modes)
+  1. [NESDev Wiki](https://www.nesdev.org/wiki/Nesdev_Wiki) - Comprehensive NES hardware documentation
+  2. [Masswerk](https://www.masswerk.at/nowgobang/2021/6502-illegal-opcodes) - 6502 illegal opcodes
+  3. [Emulator101](http://www.emulator101.com/6502-addressing-modes.html) - 6502 addressing modes
+  4. [Cdot Wiki](https://wiki.cdot.senecapolytechnic.ca/wiki/6502_Addressing_Modes) - Additional addressing mode documentation
 
 And many more
