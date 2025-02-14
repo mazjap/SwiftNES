@@ -7,17 +7,17 @@ extension NES {
             /// to get compatible color formats for your rendering method
             public let data: [UInt32]
             
-            /// Converts the frame's RGB data to RGBA format by adding an opaque alpha channel
+            /// Converts the frame's RGB data to ARGB format by adding an opaque alpha channel
             /// Useful for rendering with APIs that expect RGBA pixel format like Metal's MTLPixelFormat.rgba8Unorm
-            /// - Returns: Array of pixels in RGBA format with full opacity (0xFF alpha)
-            func toRGBA() -> [UInt32] {
+            /// - Returns: Array of pixels in RGBA format with full opacity (0xFF alpha | 0xAARRGGBB)
+            func toARGB() -> [UInt32] {
                 data.map { $0 | 0xFF000000 }
             }
             
-            /// Converts the frame's RGB data to BGRA format by swapping R and B channels and adding an opaque alpha channel
+            /// Converts the frame's RGB data to ABGR format by swapping R and B channels and adding an opaque alpha channel
             /// Useful for rendering with APIs that expect BGRA pixel format like Metal's MTLPixelFormat.bgra8Unorm
-            /// - Returns: Array of pixels in BGRA format with full opacity (0xFF alpha)
-            func toBGRA() -> [UInt32] {
+            /// - Returns: Array of pixels in BGRA format with full opacity (0xFF alpha | 0xAABBGGRR)
+            func toABGR() -> [UInt32] {
                 data.map { rgb in
                     let r = (rgb >> 16) & 0xFF
                     let g = (rgb >> 8) & 0xFF
