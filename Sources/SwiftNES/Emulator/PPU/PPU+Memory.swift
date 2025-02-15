@@ -30,13 +30,7 @@ extension NES.PPU {
             case 0x3000...0x3EFF:  // Nametable mirrors
                 return read(from: address & 0x2FFF)
             case 0x3F00...0x3FFF:  // Palette RAM
-                let paletteAddr = Int(address & 0x1F)  // 32 byte wrap
-                // Handle palette mirroring
-                return if paletteAddr & 0x3 == 0 {
-                    paletteRam[0]  // Universal background color
-                } else {
-                    paletteRam[paletteAddr]
-                }
+                return readPalette(from: address)
             default:
                 emuLogger.error("PPU attempted to read from invalid address: \(String(format: "0x%04X", address))")
                 return 0
@@ -57,12 +51,7 @@ extension NES.PPU {
             case 0x3000...0x3EFF: // Nametable mirrors
                 write(value, to: address & 0x2FFF)
             case 0x3F00...0x3FFF: // Palette RAM
-                let paletteAddr = Int(address & 0x1F)
-                if paletteAddr & 0x3 == 0 {
-                    paletteRam[0] = value // Universal background color
-                } else {
-                    paletteRam[paletteAddr] = value
-                }
+                write(value, to: address)
             default:
                 emuLogger.error("PPU attempted to write \(String(format: "0x%02X", value)) to invalid address: \(String(format: "0x%04X", address))")
             }
@@ -75,6 +64,28 @@ extension NES.PPU {
         
         func writeOAM(_ value: UInt8, to address: UInt8) {
             oamRam[Int(address)] = value
+        }
+        
+        func readPalette(from address: UInt16) -> UInt8 {
+            let paletteAddr = Int(address & 0x1F)
+            
+            // $3F10/$3F14/$3F18/$3F1C mirror $3F00/$3F04/$3F08/$3F0C
+            if paletteAddr & 0x13 == 0x10 {
+                return paletteRam[paletteAddr & 0xF]
+            }
+            
+            return paletteRam[paletteAddr]
+        }
+
+        func writePalette(_ value: UInt8, to address: UInt16) {
+            let paletteAddr = Int(address & 0x1F)
+            
+            // $3F10/$3F14/$3F18/$3F1C mirror $3F00/$3F04/$3F08/$3F0C
+            if paletteAddr & 0x13 == 0x10 {
+                paletteRam[paletteAddr & 0xF] = value
+            } else {
+                paletteRam[paletteAddr] = value
+            }
         }
     }
 }
