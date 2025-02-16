@@ -1,8 +1,10 @@
 extension NES {
     public class PPU {
         public struct Frame: Sendable {
-            public let width: Int = 256
-            public let height: Int = 240
+            public static let width: Int = 256
+            public static let height: Int = 240
+            public static let pixelCount: Int = width * height
+            
             /// In RGB format. Use the convenience functions, `toRGBA()` or `toBGRA()`
             /// to get compatible color formats for your rendering method
             public let data: [UInt32]
@@ -10,20 +12,28 @@ extension NES {
             /// Converts the frame's RGB data to ARGB format by adding an opaque alpha channel
             /// Useful for rendering with APIs that expect RGBA pixel format like Metal's MTLPixelFormat.rgba8Unorm
             /// - Returns: Array of pixels in RGBA format with full opacity (0xFF alpha | 0xAARRGGBB)
-            func toARGB() -> [UInt32] {
+            public func toARGB() -> [UInt32] {
                 data.map { $0 | 0xFF000000 }
             }
             
             /// Converts the frame's RGB data to ABGR format by swapping R and B channels and adding an opaque alpha channel
             /// Useful for rendering with APIs that expect BGRA pixel format like Metal's MTLPixelFormat.bgra8Unorm
             /// - Returns: Array of pixels in BGRA format with full opacity (0xFF alpha | 0xAABBGGRR)
-            func toABGR() -> [UInt32] {
+            public func toABGR() -> [UInt32] {
                 data.map { rgb in
                     let r = (rgb >> 16) & 0xFF
                     let g = (rgb >> 8) & 0xFF
                     let b = rgb & 0xFF
                     return 0xFF000000 | (b << 16) | (g << 8) | r
                 }
+            }
+            
+            public func isValidPosition(x: Int, y: Int) -> Bool {
+                x >= 0 && x < Self.width && y >= 0 && y < Self.height
+            }
+            
+            public func positionFor(x: Int, y: Int) -> Int {
+                y * Self.width + x
             }
         }
         
@@ -52,16 +62,17 @@ extension NES {
         var memory: Memory
         var setNMI: () -> Void
         var frameBuffer: FrameBuffer
-        var frameCallback: ((Frame) -> Void)?
+        // TODO: - Solidify Result Error type to specific cases
+        var frameCallback: ((Result<Frame, Error>) -> Void)?
             
-        public func setFrameCallback(_ callback: @escaping (Frame) -> Void) {
+        public func setFrameCallback(_ callback: @escaping (Result<Frame, Error>) -> Void) {
             frameCallback = callback
         }
             
         public func frameSequence() -> AsyncThrowingStream<Frame, Error> {
             AsyncThrowingStream { continuation in
-                setFrameCallback { frame in
-                    continuation.yield(frame)
+                setFrameCallback { result in
+                    continuation.yield(with: result)
                 }
             }
         }
@@ -72,7 +83,7 @@ extension NES {
         
         private func outputFrame() {
             guard let frameCallback else { return }
-            frameCallback(frameBuffer.makeFrame())
+            frameCallback(.success(frameBuffer.makeFrame()))
         }
         
         init(memoryManager: MMU, setNMI: @escaping () -> Void) {
