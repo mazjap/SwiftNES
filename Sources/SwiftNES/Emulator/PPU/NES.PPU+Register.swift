@@ -42,8 +42,8 @@ extension NES.PPU {
             mutating get {
                 let memoryValue = memory.read(from: addr)
                 
-                // Increment address before any potential read buffering
-                addr += ctrl.vramAddressIncrement
+                // Increment before any potential read buffering
+                incrementDataAddress()
                 
                 if addr < 0x3F00 { // Not palette data - return last buffered value, store new value in buffer
                     let bufferedValue = ppuDataReadBuffer
@@ -56,7 +56,7 @@ extension NES.PPU {
             }
             set {
                 memory.write(newValue, to: addr)
-                addr += ctrl.vramAddressIncrement
+                incrementDataAddress()
             }
         }
         
@@ -119,6 +119,10 @@ extension NES.PPU.Registers {
         set {
             addr = (addr & 0xFF00) | UInt16(newValue)
         }
+    }
+    
+    private mutating func incrementDataAddress() {
+        addr = (addr + ctrl.vramAddressIncrement) & 0x3FFF
     }
     
     mutating func read(from register: UInt8) -> UInt8 {
