@@ -87,5 +87,63 @@ extension NES.PPU {
                 paletteRam[paletteAddr] = value
             }
         }
+        
+        /// Fetches an 8x8 tile from the pattern table
+        /// - Parameters:
+        ///   - tileIndex: Index of the tile in pattern table (0-255)
+        ///   - table: Which pattern table to use (0 or 1)
+        /// - Returns: Array of 8 bytes for the low bit plane and 8 bytes for the high bit plane
+        func fetchTileData(tileIndex: UInt8, table: UInt8) -> (lowPlane: [UInt8], highPlane: [UInt8]) {
+            let baseAddr = UInt16(table) * 0x1000 // Each table is 4KB (0x1000 bytes)
+            let tileAddr = baseAddr + UInt16(tileIndex) * 16 // Each tile is 16 bytes
+            
+            var lowPlane = [UInt8]()
+            var highPlane = [UInt8]()
+            
+            // First 8 bytes are low bit plane
+            for i in 0..<8 {
+                lowPlane.append(read(from: tileAddr + UInt16(i)))
+            }
+            
+            // Next 8 bytes are high bit plane
+            for i in 0..<8 {
+                highPlane.append(read(from: tileAddr + UInt16(i + 8)))
+            }
+            
+            return (lowPlane, highPlane)
+        }
+        
+        /// Decodes a single row of an 8x8 tile
+        /// - Parameters:
+        ///   - lowByte: Byte from the low bit plane
+        ///   - highByte: Byte from the high bit plane
+        /// - Returns: Array of 8 2-bit values representing pixel pattern indices
+        func decodeTileRow(lowByte: UInt8, highByte: UInt8) -> [UInt8] {
+            var row = [UInt8](repeating: 0, count: 8)
+            
+            for bit in 0..<8 {
+                let lowBit = (lowByte >> (7 - bit)) & 0x1
+                let highBit = (highByte >> (7 - bit)) & 0x1
+                row[bit] = (highBit << 1) | lowBit
+            }
+            
+            return row
+        }
+        
+        /// Fetches and decodes a complete 8x8 tile
+        /// - Parameters:
+        ///   - tileIndex: Index of the tile in pattern table (0-255)
+        ///   - table: Which pattern table to use (0 or 1)
+        /// - Returns: 8x8 array of pattern indices (0-3)
+        func fetchDecodedTile(tileIndex: UInt8, table: UInt8) -> [[UInt8]] {
+            let (lowPlane, highPlane) = fetchTileData(tileIndex: tileIndex, table: table)
+            var tile = [[UInt8]](repeating: [UInt8](repeating: 0, count: 8), count: 8)
+            
+            for row in 0..<8 {
+                tile[row] = decodeTileRow(lowByte: lowPlane[row], highByte: highPlane[row])
+            }
+            
+            return tile
+        }
     }
 }
