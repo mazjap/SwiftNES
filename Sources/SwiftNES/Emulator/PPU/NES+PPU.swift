@@ -10,15 +10,15 @@ extension NES {
             public let data: [UInt32]
             
             /// Converts the frame's RGB data to ARGB format by adding an opaque alpha channel
-            /// Useful for rendering with APIs that expect RGBA pixel format like Metal's MTLPixelFormat.rgba8Unorm
-            /// - Returns: Array of pixels in RGBA format with full opacity (0xFF alpha | 0xAARRGGBB)
+            /// Useful for rendering with APIs that expect ARGB pixel format like Metal's MTLPixelFormat.rgba8Unorm
+            /// - Returns: Array of pixels in ARGB format with full opacity (0xFF alpha | 0xAARRGGBB)
             public func toARGB() -> [UInt32] {
                 data.map { $0 | 0xFF000000 }
             }
             
             /// Converts the frame's RGB data to ABGR format by swapping R and B channels and adding an opaque alpha channel
-            /// Useful for rendering with APIs that expect BGRA pixel format like Metal's MTLPixelFormat.bgra8Unorm
-            /// - Returns: Array of pixels in BGRA format with full opacity (0xFF alpha | 0xAABBGGRR)
+            /// Useful for rendering with APIs that expect ABGR pixel format like Metal's MTLPixelFormat.bgra8Unorm
+            /// - Returns: Array of pixels in ABGR format with full opacity (0xFF alpha | 0xAABBGGRR)
             public func toABGR() -> [UInt32] {
                 data.map { rgb in
                     let r = (rgb >> 16) & 0xFF
@@ -64,11 +64,11 @@ extension NES {
         var frameBuffer: FrameBuffer
         // TODO: - Solidify Result Error type to specific cases
         var frameCallback: ((Result<Frame, Error>) -> Void)?
-            
+        
         public func setFrameCallback(_ callback: @escaping (Result<Frame, Error>) -> Void) {
             frameCallback = callback
         }
-            
+        
         public func frameSequence() -> AsyncThrowingStream<Frame, Error> {
             AsyncThrowingStream { continuation in
                 setFrameCallback { result in
