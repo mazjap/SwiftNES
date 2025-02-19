@@ -64,9 +64,9 @@ extension NES.PPU {
         /// Writing to this register initiates a DMA transfer from CPU memory to OAM
         var oamDma: UInt8
         
-        private var writeToggle = false  // Toggles between high/low byte
         private var lastDataBusValue: UInt8 = 0 // Used when accessing write-only registers
         private var ppuDataReadBuffer: UInt8 = 0 // Last pulled value from memory
+        var writeToggle = false  // Toggles between high/low byte
         var tempVramAddress: UInt16 = 0 // Temporary VRAM address register
         var currentVramAddress: UInt16 = 0 // Current VRAM address register
         var fineXScroll: UInt8 = 0 // Fine X scroll (3 bits)

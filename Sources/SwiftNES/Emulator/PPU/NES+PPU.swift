@@ -6,38 +6,18 @@ extension NES {
         var frame: Int = 0
         var isOddFrame: Bool = false // Used for skipped cycle on odd frames
         var memory: Memory
-        var setNMI: () -> Void
+        var nmiPending = false
+        var triggerNMI: () -> Void
         var frameBuffer: FrameBuffer
         // TODO: - Solidify Result Error type to specific cases
         var frameCallback: ((Result<Frame, Error>) -> Void)?
         public internal(set) var renderState: RenderState = .idle
         
-        public func setFrameCallback(_ callback: @escaping (Result<Frame, Error>) -> Void) {
-            frameCallback = callback
-        }
-        
-        public func frameSequence() -> AsyncThrowingStream<Frame, Error> {
-            AsyncThrowingStream { continuation in
-                setFrameCallback { result in
-                    continuation.yield(with: result)
-                }
-            }
-        }
-        
-        private func colorFromPaletteIndex(_ index: UInt8) -> UInt32 {
-            Self.masterPalette[Int(index & 0x3F)]
-        }
-        
-        private func outputFrame() {
-            guard let frameCallback else { return }
-            frameCallback(.success(frameBuffer.makeFrame()))
-        }
-        
-        init(memoryManager: MMU, setNMI: @escaping () -> Void) {
+        init(memoryManager: MMU, triggerNMI: @escaping () -> Void) {
             let memory = Memory(cartridge: memoryManager.cartridge)
             
             self.memory = memory
-            self.setNMI = setNMI
+            self.triggerNMI = triggerNMI
             
             self.registers = Registers(
                 memory: memory,
@@ -53,12 +33,17 @@ extension NES {
             self.frameBuffer = FrameBuffer()
         }
         
+        // MARK: - Internal Functions
+        
         func step(_ cycleCount: UInt8) {
             // Pre-render scanline (-1)
             if scanline == -1 {
                 if cycle == 1 {
-                    // Clear VBlank, sprite 0, overflow flags
-                    registers.status.rawValue = 0
+                    // Clear status flags related to the last frame
+                    registers.status.remove([.vblank, .sprite0Hit, .spriteOverflow])
+                    
+                    // Also clear pending NMI if it was set
+                    nmiPending = false
                 }
                 
                 if cycle >= 280 && cycle <= 304 && (registers.mask.contains(.showBackground) || registers.mask.contains(.showSprites)) {
@@ -86,13 +71,9 @@ extension NES {
                     // TODO: Implement prefetch
                 }
                 
-                // Update horizontal position at end of line
+                // Update horizontal & vertical position at end of line
                 if cycle == 256 {
                     incrementHorizontalPosition()
-                }
-                
-                // Update vertical position at end of line
-                if cycle == 256 {
                     incrementVerticalPosition()
                 }
             }
@@ -103,10 +84,15 @@ extension NES {
             // Start of VBlank (scanline 241)
             if scanline == 241 && cycle == 1 {
                 registers.status.insert(.vblank)
-                if registers.ctrl.contains(.generateNMI) {
-                    setNMI()
-                }
+                
                 outputFrame()
+                
+                if registers.ctrl.contains(.generateNMI) {
+                    triggerNMI()
+                }
+                
+                // Set NMI pending for edge case handling with later PPUCTRL writes
+                nmiPending = true
             }
             
             // Advance PPU state
@@ -132,11 +118,59 @@ extension NES {
         }
         
         func read(from register: UInt8) -> UInt8 {
-            registers.read(from: register)
+            switch register {
+            case 0x02: // PPUSTATUS
+                return readStatus()
+            default:
+                return registers.read(from: register)
+            }
         }
         
         func write(_ value: UInt8, to register: UInt8) {
-            registers.write(value, to: register)
+            switch register {
+            case 0x00: // PPUCTRL
+                writeControl(value)
+            default:
+                registers.write(value, to: register)
+            }
+        }
+        
+        /// Handle PPUSTATUS register read with proper NMI timing
+        private func readStatus() -> UInt8 {
+            let currentStatus = registers.status.readAndClear()
+            registers.writeToggle = false
+            
+            // If reading status exactly at VBlank set (race condition),
+            // prevent NMI from occurring this frame by clearing the pending flag
+            if scanline == 241 && cycle <= 3 {
+                nmiPending = false
+            }
+            
+            return currentStatus
+        }
+        
+        /// Handle PPUCTRL register write with proper NMI timing
+        private func writeControl(_ value: UInt8) {
+            let oldNMIEnabled = registers.ctrl.contains(.generateNMI)
+            registers.ctrl.rawValue = value
+            
+            // If NMI enabled during VBlank period and previously disabled,
+            // and VBlank flag is set, trigger an NMI immediately
+            if !oldNMIEnabled && registers.ctrl.contains(.generateNMI) &&
+               registers.status.contains(.vblank) && nmiPending {
+                triggerNMI()
+            }
+        }
+        
+        // MARK: - Private Functions
+        
+        private func colorFromPaletteIndex(_ index: UInt8) -> UInt32 {
+            Self.masterPalette[Int(index & 0x3F)]
+        }
+        
+        private func outputFrame() {
+            guard let frameCallback else { return }
+            frameCallback(.success(frameBuffer.makeFrame()))
         }
         
         private func incrementHorizontalPosition() {
@@ -202,5 +236,21 @@ extension NES {
             0xE9E681, 0xCEF481, 0xB6FB9A, 0xA9FAC3, // 0x38-0x3B
             0xA9F0F4, 0xB8B8B8, 0x000000, 0x000000  // 0x3C-0x3F
         ]
+    }
+}
+
+extension NES.PPU {
+    // MARK: - Public API Functions
+    
+    public func setFrameCallback(_ callback: @escaping (Result<Frame, Error>) -> Void) {
+        frameCallback = callback
+    }
+    
+    public func frameSequence() -> AsyncThrowingStream<Frame, Error> {
+        AsyncThrowingStream { continuation in
+            setFrameCallback { result in
+                continuation.yield(with: result)
+            }
+        }
     }
 }
