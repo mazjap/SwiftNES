@@ -67,6 +67,9 @@ extension NES.PPU {
         private var writeToggle = false  // Toggles between high/low byte
         private var lastDataBusValue: UInt8 = 0 // Used when accessing write-only registers
         private var ppuDataReadBuffer: UInt8 = 0 // Last pulled value from memory
+        var tempVramAddress: UInt16 = 0 // Temporary VRAM address register
+        var currentVramAddress: UInt16 = 0 // Current VRAM address register
+        var fineXScroll: UInt8 = 0 // Fine X scroll (3 bits)
         
         init(memory: Memory, ctrl: PPUCtrl, mask: PPUMask, status: PPUStatus, oamAddr: UInt8, scroll: UInt16, addr: UInt16, oamDma: UInt8, writeToggle: Bool = false) {
             self.memory = memory
@@ -129,13 +132,18 @@ extension NES.PPU.Registers {
         let value = {
             switch register {
                 // Write-only registers return last data bus value
-                case 0x00, 0x01, 0x03, 0x05, 0x06:
-                    emuLogger.notice("Attempted read from write-only PPU status register")
-                    return lastDataBusValue
-                case 0x02: return status.readAndClear()
-                case 0x04: return oamData
-                case 0x07: return data
-                default: fatalError("Read request to non-existent PPU Register: \(String(format: "%02x", register))")
+            case 0x00, 0x01, 0x03, 0x05, 0x06:
+                emuLogger.notice("Attempted read from write-only PPU status register")
+                return lastDataBusValue
+            case 0x02:
+                writeToggle = false
+                return status.readAndClear()
+            case 0x04:
+                return oamData
+            case 0x07:
+                return data
+            default:
+                fatalError("Read request to non-existent PPU Register: \(String(format: "%02x", register))")
             }
         }()
         
@@ -157,17 +165,24 @@ extension NES.PPU.Registers {
         case 0x04: oamData = value
         case 0x05:
             if writeToggle {
-                scrollY = value
+                // Second write (Y scroll)
+                tempVramAddress = (tempVramAddress & 0x8FFF) | (UInt16(value & 0x7) << 12) // Fine Y scroll (3 bits)
+                tempVramAddress = (tempVramAddress & 0xFC1F) | (UInt16(value & 0xF8) << 2) // Coarse Y scroll (5 bits)
             } else {
-                scrollX = value
+                // First write (X scroll)
+                fineXScroll = value & 0x7 // Fine X scroll (3 bits)
+                tempVramAddress = (tempVramAddress & 0xFFE0) | (UInt16(value) >> 3) // Coarse X scroll (5 bits)
             }
             
             writeToggle.toggle()
         case 0x06:
-            if writeToggle {
-                addrHigh = value
+            if !writeToggle {
+                // Second write (low byte)
+                tempVramAddress = (tempVramAddress & 0xFF00) | UInt16(value) // Set low byte
+                currentVramAddress = tempVramAddress // Copy `temp` to `current` on second write
             } else {
-                addrLow = value
+                // First write (high byte)
+                tempVramAddress = (tempVramAddress & 0x00FF) | (UInt16(value & 0x3F) << 8) // Set high byte, clear unused bits
             }
             
             writeToggle.toggle()
