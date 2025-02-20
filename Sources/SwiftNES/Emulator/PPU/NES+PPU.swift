@@ -45,44 +45,14 @@ extension NES {
                     // Also clear pending NMI if it was set
                     nmiPending = false
                 }
-                
-                if cycle >= 280 && cycle <= 304 && (registers.mask.contains(.showBackground) || registers.mask.contains(.showSprites)) {
-                    // Copy vertical scroll bits from t to v
-                    registers.currentVramAddress = (registers.currentVramAddress & ~0x7BE0) | (registers.tempVramAddress & 0x7BE0)
-                }
             }
             
-            // Visible scanlines (0-239)
-            if scanline >= 0 && scanline < 240 {
-                if cycle == 0 {
-                    // Idle cycle
-                    renderState = .idle
-                } else if cycle <= 256 {
-                    // Visible pixels + tile/sprite fetching
-                    renderState = .visible
-                    // TODO: Implement rendering logic
-                } else if cycle <= 320 {
-                    // Sprite evaluation for next line
-                    renderState = .spriteEval
-                    // TODO: Implement sprite evaluation
-                } else if cycle <= 336 {
-                    // Prefetch first two tiles of next line
-                    renderState = .prefetch
-                    // TODO: Implement prefetch
-                }
-                
-                // Update horizontal & vertical position at end of line
-                if cycle == 256 {
-                    incrementHorizontalPosition()
-                    incrementVerticalPosition()
-                }
-            }
-            
-            // Post-render scanline (240)
-            // Do nothing, PPU is idle
+            // Handle VRAM address updates and render states
+            updateAddressDuringRendering()
             
             // Start of VBlank (scanline 241)
             if scanline == 241 && cycle == 1 {
+                renderState = .idle
                 registers.status.insert(.vblank)
                 
                 outputFrame()
@@ -215,6 +185,59 @@ extension NES {
                 
                 // Put coarse Y back into v
                 registers.currentVramAddress = (registers.currentVramAddress & ~0x03E0) | (y << 5)
+            }
+        }
+        
+        /// Updates the VRAM address registers during active rendering
+        private func updateAddressDuringRendering() {
+            // Only update if rendering is enabled
+            if !(registers.mask.contains(.showBackground) || registers.mask.contains(.showSprites)) {
+                return
+            }
+            
+            // Active scanlines only (0-239)
+            if scanline >= 0 && scanline < 240 {
+                if cycle == 0 {
+                    // Idle cycle
+                    renderState = .idle
+                } else if cycle < 256 {
+                    // Visible pixels + tile/sprite fetching
+                    renderState = .visible
+                    
+                    // Every 8 cycles, increment coarse X
+                    if cycle % 8 == 0 {
+                        incrementHorizontalPosition()
+                    }
+                } else if cycle == 256 {
+                    renderState = .visible
+                    // At the end of scanline, increment Y position
+                    incrementVerticalPosition()
+                } else if cycle <= 320 {
+                    // Sprite evaluation for next line
+                    renderState = .spriteEval
+                    // TODO: Implement sprite evaluation
+                } else if cycle <= 336 {
+                    // Prefetch first two tiles of next line
+                    renderState = .prefetch
+                    // TODO: Implement prefetch
+                }
+            }
+            
+            // At cycle 257, copy horizontal bits from t to v
+            if cycle == 257 {
+                // Copy horizontal bits from t to v (coarse X, nametable select X)
+                registers.currentVramAddress = (registers.currentVramAddress & ~0x041F) |
+                                              (registers.tempVramAddress & 0x041F)
+            }
+            
+            // During pre-render scanline (261 or -1), copy vertical bits from t to v
+            if scanline == 261 || scanline == -1 {
+                // Between cycles 280-304, copy vertical bits
+                if cycle >= 280 && cycle <= 304 {
+                    // Copy vertical bits from t to v (coarse Y, fine Y, nametable select Y)
+                    registers.currentVramAddress = (registers.currentVramAddress & ~0x7BE0) |
+                                                  (registers.tempVramAddress & 0x7BE0)
+                }
             }
         }
         
