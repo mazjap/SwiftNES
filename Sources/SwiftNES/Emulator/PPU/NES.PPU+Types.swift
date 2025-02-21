@@ -54,6 +54,14 @@ extension NES.PPU {
 // MARK: - Internal Types
 
 extension NES.PPU {
+    /// Tracks current fetch operation during the 8-cycle pattern
+    enum FetchOperation {
+        case nametable
+        case attribute
+        case patternLow
+        case patternHigh
+    }
+    
     struct FrameBuffer {
         private var pixels: [UInt32]
         
@@ -68,6 +76,46 @@ extension NES.PPU {
         
         func makeFrame() -> Frame {
             Frame(data: pixels)
+        }
+    }
+    
+    /// State needed for background tile fetching
+    struct BackgroundFetchState {
+        // Current fetch operation
+        var operation: FetchOperation = .nametable
+        
+        // Temporary data for current tile fetch
+        var nametableByte: UInt8 = 0
+        var attributeByte: UInt8 = 0
+        var patternLowByte: UInt8 = 0
+        var patternHighByte: UInt8 = 0
+        
+        // Current tile's palette attribute (2 bits)
+        var tileAttribute: UInt8 = 0
+        
+        // Pattern table shift registers (16 bits each)
+        var patternShiftLow: UInt16 = 0
+        var patternShiftHigh: UInt16 = 0
+        
+        // Attribute shift registers (8 bits, but only 2 bits used)
+        var attributeShiftLow: UInt8 = 0
+        var attributeShiftHigh: UInt8 = 0
+        
+        // Attribute latches for next tile
+        var attributeLatchLow: UInt8 = 0
+        var attributeLatchHigh: UInt8 = 0
+        
+        // Reset back to initial state
+        mutating func reset() {
+            operation = .nametable
+            nametableByte = 0
+            attributeByte = 0
+            patternLowByte = 0
+            patternHighByte = 0
+            tileAttribute = 0
+            
+            // Don't reset shift registers on scanline reset
+            // as they need to continue shifting across tile boundaries
         }
     }
 }
