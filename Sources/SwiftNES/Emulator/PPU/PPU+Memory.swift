@@ -26,7 +26,8 @@ extension NES.PPU {
                 
                 return cartridge.read(from: address)
             case 0x2000...0x2FFF:  // Nametables
-                return vram[Int(address & 0x7FF)]  // Mirror every 2KB
+                let vramAddr = resolveNametableAddress(address)
+                return vram[Int(vramAddr)]
             case 0x3000...0x3EFF:  // Nametable mirrors
                 return read(from: address & 0x2FFF)
             case 0x3F00...0x3FFF:  // Palette RAM
@@ -47,7 +48,8 @@ extension NES.PPU {
                 
                 cartridge.write(value, to: address)
             case 0x2000...0x2FFF: // Nametables
-                vram[Int(address & 0x7FF)] = value
+                let vramAddr = resolveNametableAddress(address)
+                vram[Int(vramAddr)] = value
             case 0x3000...0x3EFF: // Nametable mirrors
                 write(value, to: address & 0x2FFF)
             case 0x3F00...0x3FFF: // Palette RAM
@@ -144,6 +146,44 @@ extension NES.PPU {
             }
             
             return tile
+        }
+        
+        /// Resolve a nametable address based on Cartridge's mirroring mode
+        func resolveNametableAddress(_ address: UInt16) -> UInt16 {
+            // Extract the nametable number (0-3) from bits 10-11
+            let nametableNum = (address >> 10) & 0x3
+            
+            // Get the base nametable address (0x2000-0x2C00, in steps of 0x400)
+            let baseAddr = 0x2000 + (nametableNum * 0x400)
+            
+            // Get the offset within the nametable (0-0x3FF)
+            let offset = address & 0x3FF
+            
+            // For the physical VRAM address, we need to map the logical nametable
+            // to one of the two physical nametables based on mirroring
+            var vramAddr: UInt16
+            
+            switch cartridge?.mapper.mirroringMode {
+            case .vertical:
+                // Nametables 0,2 -> first 1KB, 1,3 -> second 1KB
+                vramAddr = ((baseAddr & 0x800) == 0) ? offset : (0x400 + offset)
+                
+            case .singleScreenLower:
+                // All nametables -> first 1KB
+                vramAddr = offset
+                
+            case .singleScreenUpper:
+                // All nametables -> second 1KB
+                vramAddr = 0x400 + offset
+                
+            case .fourScreen:
+                fallthrough // TODO: - Implement four-screen mirroring. All your VRAM are belong to us.
+            case .horizontal, .none: // Default to horizontal mirroring if no cartridge
+                // Nametables 0,1 -> first 1KB, 2,3 -> second 1KB
+                vramAddr = (baseAddr < 0x2800) ? offset : (0x400 + offset)
+            }
+            
+            return vramAddr
         }
     }
 }

@@ -1,9 +1,19 @@
+public enum NametableMirroring {
+    case horizontal
+    case vertical
+    case singleScreenLower
+    case singleScreenUpper
+    case fourScreen
+}
+
 public protocol Mapper: Memory {
     var prgROM: [UInt8] { get }
     var chrROM: [UInt8] { get }
     
     var prgStart: UInt16 { get }
     var prgEnd: UInt16 { get }
+    
+    var mirroringMode: NametableMirroring { get }
 }
 
 extension Mapper {
@@ -20,9 +30,12 @@ extension NES.Cartridge {
         let prgStart: UInt16 = 0x8000
         let prgEnd: UInt16 = 0xFFFF
         
-        init(programMemory: [UInt8], characterMemory: [UInt8]) {
+        let mirroringMode: NametableMirroring
+        
+        init(programMemory: [UInt8], characterMemory: [UInt8], mirroringMode: NametableMirroring = .horizontal) {
             self.prgROM = programMemory
             self.chrROM = characterMemory
+            self.mirroringMode = mirroringMode
         }
         
         func read(from address: UInt16) -> UInt8 {
