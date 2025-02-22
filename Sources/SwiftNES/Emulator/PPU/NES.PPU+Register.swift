@@ -50,7 +50,8 @@ extension NES.PPU {
                     ppuDataReadBuffer = memoryValue
                     return bufferedValue
                 } else { // Palette data - return new value, but also store in buffer
-                    ppuDataReadBuffer = memory.read(from: addr & 0x2FFF)
+                    // Mirror palette addresses 3F00-3FFF to 2F00-2FFF for the buffer
+                    ppuDataReadBuffer = memory.read(from: 0x2000 | (addr & 0x0FFF))
                     return memoryValue
                 }
             }
