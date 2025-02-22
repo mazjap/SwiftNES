@@ -1,24 +1,37 @@
 extension NES.PPU {
     class Memory {
-        // 2KB of VRAM for nametables
-        private var vram: [UInt8]
-        // 256 bytes for sprite data
-        private var oamRam: [UInt8]
-        // 32 bytes for palettes
-        private var paletteRam: [UInt8]
-        // For accessing cartridge CHR ROM/RAM
+        private enum Size {
+            static let kilobyte = 1024
+            static let nametable = 2 * kilobyte // 2KB
+            static let spriteRAM = 256 // 256B
+            static let paletteRAM = 32 // 32B
+        }
+        
+        private var vram: [UInt8] = []
+        private var extendedVram: [UInt8]?
+        private var oamRam: [UInt8] = []
+        private var paletteRam: [UInt8] = []
         private weak var cartridge: NES.Cartridge?
         
-        init(cartridge: NES.Cartridge?) {
-            self.vram = [UInt8](repeating: 0, count: 0x800) // 2KB
-            self.oamRam = [UInt8](repeating: 0, count: 0x100) // 256B
-            self.paletteRam = [UInt8](repeating: 0, count: 32) // 32B
+        init() {}
+        
+        func reset(cartridge: NES.Cartridge?) {
             self.cartridge = cartridge
+            
+            vram = [UInt8](repeating: 0, count: Size.nametable)
+            oamRam = [UInt8](repeating: 0, count: Size.spriteRAM)
+            paletteRam = [UInt8](repeating: 0, count: Size.paletteRAM)
+            
+            if cartridge?.mapper.mirroringMode == .fourScreen {
+                extendedVram = [UInt8](repeating: 0, count: Size.nametable)
+            } else {
+                extendedVram = nil
+            }
         }
         
         func read(from address: UInt16) -> UInt8 {
-            switch address & 0x3FFF {  // Mirror everything above $3FFF
-            case 0x0000...0x1FFF:  // Pattern Tables
+            switch address & 0x3FFF { // Mirror everything above $3FFF
+            case 0x0000...0x1FFF: // Pattern Tables
                 guard let cartridge else {
                     emuLogger.error("Attempted to read pattern table with no cartridge present")
                     return 0
@@ -26,11 +39,17 @@ extension NES.PPU {
                 
                 return cartridge.read(from: address)
             case 0x2000...0x2FFF:  // Nametables
-                let vramAddr = resolveNametableAddress(address)
-                return vram[Int(vramAddr)]
-            case 0x3000...0x3EFF:  // Nametable mirrors
+                if let (isExtended, resolvedAddress) = resolveNametableAddress(address) {
+                    if isExtended, extendedVram != nil {
+                        return extendedVram![Int(resolvedAddress)]
+                    } else {
+                        return vram[Int(resolvedAddress)]
+                    }
+                }
+                return 0
+            case 0x3000...0x3EFF: // Nametable mirrors
                 return read(from: address & 0x2FFF)
-            case 0x3F00...0x3FFF:  // Palette RAM
+            case 0x3F00...0x3FFF: // Palette RAM
                 return readPalette(from: address)
             default:
                 emuLogger.error("PPU attempted to read from invalid address: \(String(format: "0x%04X", address))")
@@ -48,8 +67,13 @@ extension NES.PPU {
                 
                 cartridge.write(value, to: address)
             case 0x2000...0x2FFF: // Nametables
-                let vramAddr = resolveNametableAddress(address)
-                vram[Int(vramAddr)] = value
+                if let (isExtended, resolvedAddress) = resolveNametableAddress(address) {
+                    if isExtended, extendedVram != nil {
+                        extendedVram![Int(resolvedAddress)] = value
+                    } else {
+                        vram[Int(resolvedAddress)] = value
+                    }
+                }
             case 0x3000...0x3EFF: // Nametable mirrors
                 write(value, to: address & 0x2FFF)
             case 0x3F00...0x3FFF: // Palette RAM
@@ -149,41 +173,45 @@ extension NES.PPU {
         }
         
         /// Resolve a nametable address based on Cartridge's mirroring mode
-        func resolveNametableAddress(_ address: UInt16) -> UInt16 {
+        func resolveNametableAddress(_ address: UInt16) -> (isExtended: Bool, address: UInt16)? {
             // Extract the nametable number (0-3) from bits 10-11
             let nametableNum = (address >> 10) & 0x3
-            
-            // Get the base nametable address (0x2000-0x2C00, in steps of 0x400)
-            let baseAddr = 0x2000 + (nametableNum * 0x400)
             
             // Get the offset within the nametable (0-0x3FF)
             let offset = address & 0x3FF
             
-            // For the physical VRAM address, we need to map the logical nametable
-            // to one of the two physical nametables based on mirroring
-            var vramAddr: UInt16
-            
             switch cartridge?.mapper.mirroringMode {
             case .vertical:
                 // Nametables 0,2 -> first 1KB, 1,3 -> second 1KB
-                vramAddr = ((baseAddr & 0x800) == 0) ? offset : (0x400 + offset)
-                
+                let vramAddr = ((nametableNum & 1) == 0) ? offset : (0x400 + offset)
+                return (false, vramAddr)
             case .singleScreenLower:
                 // All nametables -> first 1KB
-                vramAddr = offset
-                
+                return (false, offset)
             case .singleScreenUpper:
                 // All nametables -> second 1KB
-                vramAddr = 0x400 + offset
-                
+                return (false, 0x400 + offset)
             case .fourScreen:
-                fallthrough // TODO: - Implement four-screen mirroring. All your VRAM are belong to us.
+                guard let extendedVram = extendedVram else {
+                    // Fallback to horizontal mirroring if extended VRAM isn't available
+                    fallthrough
+                }
+                
+                // Each nametable has its own dedicated 1KB
+                if nametableNum < 2 {
+                    // Nametables 0 and 1 use standard VRAM
+                    let vramAddr = (nametableNum == 0) ? offset : (0x400 + offset)
+                    return (false, vramAddr)
+                } else {
+                    // Nametables 2 and 3 use extended VRAM
+                    let vramAddr = (nametableNum == 2) ? offset : (0x400 + offset)
+                    return (true, vramAddr)
+                }
             case .horizontal, .none: // Default to horizontal mirroring if no cartridge
                 // Nametables 0,1 -> first 1KB, 2,3 -> second 1KB
-                vramAddr = (baseAddr < 0x2800) ? offset : (0x400 + offset)
+                let vramAddr = (nametableNum < 2) ? offset : (0x400 + offset)
+                return (false, vramAddr)
             }
-            
-            return vramAddr
         }
     }
 }

@@ -10,12 +10,13 @@ extension NES {
         var triggerNMI: () -> Void
         var bgFetchState = BackgroundFetchState()
         var frameBuffer: FrameBuffer
+        
         // TODO: - Solidify Result Error type to specific cases
         var frameCallback: ((Result<Frame, Error>) -> Void)?
         public internal(set) var renderState: RenderState = .idle
         
         init(memoryManager: MMU, triggerNMI: @escaping () -> Void) {
-            let memory = Memory(cartridge: memoryManager.cartridge)
+            let memory = Memory()
             
             self.memory = memory
             self.triggerNMI = triggerNMI
@@ -84,8 +85,9 @@ extension NES {
             }
         }
         
-        func reset() {
+        func reset(cartridge: Cartridge?) {
             // TODO: - Implement me
+            memory.reset(cartridge: cartridge)
         }
         
         func read(from register: UInt8) -> UInt8 {

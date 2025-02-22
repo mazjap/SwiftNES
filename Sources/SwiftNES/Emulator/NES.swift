@@ -57,7 +57,7 @@ public class NintendoEntertainmentSystem {
     
     public func reset() {
         cpu.reset()
-        ppu.reset()
+        ppu.reset(cartridge: memoryManager.cartridge)
         apu.reset()
         
         // TODO: - Possibly reset memoryManager & input
