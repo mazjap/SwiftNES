@@ -49,7 +49,7 @@ extension NES.Cartridge {
                 return prgROM[mirrorAddress]
             case 0x0000...0x1FFF:
                 // CHR ROM - used by the PPU
-                return chrROM[Int(address)]
+                return chrROM[Int(address) % chrROM.count]
             default:
                 // Addresses outside of the defined ranges are typically not used.
                 // Returning 0 for simplicity, but error handling could be added.
