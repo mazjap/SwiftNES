@@ -37,8 +37,8 @@ extension NES {
         // MARK: - Internal Functions
         
         func step(_ cycleCount: UInt8) {
-            // Pre-render scanline (-1)
-            if scanline == -1 {
+            // Pre-render scanline
+            if scanline == 261 {
                 if cycle == 1 {
                     // Clear status flags related to the last frame
                     registers.status.remove([.vblank, .sprite0Hit, .spriteOverflow])
@@ -72,7 +72,7 @@ extension NES {
                 cycle = 0
                 scanline += 1
                 if scanline > 261 {
-                    scanline = -1
+                    scanline = 0
                     frame += 1
                     isOddFrame = !isOddFrame
                     
@@ -212,8 +212,8 @@ extension NES {
                                               (registers.tempVramAddress & 0x041F)
             }
             
-            // During pre-render scanline (261 or -1), copy vertical bits from t to v
-            if scanline == 261 || scanline == -1 {
+            // During pre-render scanline (261), copy vertical bits from t to v
+            if scanline == 261 {
                 // Between cycles 280-304, copy vertical bits
                 if cycle >= 280 && cycle <= 304 {
                     // Copy vertical bits from t to v (coarse Y, fine Y, nametable select Y)
