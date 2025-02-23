@@ -174,11 +174,14 @@ extension NES.PPU {
         
         /// Resolve a nametable address based on Cartridge's mirroring mode
         func resolveNametableAddress(_ address: UInt16) -> (isExtended: Bool, address: UInt16)? {
+            // Normalize the address to the nametable range (0x2000-0x2FFF)
+            let normalizedAddr = 0x2000 | (address & 0xFFF)
+            
             // Extract the nametable number (0-3) from bits 10-11
-            let nametableNum = (address >> 10) & 0x3
+            let nametableNum = (normalizedAddr >> 10) & 0x3
             
             // Get the offset within the nametable (0-0x3FF)
-            let offset = address & 0x3FF
+            let offset = normalizedAddr & 0x3FF
             
             switch cartridge?.mapper.mirroringMode {
             case .vertical:
