@@ -37,7 +37,7 @@ extension NES {
         
         // MARK: - Internal Functions
         
-        func step(_ cycleCount: UInt8) {
+        func step() {
             // Pre-render scanline
             if scanline == 261 {
                 if cycle == 1 {
@@ -176,6 +176,8 @@ extension NES {
                 if cycle == 0 {
                     // Idle cycle
                     renderState = .idle
+                    
+                    bgFetchState.reset()
                 } else if cycle <= 256 {
                     // Visible pixels + tile/sprite fetching
                     renderState = .visible
@@ -204,95 +206,86 @@ extension NES {
                     
                     // Continue fetching during prefetch cycles
                     fetchBackgroundTile()
+                    
+                    // At 328 and 336, we need to increment the horizontal position
+                    if cycle == 328 || cycle == 336 {
+                        incrementHorizontalPosition()
+                    }
                 }
             }
             
             // At cycle 257, copy horizontal bits from t to v
             if cycle == 257 {
                 // Copy horizontal bits from t to v (coarse X, nametable select X)
-                registers.currentVramAddress = (registers.currentVramAddress & ~0x041F) |
-                                              (registers.tempVramAddress & 0x041F)
+                registers.currentVramAddress = (registers.currentVramAddress & ~0x041F) | (registers.tempVramAddress & 0x041F)
             }
             
             // During pre-render scanline (261), copy vertical bits from t to v
             if scanline == 261 {
-                // Between cycles 280-304, copy vertical bits
-                if cycle >= 280 && cycle <= 304 {
+                if cycle == 0 {
+                    bgFetchState.reset()
+                } else if cycle >= 280 && cycle <= 304 { // Between cycles 280-304, copy vertical bits
                     // Copy vertical bits from t to v (coarse Y, fine Y, nametable select Y)
-                    registers.currentVramAddress = (registers.currentVramAddress & ~0x7BE0) |
-                                                  (registers.tempVramAddress & 0x7BE0)
+                    registers.currentVramAddress = (registers.currentVramAddress & ~0x7BE0) | (registers.tempVramAddress & 0x7BE0)
                 }
             }
         }
         
         /// Performs background tile fetching based on current PPU cycle
         private func fetchBackgroundTile() {
+            assert(cycle <= 256 || (cycle >= 321 && cycle <= 336), "Background fetch occurred during invalid cycle: \(cycle)")
+            
             // Only fetch during active rendering
             guard registers.mask.contains(.showBackground) else {
                 return
             }
             
-            // Reset fetch state at the start of each scanline
-            if cycle == 0 {
-                bgFetchState.reset()
-            }
-            
-            // Each fetch operation takes 2 cycles
-            let fetchCycle = (cycle % 8) / 2
+            // Get exact cycle within the 8-cycle sequence
+            let fetchCycle = cycle & 0x7
             
             switch fetchCycle {
-            case 0: // Nametable byte fetch
-                // Calculate nametable address from current VRAM address
+            case 1: // Nametable fetch
+                bgFetchState.operation = .nametable
+            case 2: // Second cycle of nametable fetch - data becomes available
                 let nametableAddr = 0x2000 | (registers.currentVramAddress & 0x0FFF)
                 bgFetchState.nametableByte = memory.read(from: nametableAddr)
+            case 3: // Attribute fetch
                 bgFetchState.operation = .attribute
-                
-            case 1: // Attribute table byte fetch
-                // Calculate attribute address
+            case 4: // Second cycle of attribute fetch - data becomes available
                 let v = registers.currentVramAddress
                 let attributeAddr = 0x23C0 | (v & 0x0C00) | ((v >> 4) & 0x38) | ((v >> 2) & 0x07)
                 bgFetchState.attributeByte = memory.read(from: attributeAddr)
                 
-                // Extract the correct 2 bits based on tile position
+                // Calculate attribute bits
                 let shift = ((v >> 4) & 4) | (v & 2)
                 bgFetchState.tileAttribute = (bgFetchState.attributeByte >> shift) & 0x3
+            case 5: // Pattern low byte fetch
                 bgFetchState.operation = .patternLow
-                
-            case 2: // Pattern table low byte fetch
-                let patternAddr = registers.ctrl.backgroundPatternTableBaseAddress |
-                                (UInt16(bgFetchState.nametableByte) << 4) |
-                                ((registers.currentVramAddress >> 12) & 7)
+            case 6: // Second cycle of pattern low byte fetch - data becomes available
+                let patternAddr = registers.ctrl.backgroundPatternTableBaseAddress | (UInt16(bgFetchState.nametableByte) << 4) | ((registers.currentVramAddress >> 12) & 7)
                 bgFetchState.patternLowByte = memory.read(from: patternAddr)
+            case 7: // Pattern high byte fetch
                 bgFetchState.operation = .patternHigh
-                
-            case 3: // Pattern table high byte fetch
-                let patternAddr = registers.ctrl.backgroundPatternTableBaseAddress |
-                                (UInt16(bgFetchState.nametableByte) << 4) |
-                                ((registers.currentVramAddress >> 12) & 7) | 8
+            case 0: // Second cycle of pattern high byte (cycle 8/0) - data becomes available
+                let patternAddr = registers.ctrl.backgroundPatternTableBaseAddress | (UInt16(bgFetchState.nametableByte) << 4) | ((registers.currentVramAddress >> 12) & 7) | 8
                 bgFetchState.patternHighByte = memory.read(from: patternAddr)
                 
-                // At end of fetch, load shift registers (implemented in next step)
+                // Load shift registers at end of sequence
                 loadBackgroundShiftRegisters()
-                bgFetchState.operation = .nametable
-                
             default:
-                break
+                break // Should never happen
             }
         }
         
         /// Loads the shift registers with new tile data at the end of each fetch cycle
         private func loadBackgroundShiftRegisters() {
-            // Shift previous contents left by 8 bits
-            bgFetchState.patternShiftLow = (bgFetchState.patternShiftLow & 0xFF00) | UInt16(bgFetchState.patternLowByte)
-            bgFetchState.patternShiftHigh = (bgFetchState.patternShiftHigh & 0xFF00) | UInt16(bgFetchState.patternHighByte)
+            // Shift existing data left by 8 and load new data into low byte
+            bgFetchState.patternShiftLow = (bgFetchState.patternShiftLow << 8) | UInt16(bgFetchState.patternLowByte)
+            bgFetchState.patternShiftHigh = (bgFetchState.patternShiftHigh << 8) | UInt16(bgFetchState.patternHighByte)
             
-            // Set attribute latches based on current attribute bits
-            bgFetchState.attributeLatchLow = bgFetchState.tileAttribute & 0x01 > 0 ? 0xFF : 0x00
-            bgFetchState.attributeLatchHigh = bgFetchState.tileAttribute & 0x02 > 0 ? 0xFF : 0x00
-            
-            // Load attribute shifts based on latches
-            bgFetchState.attributeShiftLow = (bgFetchState.attributeShiftLow & 0xF0) | (bgFetchState.attributeLatchLow & 0x0F)
-            bgFetchState.attributeShiftHigh = (bgFetchState.attributeShiftHigh & 0xF0) | (bgFetchState.attributeLatchHigh & 0x0F)
+            // Store attribute bits as simple boolean latches
+            bgFetchState.attributeLatchLow = (bgFetchState.tileAttribute & 0x01) != 0
+            bgFetchState.attributeLatchHigh = (bgFetchState.tileAttribute & 0x02) != 0
         }
         
         /// Handle PPUSTATUS register read with proper NMI timing
@@ -324,18 +317,20 @@ extension NES {
         
         /// Shifts all background registers by one bit
         private func shiftBackgroundRegisters() {
-            // Only shift during rendering
             guard registers.mask.contains(.showBackground) else {
                 return
             }
             
-            // Shift pattern table registers
+            // Shift pattern registers one bit left each cycle
             bgFetchState.patternShiftLow <<= 1
             bgFetchState.patternShiftHigh <<= 1
             
-            // Shift attribute registers
-            bgFetchState.attributeShiftLow <<= 1
-            bgFetchState.attributeShiftHigh <<= 1
+            // Reload attribute shift registers from latches every 8 pixels
+            if cycle & 0x7 == 0 {
+                // Convert boolean latches to full bytes (all 1s or all 0s)
+                bgFetchState.attributeShiftLow = bgFetchState.attributeLatchLow ? 0xFF : 0x00
+                bgFetchState.attributeShiftHigh = bgFetchState.attributeLatchHigh ? 0xFF : 0x00
+            }
         }
         
         /// Gets the color for the current background pixel
@@ -363,9 +358,8 @@ extension NES {
             }
             
             // Get palette bits from attribute shift registers
-            let attrBitPos = 7 - registers.fineXScroll
-            let paletteLow: UInt8 = (bgFetchState.attributeShiftLow >> attrBitPos) & 0x01
-            let paletteHigh: UInt8 = (bgFetchState.attributeShiftHigh >> attrBitPos) & 0x01
+            let paletteLow: UInt8 = (bgFetchState.attributeShiftLow == 0xFF) ? 1 : 0
+            let paletteHigh: UInt8 = (bgFetchState.attributeShiftHigh == 0xFF) ? 1 : 0
             
             // Combine pattern and palette bits to get the palette entry
             // Format: 0bPPpp where PP is palette number and pp is pixel value

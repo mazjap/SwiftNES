@@ -192,7 +192,7 @@ extension NES.PPU {
                 // All nametables -> second 1KB
                 return (false, 0x400 + offset)
             case .fourScreen:
-                guard let extendedVram = extendedVram else {
+                guard extendedVram != nil else {
                     // Fallback to horizontal mirroring if extended VRAM isn't available
                     fallthrough
                 }

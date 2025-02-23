@@ -44,11 +44,11 @@ public class NintendoEntertainmentSystem {
             
             // PPU steps 3 times per cpu step
             for _ in 0..<cpuCycles * 3 {
-                ppu.step(cpuCycles)
+                ppu.step()
             }
             
             for _ in 0..<cpuCycles {
-                apu.step(cpuCycles)
+                apu.step()
             }
             
             // Handle other components as needed

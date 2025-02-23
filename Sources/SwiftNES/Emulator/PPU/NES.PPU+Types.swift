@@ -102,8 +102,8 @@ extension NES.PPU {
         var attributeShiftHigh: UInt8 = 0
         
         // Attribute latches for next tile
-        var attributeLatchLow: UInt8 = 0
-        var attributeLatchHigh: UInt8 = 0
+        var attributeLatchLow: Bool = false
+        var attributeLatchHigh: Bool = false
         
         // Reset back to initial state
         mutating func reset() {
