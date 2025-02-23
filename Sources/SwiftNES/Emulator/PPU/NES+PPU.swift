@@ -38,33 +38,27 @@ extension NES {
         // MARK: - Internal Functions
         
         func step() {
-            // Pre-render scanline
-            if scanline == 261 {
-                if cycle == 1 {
-                    // Clear status flags related to the last frame
-                    registers.status.remove([.vblank, .sprite0Hit, .spriteOverflow])
-                    
-                    // Also clear pending NMI if it was set
-                    nmiPending = false
-                }
+            // Pre-render scanline - clear VBlank and pending nmi interrupt
+            if scanline == 261 && cycle == 1 {
+                registers.status.remove([.vblank, .sprite0Hit, .spriteOverflow])
+                nmiPending = false
             }
             
             // Handle VRAM address updates and render states
             updateAddressDuringRendering()
             
             // Start of VBlank (scanline 241)
-            if scanline == 241 && cycle == 1 {
-                renderState = .idle
-                registers.status.insert(.vblank)
-                
-                outputFrame()
-                
-                if registers.ctrl.contains(.generateNMI) {
+            if scanline == 241 {
+                if cycle == 1 {
+                    renderState = .idle
+                    registers.status.insert(.vblank)
+                    outputFrame()
+                    // Don't trigger NMI yet, just set pending
+                    nmiPending = true
+                } else if cycle == 3 && nmiPending && registers.ctrl.contains(.generateNMI) {
+                    // Now actually trigger the NMI if it wasn't suppressed
                     triggerNMI()
                 }
-                
-                // Set NMI pending for edge case handling with later PPUCTRL writes
-                nmiPending = true
             }
             
             // Advance PPU state
