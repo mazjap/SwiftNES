@@ -227,7 +227,11 @@ extension NES {
         
         /// Performs background tile fetching based on current PPU cycle
         private func fetchBackgroundTile() {
-            assert(cycle <= 256 || (cycle >= 321 && cycle <= 336), "Background fetch occurred during invalid cycle: \(cycle)")
+            guard (scanline >= 0 && scanline < 240 && cycle >= 1 && cycle <= 256) ||
+                  (scanline == 261 && cycle >= 321 && cycle <= 336) else {
+                emuLogger.warning("`fetchBackgroundTile` called outside expected timing window: scanline \(self.scanline), cycle \(self.cycle)")
+                return
+            }
             
             // Only fetch during active rendering
             guard registers.mask.contains(.showBackground) else {
@@ -329,6 +333,12 @@ extension NES {
         
         /// Gets the color for the current background pixel
         private func getBackgroundPixel() -> UInt8 {
+            // Only get background pixels during visible scanlines and cycles
+            guard scanline >= 0 && scanline < 240 && cycle >= 1 && cycle <= 256 else {
+                emuLogger.warning("`getBackgroundPixel` called outside expected timing window: scanline \(self.scanline), cycle \(self.cycle)")
+                return 0
+            }
+            
             // If background rendering is disabled, return transparent
             if !registers.mask.contains(.showBackground) {
                 return 0
