@@ -4,6 +4,8 @@ typealias Status = NES.CPU.Registers.Status
 
 extension NES.Cartridge {
     class MapperTest: Mapper {
+        var mirroringMode: SwiftNES.NametableMirroring
+        
         func read(from address: UInt16) -> UInt8 {
             guard address >= prgStart && address <= prgEnd else {
                 fatalError("Address out of bounds")
@@ -26,10 +28,11 @@ extension NES.Cartridge {
         var prgStart: UInt16 = 0x0000
         var prgEnd: UInt16
         
-        init(prgRomSize: UInt16 = 0xFFFF) {
+        init(prgRomSize: UInt16 = 0xFFFF, mirroringMode: SwiftNES.NametableMirroring = .horizontal) {
             self.prgEnd = prgStart + prgRomSize
             self.prgROM = Array(repeating: 0, count: Int(prgRomSize) + 1)
             self.chrROM = []
+            self.mirroringMode = mirroringMode
         }
     }
 }
