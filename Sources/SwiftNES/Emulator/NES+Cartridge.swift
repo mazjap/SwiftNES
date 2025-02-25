@@ -13,17 +13,17 @@ import Foundation
 // MARK: - Convenience Initializers
 
 extension NES.Cartridge {
-    convenience init(fileURL: URL) throws {
+    public convenience init(fileURL: URL) throws {
         try self.init(data: try Data(contentsOf: fileURL))
     }
     
-    convenience init(data: Data) throws {
+    public convenience init(data: Data) throws {
         let bytes = Array(data)
         
         try self.init(fileData: bytes)
     }
     
-    convenience init(fileData: [UInt8]) throws {
+    private convenience init(fileData: [UInt8]) throws {
         guard fileData.count > 16 // Header size
         else { throw NESError.cartridge(.invalidHeader(fileData)) }
         
@@ -41,7 +41,25 @@ extension NES.Cartridge {
         let chrStartIndex = prgEndIndex
         let chrEndIndex = chrStartIndex + chrSize
         
-        self.init(mapper: Mapper0(programMemory: Array(fileData[prgStartIndex..<prgEndIndex]), characterMemory: Array(fileData[chrStartIndex..<chrEndIndex])))
+        // Extract mirroring information from header
+        let flags6 = fileData[6]
+        let hasFourScreenVRAM = (flags6 & 0x08) != 0
+        let verticalMirroring = (flags6 & 0x01) != 0
+        
+        let mirroringMode: NametableMirroring
+        if hasFourScreenVRAM {
+            mirroringMode = .fourScreen
+        } else if verticalMirroring {
+            mirroringMode = .vertical
+        } else {
+            mirroringMode = .horizontal
+        }
+        
+        self.init(mapper: Mapper0(
+            programMemory: Array(fileData[prgStartIndex..<prgEndIndex]),
+            characterMemory: Array(fileData[chrStartIndex..<chrEndIndex]),
+            mirroringMode: mirroringMode
+        ))
     }
 }
 
