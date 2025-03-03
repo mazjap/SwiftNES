@@ -281,9 +281,13 @@ extension NES {
             bgFetchState.patternShiftLow = (bgFetchState.patternShiftLow << 8) | UInt16(bgFetchState.patternLowByte)
             bgFetchState.patternShiftHigh = (bgFetchState.patternShiftHigh << 8) | UInt16(bgFetchState.patternHighByte)
             
-            // Store attribute bits as simple boolean latches
-            bgFetchState.attributeLatchLow = (bgFetchState.tileAttribute & 0x01) != 0
-            bgFetchState.attributeLatchHigh = (bgFetchState.tileAttribute & 0x02) != 0
+            // Convert attribute bits to bytes for the next 8 pixels
+            let attrByteLow: UInt8 = (bgFetchState.tileAttribute & 0b01) != 0 ? 0xFF : 0x00
+            let attrByteHigh: UInt8 = (bgFetchState.tileAttribute & 0b10) != 0 ? 0xFF : 0x00
+            
+            // Shift existing attribute data left by 8 and load new data
+            bgFetchState.attributeShiftLow = (bgFetchState.attributeShiftLow << 8) | attrByteLow
+            bgFetchState.attributeShiftHigh = (bgFetchState.attributeShiftHigh << 8) | attrByteHigh
         }
         
         /// Handle PPUSTATUS register read with proper NMI timing
@@ -319,16 +323,11 @@ extension NES {
                 return
             }
             
-            // Shift pattern registers one bit left each cycle
+            // Shift all registers one bit left each cycle
             bgFetchState.patternShiftLow <<= 1
             bgFetchState.patternShiftHigh <<= 1
-            
-            // Reload attribute shift registers from latches every 8 pixels
-            if cycle & 0x7 == 0 {
-                // Convert boolean latches to full bytes (all 1s or all 0s)
-                bgFetchState.attributeShiftLow = bgFetchState.attributeLatchLow ? 0xFF : 0x00
-                bgFetchState.attributeShiftHigh = bgFetchState.attributeLatchHigh ? 0xFF : 0x00
-            }
+            bgFetchState.attributeShiftLow <<= 1
+            bgFetchState.attributeShiftHigh <<= 1
         }
         
         /// Gets the color for the current background pixel
@@ -362,8 +361,9 @@ extension NES {
             }
             
             // Get palette bits from attribute shift registers
-            let paletteLow: UInt8 = (bgFetchState.attributeShiftLow == 0xFF) ? 1 : 0
-            let paletteHigh: UInt8 = (bgFetchState.attributeShiftHigh == 0xFF) ? 1 : 0
+            // Use bit 7 of the shift register (the bit that's about to shift out)
+            let paletteLow: UInt8 = (bgFetchState.attributeShiftLow & 0x80) != 0 ? 1 : 0
+            let paletteHigh: UInt8 = (bgFetchState.attributeShiftHigh & 0x80) != 0 ? 1 : 0
             
             // Combine pattern and palette bits to get the palette entry
             // Format: 0bPPpp where PP is palette number and pp is pixel value

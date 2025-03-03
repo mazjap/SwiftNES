@@ -9,6 +9,7 @@ public enum NametableMirroring {
 public protocol Mapper: Memory {
     var prgROM: [UInt8] { get }
     var chrROM: [UInt8] { get }
+    var hasCHRRAM: Bool { get }
     
     var prgStart: UInt16 { get }
     var prgEnd: UInt16 { get }
@@ -31,6 +32,7 @@ extension NES.Cartridge {
     class Mapper0: Mapper {
         let prgROM: [UInt8]
         let chrROM: [UInt8]
+        let hasCHRRAM = false
         
         let prgStart: UInt16 = 0x8000
         let prgEnd: UInt16 = 0xFFFF
@@ -73,6 +75,8 @@ extension NES.Cartridge {
     class Mapper1: Mapper {
         let prgROM: [UInt8]
         let chrROM: [UInt8]
+        private var chrRAM: [UInt8]?
+        var hasCHRRAM: Bool { chrROM.count == 0 || chrROM.count <= 8192 }
         
         let prgStart: UInt16 = 0x8000
         let prgEnd: UInt16 = 0xFFFF
@@ -96,9 +100,16 @@ extension NES.Cartridge {
         
         init(programMemory: [UInt8], characterMemory: [UInt8], mirroringMode: NametableMirroring = .horizontal) {
             self.prgROM = programMemory
-            self.chrROM = characterMemory.isEmpty ? [UInt8](repeating: 0, count: 8192) : characterMemory // Default 8KB CHR RAM if empty
+            self.chrROM = characterMemory
             self.mirroringMode = mirroringMode
             self.prgRAM = [UInt8](repeating: 0, count: 8192) // 8KB PRG RAM
+            if hasCHRRAM {
+                self.chrRAM = if characterMemory.isEmpty {
+                    .init(repeating: 0, count: 8192)
+                } else {
+                    characterMemory
+                }
+            }
             
             // Reset to power-up state
             self.shiftRegister = 0x10
@@ -132,18 +143,34 @@ extension NES.Cartridge {
                     // First 4KB bank (controlled by chrBank0)
                     let bankOffset = Int(chrBank0) * 4096
                     let chrAddress = bankOffset + Int(address)
-                    return chrROM[chrAddress % chrROM.count]
+                    if chrRAM != nil {
+                        return chrRAM![chrAddress % chrRAM!.count]
+                    } else {
+                        return chrROM[chrAddress % chrROM.count]
+                    }
                 } else {
                     // Second 4KB bank (controlled by chrBank1)
-                    let bankOffset = Int(chrBank1) * 4096
-                    let chrAddress = bankOffset + Int(address - 0x1000)
-                    return chrROM[chrAddress % chrROM.count]
+                    if chrRAM != nil {
+                        let bankOffset = Int(chrBank1) * 4096
+                        let chrAddress = bankOffset + Int(address - 0x1000)
+                        return chrRAM![chrAddress % chrRAM!.count]
+                    } else {
+                        let bankOffset = Int(chrBank1) * 4096
+                        let chrAddress = bankOffset + Int(address - 0x1000)
+                        return chrROM[chrAddress % chrROM.count]
+                    }
                 }
             } else {
                 // 8KB bank mode: single bank controlled by chrBank0 (ignoring lowest bit)
-                let bankOffset = Int(chrBank0 & 0xFE) * 4096
-                let chrAddress = bankOffset + Int(address)
-                return chrROM[chrAddress % chrROM.count]
+                if chrRAM != nil {
+                    let bankOffset = Int(chrBank0 & 0xFE) * 4096
+                    let chrAddress = bankOffset + Int(address)
+                    return chrRAM![chrAddress % chrRAM!.count]
+                } else {
+                    let bankOffset = Int(chrBank0 & 0xFE) * 4096
+                    let chrAddress = bankOffset + Int(address)
+                    return chrROM[chrAddress % chrROM.count]
+                }
             }
         }
         
@@ -190,13 +217,33 @@ extension NES.Cartridge {
         func write(_ value: UInt8, to address: UInt16) {
             switch address {
             case 0x0000...0x1FFF:
-                // Writing to CHR ROM/RAM
-                if chrROM.count <= 8192 {
-                    // Treat as CHR RAM if size is 8KB or less
-                    // (Note: Would need to make chrROM mutable for this to work)
-                    // In a real implementation, you'd need a separate mutable array for CHR RAM
+                // CHR RAM
+                if chrRAM != nil {
+                    // Only write if we have CHR RAM
+                    // Apply the same banking logic as in read, but for writes
+                    if chrBankMode == 0 {
+                        if address < 0x1000 {
+                            let bankOffset = Int(chrBank0) * 4096
+                            let chrAddress = bankOffset + Int(address)
+                            if chrAddress < chrRAM!.count {
+                                chrRAM![chrAddress] = value
+                            }
+                        } else {
+                            let bankOffset = Int(chrBank1) * 4096
+                            let chrAddress = bankOffset + Int(address - 0x1000)
+                            if chrAddress < chrRAM!.count {
+                                chrRAM![chrAddress] = value
+                            }
+                        }
+                    } else {
+                        // 8KB bank mode writing
+                        let bankOffset = Int(chrBank0 & 0xFE) * 4096
+                        let chrAddress = bankOffset + Int(address)
+                        if chrAddress < chrRAM!.count {
+                            chrRAM![chrAddress] = value
+                        }
+                    }
                 }
-                
             case 0x6000...0x7FFF:
                 // PRG RAM
                 if prgRAMEnabled {
