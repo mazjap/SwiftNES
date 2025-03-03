@@ -10,7 +10,7 @@ extension NES.CPU {
             case fatal                 // KIL/STP/HLT opcode that jams the CPU
         }
         
-        let baseCycles: UInt8
+        let baseCycles: UInt16
         let addPageCross: Bool  // Whether to add cycle for page boundary crossing
         let addSuccessfulBranch: Bool // Whether branching occurred
         let stability: Stability
@@ -35,7 +35,7 @@ extension NES.CPU {
             addPageCross || addSuccessfulBranch
         }
         
-        func cycleCount(pageCrossed: Bool, branchOccurred: Bool) -> UInt8 {
+        func cycleCount(pageCrossed: Bool, branchOccurred: Bool) -> UInt16 {
             var count = baseCycles
             
             if addPageCross && pageCrossed {
@@ -50,27 +50,27 @@ extension NES.CPU {
         }
         
         /// Instruction's clock cycle count could be increased by one, depending on if a page boundary is crossed
-        static func pageCross(_ baseCycles: UInt8) -> Self {
+        static func pageCross(_ baseCycles: UInt16) -> Self {
             Self(baseCycles: baseCycles, addPageCross: true, addSuccessfulBranch: false, stability: .stable)
         }
         
         /// Instruction's clock cycle count could be increased by two, depending on if a page boundary is crossed and/or if branch condition is successful
-        static func pageBranch(_ baseCycles: UInt8) -> Self {
+        static func pageBranch(_ baseCycles: UInt16) -> Self {
             Self(baseCycles: baseCycles, addPageCross: true, addSuccessfulBranch: true, stability: .stable)
         }
         
         /// Instruction's clock cycle count is static
-        static func unchanged(_ baseCycles: UInt8) -> Self {
+        static func unchanged(_ baseCycles: UInt16) -> Self {
             Self(baseCycles: baseCycles, addPageCross: false, addSuccessfulBranch: false, stability: .stable)
         }
         
         /// Illegal, but stable, opcode with a static clock cycle count
-        static func iUnchanged(_ baseCycles: UInt8) -> Self {
+        static func iUnchanged(_ baseCycles: UInt16) -> Self {
             Self(baseCycles: baseCycles, addPageCross: false, addSuccessfulBranch: false, stability: .illegalStable)
         }
         
         /// Illegal, but stable, opcode that adds one clock cycle if addressing mode crosses page boundary
-        static func iPageCross(_ baseCycles: UInt8) -> Self {
+        static func iPageCross(_ baseCycles: UInt16) -> Self {
             Self(baseCycles: baseCycles, addPageCross: true, addSuccessfulBranch: false, stability: .illegalStable)
         }
         
@@ -80,12 +80,12 @@ extension NES.CPU {
         }
         
         /// Unstable opcode as dictated by https://www.masswerk.at/nowgobang/2021/6502-illegal-opcodes
-        static func uUnchanged(_ baseCycles: UInt8) -> Self {
+        static func uUnchanged(_ baseCycles: UInt16) -> Self {
             Self(baseCycles: baseCycles, addPageCross: false, addSuccessfulBranch: false, stability: .illegalUnstable)
         }
         
         /// Highly unstable opcode as dictated by https://www.masswerk.at/nowgobang/2021/6502-illegal-opcodes
-        static func huUnchanged(_ baseCycles: UInt8) -> Self {
+        static func huUnchanged(_ baseCycles: UInt16) -> Self {
             Self(baseCycles: baseCycles, addPageCross: false, addSuccessfulBranch: false, stability: .illegalHighlyUnstable)
         }
     }

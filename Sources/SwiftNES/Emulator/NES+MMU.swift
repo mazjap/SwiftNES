@@ -10,17 +10,20 @@ extension NES {
         public var cartridge: Cartridge?
         var readPPURegister: ((_ register: UInt8) -> UInt8)?
         var writePPURegister: ((_ value: UInt8, _ register: UInt8) -> Void)?
+        var handleOAMDMA: ((UInt8) -> Void)?
         
         public init(
             internalRAM: RandomAccessMemory = .init(),
             cartridge: Cartridge? = nil,
             readPPURegister: ((_ register: UInt8) -> UInt8)? = nil,
-            writePPURegister: ((_ value: UInt8, _ register: UInt8) -> Void)? = nil
+            writePPURegister: ((_ value: UInt8, _ register: UInt8) -> Void)? = nil,
+            handleOAMDMA: ((UInt8) -> Void)? = nil
         ) {
             self.internalRAM = internalRAM
             self.cartridge = cartridge
             self.readPPURegister = readPPURegister
             self.writePPURegister = writePPURegister
+            self.handleOAMDMA = handleOAMDMA
         }
         
         /// Accesses memory at the specified address and allows modification of the value.
@@ -81,7 +84,11 @@ extension NES {
         }
         
         public func write(_ value: UInt8, to address: UInt16) {
-            access(at: address) { $0 = value }
+            if address == 0x4014 {
+                handleOAMDMA?(value)
+            } else {
+                access(at: address) { $0 = value }
+            }
         }
     }
 }

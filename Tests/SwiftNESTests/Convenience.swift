@@ -5,6 +5,7 @@ typealias Status = NES.CPU.Registers.Status
 extension NES.Cartridge {
     class MapperTest: Mapper {
         var mirroringMode: SwiftNES.NametableMirroring
+        let hasCHRRAM = false
         
         func read(from address: UInt16) -> UInt8 {
             guard address >= prgStart && address <= prgEnd else {
@@ -38,7 +39,7 @@ extension NES.Cartridge {
 }
 
 extension NES.CPU {
-    convenience init(memoryManager: NES.MMU, registers: Registers, clockCycleCount: UInt8) {
+    convenience init(memoryManager: NES.MMU, registers: Registers, clockCycleCount: UInt16) {
         self.init(memoryManager: memoryManager)
         self.registers = registers
         self.clockCycleCount = clockCycleCount

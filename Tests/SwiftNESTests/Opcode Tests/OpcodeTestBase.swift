@@ -8,7 +8,7 @@ enum PCStatus {
 
 /// Represents the expected outcome of a CPU operation
 struct ExpectedState {
-    var cycles: UInt8
+    var cycles: UInt16
     var pcStatus: PCStatus
     var a: UInt8?
     var x: UInt8?
@@ -16,7 +16,7 @@ struct ExpectedState {
     var sp: UInt8?
     var status: Status?
     
-    init(cycles: UInt8, pcStatus: PCStatus, absolutePC: UInt16? = nil, a: UInt8? = nil, x: UInt8? = nil, y: UInt8? = nil, sp: UInt8? = nil, status: Status? = nil) {
+    init(cycles: UInt16, pcStatus: PCStatus, absolutePC: UInt16? = nil, a: UInt8? = nil, x: UInt8? = nil, y: UInt8? = nil, sp: UInt8? = nil, status: Status? = nil) {
         self.cycles = cycles
         self.pcStatus = pcStatus
         self.a = a
@@ -28,7 +28,7 @@ struct ExpectedState {
 }
 
 extension ExpectedState {
-    init(cycles: UInt8, pcIncrement: Int16, a: UInt8? = nil, x: UInt8? = nil, y: UInt8? = nil, sp: UInt8? = nil, status: Status? = nil) {
+    init(cycles: UInt16, pcIncrement: Int16, a: UInt8? = nil, x: UInt8? = nil, y: UInt8? = nil, sp: UInt8? = nil, status: Status? = nil) {
         self.init(cycles: cycles, pcStatus: .relative(pcIncrement), a: a, x: x, y: y, sp: sp, status: status)
     }
 }
@@ -36,7 +36,7 @@ extension ExpectedState {
 /// Base class providing CPU test functionality
 class OpcodeTestBase: TestBase {
     // Helper to get timing info for a specific opcode
-    func getInstructionTiming(opcode: UInt8, pageCrossed: Bool = false, branchTaken: Bool = false) -> UInt8 {
+    func getInstructionTiming(opcode: UInt8, pageCrossed: Bool = false, branchTaken: Bool = false) -> UInt16 {
         guard let timing = NES.CPU.instructionTimings[opcode] else {
             fatalError("Unknown opcode: \(String(opcode, radix: 16))")
         }

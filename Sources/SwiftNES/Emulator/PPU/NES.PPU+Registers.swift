@@ -20,9 +20,13 @@ extension NES.PPU {
         
         /// OAM Data Register ($2004) read/write
         /// Read/write data from/to OAM at the address specified by OAMADDR
+        /// - Note: Each write to `oamData` automatically increments `oamAddr` as a side effect
         var oamData: UInt8 {
             get { memory.readOAM(from: oamAddr) }
-            set { memory.writeOAM(newValue, to: oamAddr) }
+            set {
+                memory.writeOAM(newValue, to: oamAddr)
+                oamAddr &+= 1
+            }
         }
         /// Scroll Register ($2005) write-only x2
         /// Controls fine scrolling of the background
@@ -61,10 +65,6 @@ extension NES.PPU {
             }
         }
         
-        /// OAM DMA Register ($4014) write-only
-        /// Writing to this register initiates a DMA transfer from CPU memory to OAM
-        var oamDma: UInt8
-        
         private var lastDataBusValue: UInt8 = 0 // Used when accessing write-only registers
         private var ppuDataReadBuffer: UInt8 = 0 // Last pulled value from memory
         var writeToggle = false  // Toggles between high/low byte
@@ -72,7 +72,7 @@ extension NES.PPU {
         var currentVramAddress: UInt16 = 0 // Current VRAM address register
         var fineXScroll: UInt8 = 0 // Fine X scroll (3 bits)
         
-        init(memory: Memory, ctrl: PPUCtrl, mask: PPUMask, status: PPUStatus, oamAddr: UInt8, scroll: UInt16, addr: UInt16, oamDma: UInt8, writeToggle: Bool = false) {
+        init(memory: Memory, ctrl: PPUCtrl, mask: PPUMask, status: PPUStatus, oamAddr: UInt8, scroll: UInt16, addr: UInt16, writeToggle: Bool = false) {
             self.memory = memory
             self.ctrl = ctrl
             self.mask = mask
@@ -80,7 +80,6 @@ extension NES.PPU {
             self.oamAddr = oamAddr
             self.scroll = scroll
             self.addr = addr
-            self.oamDma = oamDma
             self.writeToggle = writeToggle
         }
     }

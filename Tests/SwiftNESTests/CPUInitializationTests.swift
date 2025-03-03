@@ -37,4 +37,34 @@ class CPUInitializationTests {
         #expect(cpu.registers.status == Status([.carry, .overflow, .decimal, .interrupt]), "Status should include interrupt flag, but otherwise remain the same")
         #expect(cpu.registers.programCounter == 0x8000, "Program counter was not properly pulled from reset vector")
     }
+    
+    @Test("OAM DMA")
+    func testOAMDMA() {
+        let nes = NES(cartridge: NES.Cartridge(mapper: NES.Cartridge.MapperTest()))
+        let mmu = nes.memoryManager
+        let cpu = nes.cpu
+        
+        // Set PC to 0x8000 on reset/start
+        mmu.write(0x00, to: 0xFFFC)
+        mmu.write(0x80, to: 0xFFFD)
+        
+        cpu.reset()
+        
+        // Insert STA,abs at start of program which writes to 0x4014 (OAM DMA trigger)
+        mmu.write(0x8D, to: 0x8000)
+        mmu.write(0x14, to: 0x8001)
+        mmu.write(0x40, to: 0x8002)
+        
+        cpu.registers.accumulator = 0x01
+        
+        let cycles = cpu.executeNextInstruction()
+        
+        // OAM DMA transfer takes 513-514 cycles on top of whatever write operation was performed to trigger the transfer (STA in this case)
+        // 4 cycles for STA absolute
+        // +
+        // 513 cycles for OAM DMA transfer
+        // =
+        // 517
+        #expect(cycles == 517)
+    }
 }

@@ -20,6 +20,9 @@ public class NintendoEntertainmentSystem {
         self.apu = APU()
         self.input = InputHandler()
         
+        memoryManager.handleOAMDMA = { [unowned cpu] page in
+            cpu.performOAMDMA(page: page)
+        }
         memoryManager.readPPURegister = { [unowned ppu] register in
             ppu.read(from: register)
         }

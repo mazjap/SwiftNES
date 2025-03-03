@@ -4,7 +4,7 @@ extension NES {
         var irqPending = false
         var nmiPending = false
         var registers: Registers
-        public internal(set) var clockCycleCount: UInt8
+        public internal(set) var clockCycleCount: UInt16
         
         public init(memoryManager: MMU) {
             self.memoryManager = memoryManager
@@ -54,7 +54,8 @@ extension NES {
         /// - Returns: The number of CPU cycles consumed by the instruction execution.
         /// - Note: This includes the cycle for fetching the opcode and any additional cycles for addressing modes.
         @discardableResult // discardable for testing convenience
-        public func executeNextInstruction() -> UInt8 {
+        public func executeNextInstruction() -> UInt16 {
+            clockCycleCount = 0
             let opcode = getOpcode()
             
             guard let timingForInstruction = Self.instructionTimings[opcode] else {
@@ -111,7 +112,7 @@ extension NES {
                 fatalError("No opcode calling mode was found for opcode 0x\(String(opcode, radix: 16))")
             }
             
-            clockCycleCount = timingForInstruction.cycleCount(pageCrossed: pageCrossed, branchOccurred: branchOccurred)
+            clockCycleCount += timingForInstruction.cycleCount(pageCrossed: pageCrossed, branchOccurred: branchOccurred)
             
             if nmiPending {
                 handleNMI()

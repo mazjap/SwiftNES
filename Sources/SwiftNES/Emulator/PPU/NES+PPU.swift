@@ -28,8 +28,7 @@ extension NES {
                 status: .init(rawValue: 0),
                 oamAddr: 0,
                 scroll: 0,
-                addr: 0,
-                oamDma: 0
+                addr: 0
             )
             
             self.frameBuffer = FrameBuffer()
