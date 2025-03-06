@@ -118,4 +118,94 @@ extension NES.PPU {
             // as they need to continue shifting across tile boundaries
         }
     }
+    
+    struct SecondaryOAM {
+        static let capacity = 8
+        var sprites: [(y: UInt8, tile: UInt8, attributes: UInt8, x: UInt8)] = []
+        var sprite0Present = false
+    }
+    
+    /// Struct to track sprite pattern data for the current scanline
+    struct SpriteData {
+        // Pattern data (low and high bytes)
+        var patternLow: UInt8 = 0
+        var patternHigh: UInt8 = 0
+        
+        // Sprite attributes
+        var attributes: UInt8 = 0
+        
+        // X position counter
+        var xCounter: UInt8 = 0
+        
+        // Is this sprite 0?
+        var isSprite0: Bool = false
+        
+        // Is this sprite active?
+        var active: Bool = false
+        
+        /// Reset sprite data
+        mutating func reset() {
+            patternLow = 0
+            patternHigh = 0
+            attributes = 0
+            xCounter = 0
+            isSprite0 = false
+            active = false
+        }
+        
+        /// Initialize with sprite data
+        init(patternLow: UInt8, patternHigh: UInt8, attributes: UInt8, x: UInt8, isSprite0: Bool) {
+            self.patternLow = patternLow
+            self.patternHigh = patternHigh
+            self.attributes = attributes
+            self.xCounter = x
+            self.isSprite0 = isSprite0
+            self.active = true
+        }
+        
+        /// Default initializer
+        init() {}
+        
+        /// Get the color index for this sprite at the current position
+        /// - Returns: Color index (0-3) or nil if transparent
+        func getColorIndex() -> UInt8? {
+            // If not active or x counter hasn't reached 0, no pixel
+            if !active || xCounter > 0 {
+                return nil
+            }
+            
+            // Get the bit position (depends on horizontal flip)
+            let bit = (attributes & 0x40) != 0 ? 0 : 7
+            
+            // Get the pixel bits from pattern data
+            let lowBit = (patternLow >> bit) & 0x01
+            let highBit = (patternHigh >> bit) & 0x01
+            
+            // Combine bits to get color index (0-3)
+            let colorIndex = (highBit << 1) | lowBit
+            
+            // Return nil for transparent pixels (index 0)
+            return colorIndex != 0 ? colorIndex : nil
+        }
+        
+        /// Shift the sprite pattern data left by one bit
+        mutating func shift() {
+            // If x counter is still counting down, decrement it
+            if xCounter > 0 {
+                xCounter -= 1
+                return
+            }
+            
+            // Otherwise, shift the pattern data
+            if (attributes & 0x40) != 0 {
+                // Horizontal flip - shift right
+                patternLow >>= 1
+                patternHigh >>= 1
+            } else {
+                // Normal - shift left
+                patternLow <<= 1
+                patternHigh <<= 1
+            }
+        }
+    }
 }

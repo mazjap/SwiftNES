@@ -10,6 +10,8 @@ extension NES {
         var triggerNMI: () -> Void
         var bgFetchState = BackgroundFetchState()
         var frameBuffer: FrameBuffer
+        var secondaryOAM = SecondaryOAM()
+        var spriteData: [SpriteData] = Array(repeating: SpriteData(), count: 8)
         
         // TODO: - Solidify Result Error type to specific cases
         var frameCallback: ((Result<Frame, Error>) -> Void)?
@@ -37,14 +39,54 @@ extension NES {
         // MARK: - Internal Functions
         
         func step() {
-            // Pre-render scanline - clear VBlank and pending nmi interrupt
+            // Pre-render scanline - clear VBlank, sprite 0 hit, sprite overflow, and pending nmi interrupt
             if scanline == 261 && cycle == 1 {
                 registers.status.remove([.vblank, .sprite0Hit, .spriteOverflow])
                 nmiPending = false
             }
             
-            // Handle VRAM address updates and render states
+            // Update VRAM address registers during rendering
             updateAddressDuringRendering()
+            
+            // Add sprite evaluation after address updates
+            updateSpriteEvaluation()
+            
+            // Active scanlines (0-239)
+            if scanline >= 0 && scanline < 240 {
+                if cycle == 0 {
+                    // Idle cycle
+                    renderState = .idle
+                    bgFetchState.reset()
+                } else if cycle <= 256 {
+                    // Visible pixels + tile/sprite fetching
+                    renderState = .visible
+                    renderPixel()
+                    
+                    // Every 8 cycles, increment coarse X
+                    if cycle % 8 == 0 {
+                        incrementHorizontalPosition()
+                    }
+                    
+                    // Fetch background tiles during visible cycles
+                    fetchBackgroundTile()
+                    
+                    if cycle == 256 {
+                        // At the end of scanline, increment Y position
+                        incrementVerticalPosition()
+                    }
+                } else if cycle <= 336 {
+                    // Prefetch first two tiles of next line
+                    renderState = .prefetch
+                    
+                    // Continue fetching during prefetch cycles
+                    fetchBackgroundTile()
+                    
+                    // At 328 and 336, we need to increment the horizontal position
+                    if cycle == 328 || cycle == 336 {
+                        incrementHorizontalPosition()
+                    }
+                }
+            }
             
             // Start of VBlank (scanline 241)
             if scanline == 241 {
@@ -162,49 +204,6 @@ extension NES {
             // Only update if rendering is enabled
             if !(registers.mask.contains(.showBackground) || registers.mask.contains(.showSprites)) {
                 return
-            }
-            
-            // Active scanlines only (0-239)
-            if scanline >= 0 && scanline < 240 {
-                if cycle == 0 {
-                    // Idle cycle
-                    renderState = .idle
-                    
-                    bgFetchState.reset()
-                } else if cycle <= 256 {
-                    // Visible pixels + tile/sprite fetching
-                    renderState = .visible
-                    
-                    renderPixel()
-                    
-                    // Every 8 cycles, increment coarse X
-                    if cycle % 8 == 0 {
-                        incrementHorizontalPosition()
-                    }
-                    
-                    // Fetch background tiles during visible cycles
-                    fetchBackgroundTile()
-                    
-                    if cycle == 256 {
-                        // At the end of scanline, increment Y position
-                        incrementVerticalPosition()
-                    }
-                } else if cycle <= 320 {
-                    // Sprite evaluation for next line
-                    renderState = .spriteEval
-                    // TODO: Implement sprite evaluation
-                } else if cycle <= 336 {
-                    // Prefetch first two tiles of next line
-                    renderState = .prefetch
-                    
-                    // Continue fetching during prefetch cycles
-                    fetchBackgroundTile()
-                    
-                    // At 328 and 336, we need to increment the horizontal position
-                    if cycle == 328 || cycle == 336 {
-                        incrementHorizontalPosition()
-                    }
-                }
             }
             
             // At cycle 257, copy horizontal bits from t to v
@@ -392,6 +391,209 @@ extension NES {
             
             // Shift registers after outputting the pixel
             shiftBackgroundRegisters()
+        }
+        
+        private func evaluateSpritesForNextScanline() {
+            // Only evaluate sprites during visible scanlines (0-239) and pre-render scanline (261)
+            guard (scanline >= 0 && scanline < 240) || scanline == 261 else {
+                return
+            }
+            
+            // Clear secondary OAM
+            secondaryOAM.sprites.removeAll()
+            secondaryOAM.sprite0Present = false
+            
+            // Determine the target scanline (next scanline, or 0 for pre-render)
+            let targetScanline = scanline == 261 ? 0 : scanline + 1
+            
+            // Determine sprite height based on current sprite size flag
+            let spriteHeight = registers.ctrl.contains(.spriteSize) ? 16 : 8
+            
+            // Sprite overflow flag starts cleared
+            registers.status.remove(.spriteOverflow)
+            
+            // Evaluate all 64 sprites in primary OAM
+            var spriteCount = 0
+            
+            for i in 0..<64 {
+                // Each sprite uses 4 bytes in OAM
+                let oamIndex = i * 4
+                
+                // Get sprite Y position from OAM
+                let spriteY = memory.readOAM(from: UInt8(oamIndex))
+                
+                // Check if this sprite is in range for the next scanline
+                // (Y position is off by one - sprite at Y=0 starts at scanline 1)
+                let spriteRow = targetScanline - Int(spriteY) - 1
+                
+                if spriteRow >= 0 && spriteRow < spriteHeight {
+                    // Sprite is visible on the next scanline
+                    
+                    // Read remaining sprite data
+                    let tileIndex = memory.readOAM(from: UInt8(oamIndex + 1))
+                    let attributes = memory.readOAM(from: UInt8(oamIndex + 2))
+                    let spriteX = memory.readOAM(from: UInt8(oamIndex + 3))
+                    
+                    // Check if we still have room in secondary OAM
+                    if spriteCount < SecondaryOAM.capacity {
+                        // Add sprite to secondary OAM
+                        secondaryOAM.sprites.append((
+                            y: spriteY,
+                            tile: tileIndex,
+                            attributes: attributes,
+                            x: spriteX
+                        ))
+                        
+                        // Track if sprite 0 is present on this scanline
+                        if i == 0 {
+                            secondaryOAM.sprite0Present = true
+                        }
+                        
+                        spriteCount += 1
+                    } else {
+                        // Secondary OAM is full - set overflow flag
+                        registers.status.insert(.spriteOverflow)
+                        break // Exit early - real hardware has a bug
+                    }
+                }
+            }
+        }
+        
+        /// Fetches pattern data for sprites
+        private func fetchSpritePatterns() {
+            // Skip if sprites are disabled
+            guard registers.mask.contains(.showSprites) else { return }
+            
+            // Determine which pattern table to use for sprites
+            let patternTableAddress: UInt16 = registers.ctrl.contains(.spritePatternTableAddress) ? 0x1000 : 0x0000
+            
+            for i in 0..<secondaryOAM.sprites.count {
+                let sprite = secondaryOAM.sprites[i]
+                
+                // Calculate which row of the sprite is needed
+                let targetScanline = scanline == 261 ? 0 : scanline + 1
+                var spriteRow = (targetScanline - Int(sprite.y) - 1) & 0x7 // For 8x8 sprites
+                
+                // Handle vertical flipping
+                if (sprite.attributes & 0x80) != 0 {
+                    spriteRow = 7 - spriteRow
+                }
+                
+                // Handle 8x16 sprite mode
+                let tileIndex: UInt16
+                if registers.ctrl.contains(.spriteSize) {
+                    // 8x16 sprites: bit 0 of tile index selects pattern table
+                    let tableSelect: UInt16 = (sprite.tile & 0x01) == 0 ? 0x0000 : 0x1000
+                    
+                    // Use top or bottom half of sprite based on row
+                    let halfSelect = (targetScanline - Int(sprite.y) - 1) >= 8 ? 1 : 0
+                    
+                    // Adjust for vertical flipping in 8x16 mode
+                    let adjustedHalf = (sprite.attributes & 0x80) != 0 ? 1 - halfSelect : halfSelect
+                    
+                    // Calculate tile index without the bank bit
+                    tileIndex = tableSelect + (UInt16(sprite.tile & 0xFE) + UInt16(adjustedHalf)) * 16
+                } else {
+                    // 8x8 sprites
+                    tileIndex = patternTableAddress + UInt16(sprite.tile) * 16
+                }
+                
+                // Calculate the address for this sprite row
+                let patternAddress = tileIndex + UInt16(spriteRow)
+                
+                // Fetch pattern data (low and high bytes)
+                let patternLow = memory.read(from: patternAddress)
+                let patternHigh = memory.read(from: patternAddress + 8)
+                
+                spriteData[i] = SpriteData(
+                    patternLow: patternLow,
+                    patternHigh: patternHigh,
+                    attributes: sprite.attributes,
+                    x: sprite.x,
+                    isSprite0: i == 0 && secondaryOAM.sprite0Present
+                )
+            }
+        }
+        
+        /// Integrate sprite evaluation into the PPU cycle processing
+        private func updateSpriteEvaluation() {
+            if (scanline >= 0 && scanline < 240) || scanline == 261 {
+                if cycle == 257 {
+                    // Start of sprite evaluation for next scanline
+                    evaluateSpritesForNextScanline()
+                    renderState = .spriteEval
+                } else if cycle >= 257 && cycle <= 320 {
+                    // Sprite pattern data fetching
+                    if cycle == 257 {
+                        // Start fetching sprite patterns
+                        fetchSpritePatterns()
+                    } else if cycle == 320 {
+                        loadSpriteData()
+                    }
+                }
+            }
+        }
+        
+        private func loadSpriteData() {
+            // Reset all sprite data
+            for i in 0..<spriteData.count {
+                spriteData[i].reset()
+            }
+            
+            // Determine which pattern table to use for sprites
+            let patternTableAddress: UInt16 = registers.ctrl.contains(.spritePatternTableAddress) ? 0x1000 : 0x0000
+            
+            // For each sprite in secondary OAM
+            for i in 0..<secondaryOAM.sprites.count {
+                let sprite = secondaryOAM.sprites[i]
+                
+                // Calculate which row of the sprite we need
+                let targetScanline = scanline == 261 ? 0 : scanline + 1
+                var spriteRow = (targetScanline - Int(sprite.y) - 1) & 0x7 // For 8x8 sprites
+                
+                // Handle vertical flipping
+                if (sprite.attributes & 0x80) != 0 {
+                    spriteRow = 7 - spriteRow
+                }
+                
+                // Calculate pattern address
+                var patternAddress: UInt16
+                
+                if registers.ctrl.contains(.spriteSize) {
+                    // 8x16 sprites
+                    let tableSelect: UInt16 = (sprite.tile & 0x01) == 0 ? 0x0000 : 0x1000
+                    let inSecondTile = (targetScanline - Int(sprite.y) - 1) >= 8
+                    let tileOffset = inSecondTile ? 1 : 0
+                    
+                    // Handle vertical flipping for 8x16 sprites
+                    let effectiveTileOffset = (sprite.attributes & 0x80) != 0 ? 1 - tileOffset : tileOffset
+                    
+                    // Adjust row for second tile
+                    if inSecondTile && (sprite.attributes & 0x80) == 0 {
+                        spriteRow &= 0x7 // Take just the lower 3 bits
+                    } else if !inSecondTile && (sprite.attributes & 0x80) != 0 {
+                        spriteRow &= 0x7
+                    }
+                    
+                    patternAddress = tableSelect + UInt16((sprite.tile & 0xFE) + UInt8(effectiveTileOffset)) * 16 + UInt16(spriteRow)
+                } else {
+                    // 8x8 sprites
+                    patternAddress = patternTableAddress + UInt16(sprite.tile) * 16 + UInt16(spriteRow)
+                }
+                
+                // Read pattern data
+                let patternLow = memory.read(from: patternAddress)
+                let patternHigh = memory.read(from: patternAddress + 8)
+                
+                // Create sprite data entry
+                spriteData[i] = SpriteData(
+                    patternLow: patternLow,
+                    patternHigh: patternHigh,
+                    attributes: sprite.attributes,
+                    x: sprite.x,
+                    isSprite0: i == 0 && secondaryOAM.sprite0Present
+                )
+            }
         }
         
         private static let masterPalette: [UInt32] = [
