@@ -363,7 +363,8 @@ extension NES {
             return paletteIndex
         }
         
-        /// Updates shift registers during rendering and outputs pixels
+        /// Gets the appropriate pixel color based on background and sprite data,
+        /// handling sprite transparency and priority.
         private func renderPixel() {
             // Only render within visible area
             guard cycle >= 1 && cycle <= 256 && scanline >= 0 && scanline < 240 else {
@@ -374,7 +375,7 @@ extension NES {
             // Get the background pixel
             let bgPixel = getBackgroundPixel()
             let bgPaletteIndex = bgPixel & 0x0F // 4 bits: palette entry within a palette
-            let bgIsOpaque = bgPaletteIndex % 4 != 0
+            let bgIsOpaque = bgPaletteIndex % 4 != 0 // Background is opaque if not using color 0 of its palette
             
             // Get the sprite pixel (if any)
             var spritePixel: UInt8 = 0
@@ -407,7 +408,8 @@ extension NES {
                         spriteIsBehind = (spriteData[i].attributes & 0x20) != 0
                         
                         // Check if this is sprite 0 for hit detection
-                        if spriteData[i].isSprite0 && bgIsOpaque {
+                        if spriteData[i].isSprite0 && bgIsOpaque &&
+                           cycle != 255 && registers.mask.contains(.showBackground) {
                             // Sprite 0 hit occurs when a non-zero pixel of sprite 0 overlaps
                             // with a non-zero pixel of the background
                             isSpriteZeroHit = true
@@ -422,8 +424,10 @@ extension NES {
                 }
             }
             
-            // Sprite 0 hit detection
-            if isSpriteZeroHit && cycle != 256 && !registers.status.contains(.sprite0Hit) {
+            // Sprite 0 hit detection (don't set if within in the left 8 pixels and clipping is enabled)
+            if isSpriteZeroHit &&
+               !(cycle <= 8 && !registers.mask.contains(.showBackgroundLeft8Pixels)) &&
+               !registers.status.contains(.sprite0Hit) {
                 registers.status.insert(.sprite0Hit)
             }
             
@@ -435,11 +439,11 @@ extension NES {
             if spritePixel == 0 {
                 // No sprite pixel, use background
                 paletteIndex = bgPaletteIndex
-            } else if bgPaletteIndex == 0 {
+            } else if !bgIsOpaque {
                 // Transparent background, use sprite
                 paletteIndex = (spritePalette << 2) | spritePixel
             } else {
-                // Both background and sprite have a pixel, use priority
+                // Both sprite and background are opaque, use priority bit
                 if spriteIsBehind {
                     paletteIndex = bgPaletteIndex
                 } else {
@@ -449,7 +453,7 @@ extension NES {
             
             // If both background and sprites are disabled, show the backdrop color
             if !registers.mask.contains(.showBackground) && !registers.mask.contains(.showSprites) {
-                paletteIndex = 0
+                paletteIndex = 0  // $3F00 is the universal background color
             }
             
             // Final address in palette RAM
