@@ -156,9 +156,7 @@ extension NES {
         }
         
         private func incrementHorizontalPosition() {
-            if !registers.mask.contains(.showBackground) && !registers.mask.contains(.showSprites) {
-                return
-            }
+            guard registers.mask.contains(.showBackground) || registers.mask.contains(.showSprites) else { return }
             
             // Increment coarse X
             if (registers.currentVramAddress & 0x001F) == 31 {
@@ -171,9 +169,7 @@ extension NES {
         }
 
         private func incrementVerticalPosition() {
-            if !registers.mask.contains(.showBackground) && !registers.mask.contains(.showSprites) {
-                return
-            }
+            guard registers.mask.contains(.showBackground) || registers.mask.contains(.showSprites) else { return }
             
             // Increment fine Y
             if (registers.currentVramAddress & 0x7000) != 0x7000 {
@@ -203,9 +199,7 @@ extension NES {
         /// Updates the VRAM address registers during active rendering
         private func updateAddressDuringRendering() {
             // Only update if rendering is enabled
-            if !(registers.mask.contains(.showBackground) || registers.mask.contains(.showSprites)) {
-                return
-            }
+            guard registers.mask.contains(.showBackground) || registers.mask.contains(.showSprites) else { return }
             
             // At cycle 257, copy horizontal bits from t to v
             if cycle == 257 {
@@ -228,14 +222,12 @@ extension NES {
         private func fetchBackgroundTile() {
             guard (scanline >= 0 && scanline < 240 && cycle >= 1 && cycle <= 256) ||
                   (scanline == 261 && cycle >= 321 && cycle <= 336) else {
-                emuLogger.warning("`fetchBackgroundTile` called outside expected timing window: scanline \(self.scanline), cycle \(self.cycle)")
+                emuLogger.warning("`fetchBackgroundTile()` called outside visible area! scanline \(self.scanline), cycle \(self.cycle)")
                 return
             }
             
             // Only fetch during active rendering
-            guard registers.mask.contains(.showBackground) else {
-                return
-            }
+            guard registers.mask.contains(.showBackground) else { return }
             
             // Get exact cycle within the 8-cycle sequence
             let fetchCycle = cycle & 0x7
@@ -333,7 +325,7 @@ extension NES {
         private func getBackgroundPixel() -> UInt8 {
             // Only get background pixels during visible scanlines and cycles
             guard scanline >= 0 && scanline < 240 && cycle >= 1 && cycle <= 256 else {
-                emuLogger.warning("`getBackgroundPixel` called outside expected timing window: scanline \(self.scanline), cycle \(self.cycle)")
+                emuLogger.warning("`getBackgroundPixel()` called outside visible area! scanline \(self.scanline), cycle \(self.cycle)")
                 return 0
             }
             
@@ -375,7 +367,7 @@ extension NES {
         private func renderPixel() {
             // Only render within visible area
             guard cycle >= 1 && cycle <= 256 && scanline >= 0 && scanline < 240 else {
-                emuLogger.error("PPU's `renderPixel()` called outside visible area!")
+                emuLogger.error("PPU's `renderPixel()` called outside visible area! scanline \(self.scanline), cycle \(self.cycle)")
                 return
             }
             
@@ -404,7 +396,7 @@ extension NES {
                     
                     // Get the sprite pixel color index (0-3)
                     if let colorIndex = spriteData[i].getColorIndex() {
-                        // We found a non-transparent sprite pixel
+                        // Non-transparent sprite pixel found
                         spritePixel = colorIndex
                         
                         // Sprite palette is in bits 0-1 of the attribute byte
@@ -471,15 +463,17 @@ extension NES {
             shiftBackgroundRegisters()
         }
         
+        /// Evaluates which sprites will be visible on the next scanline and populates secondary OAM
+        /// Enforces the 8 sprite per scanline limit and handles overflow flag
         private func evaluateSpritesForNextScanline() {
             // Only evaluate sprites during visible scanlines (0-239) and pre-render scanline (261)
             guard (scanline >= 0 && scanline < 240) || scanline == 261 else {
+                emuLogger.error("PPU's `evaluateSpritesForNextScanline()` called outside visible area! scanline \(self.scanline), cycle \(self.cycle)")
                 return
             }
             
-            // Clear secondary OAM
-            secondaryOAM.sprites.removeAll()
-            secondaryOAM.sprite0Present = false
+            // Clear secondary OAM for the new scanline
+            secondaryOAM.clear()
             
             // Determine the target scanline (next scanline, or 0 for pre-render)
             let targetScanline = scanline == 261 ? 0 : scanline + 1
@@ -492,49 +486,76 @@ extension NES {
             
             // Evaluate all 64 sprites in primary OAM
             var spriteCount = 0
+            var n = 0 // Primary OAM index (0-255)
             
-            for i in 0..<64 {
-                // Each sprite uses 4 bytes in OAM
-                let oamIndex = i * 4
-                
-                // Get sprite Y position from OAM
-                let spriteY = memory.readOAM(from: UInt8(oamIndex))
+            // Buggy sprite overflow implementation to match hardware bug
+            var m = 0 // Sprite index in evaluation (0-63)
+            var overflowBugCounter = 0 // For accurate overflow bug behavior
+            var inOverflowMode = false // Track if we're in overflow evaluation mode
+            
+            // Check first 64 sprites
+            while m < 64 {
+                // Read Y coordinate from OAM
+                let spriteY = memory.readOAM(from: UInt8(n))
                 
                 // Check if this sprite is in range for the next scanline
-                // (Y position is off by one - sprite at Y=0 starts at scanline 1)
                 let spriteRow = targetScanline - Int(spriteY) - 1
                 
                 if spriteRow >= 0 && spriteRow < spriteHeight {
                     // Sprite is visible on the next scanline
                     
-                    // Read remaining sprite data
-                    let tileIndex = memory.readOAM(from: UInt8(oamIndex + 1))
-                    let attributes = memory.readOAM(from: UInt8(oamIndex + 2))
-                    let spriteX = memory.readOAM(from: UInt8(oamIndex + 3))
-                    
-                    // Check if we still have room in secondary OAM
-                    if spriteCount < SecondaryOAM.capacity {
-                        // Add sprite to secondary OAM
-                        secondaryOAM.sprites.append((
+                    // Try to add the sprite to secondary OAM, respecting the 8 sprite limit
+                    if !inOverflowMode {
+                        let tileIndex = memory.readOAM(from: UInt8(n + 1))
+                        let attributes = memory.readOAM(from: UInt8(n + 2))
+                        let spriteX = memory.readOAM(from: UInt8(n + 3))
+                        
+                        let wasAdded = secondaryOAM.addSprite(
                             y: spriteY,
                             tile: tileIndex,
                             attributes: attributes,
-                            x: spriteX
-                        ))
+                            x: spriteX,
+                            isSprite0: m == 0
+                        )
                         
-                        // Track if sprite 0 is present on this scanline
-                        if i == 0 {
-                            secondaryOAM.sprite0Present = true
+                        if !wasAdded {
+                            // We've hit the 8 sprite limit - enter overflow mode and set the flag
+                            registers.status.insert(.spriteOverflow)
+                            inOverflowMode = true
+                        } else {
+                            spriteCount += 1
                         }
-                        
-                        spriteCount += 1
                     } else {
-                        // Secondary OAM is full - set overflow flag
+                        // We're in overflow mode - set the overflow flag but don't add the sprite
                         registers.status.insert(.spriteOverflow)
-                        break // Exit early - real hardware has a bug
+                    }
+                }
+                
+                // Increment sprite index
+                m += 1
+                n += 4
+                
+                // Hardware bug implementation:
+                // After the 8th sprite, reuse the same n counter for address calculations
+                // but don't actually write to secondary OAM
+                if inOverflowMode {
+                    // The hardware bug is complex - it increments n for every sprite tested
+                    // but then incorrectly uses (n & 0x1F) as the low bits of the OAM address
+                    // for the next evaluation, leading to comparing Y positions with sprite
+                    // attribute/X data
+                    overflowBugCounter += 1
+                    
+                    if overflowBugCounter == 3 {
+                        // After 3 increments, the counter points to the next sprite's Y position
+                        // In hardware, this makes the PPU incorrectly load from the next sprite's
+                        // attribute byte instead of Y coordinate
+                        // For simplicity, just break from the loop as the detection is already done
+                        break
                     }
                 }
             }
+            
+            emuLogger.debug("PPU evaluated sprites for scanline \(targetScanline): found \(spriteCount) sprites")
         }
         
         /// Fetches pattern data for sprites
@@ -595,24 +616,27 @@ extension NES {
         
         /// Integrate sprite evaluation into the PPU cycle processing
         private func updateSpriteEvaluation() {
-            if (scanline >= 0 && scanline < 240) || scanline == 261 {
-                if cycle == 257 {
-                    // Start of sprite evaluation for next scanline
-                    evaluateSpritesForNextScanline()
-                    renderState = .spriteEval
-                    
-                    // Reset sprite fetch state for the new sprite evaluation phase
-                    spriteFetchState.reset()
-                    
-                    // Reset all sprite data for the next scanline
-                    for i in 0..<spriteData.count {
-                        spriteData[i].reset()
-                    }
-                } else if cycle >= 257 && cycle <= 320 {
-                    // Sprite pattern fetching (cycles 257-320)
-                    // Each sprite takes 8 cycles to fetch data
-                    fetchSpriteData()
+            guard (scanline >= 0 && scanline < 240) || scanline == 261 else {
+                emuLogger.error("PPU's `updateSpriteEvaluation()` called outside visible area! scanline \(self.scanline), cycle \(self.cycle)")
+                return
+            }
+            
+            if cycle == 257 {
+                // Start of sprite evaluation for next scanline
+                evaluateSpritesForNextScanline()
+                renderState = .spriteEval
+                
+                // Reset sprite fetch state for the new sprite evaluation phase
+                spriteFetchState.reset()
+                
+                // Reset all sprite data for the next scanline
+                for i in 0..<spriteData.count {
+                    spriteData[i].reset()
                 }
+            } else if cycle >= 257 && cycle <= 320 {
+                // Sprite pattern fetching (cycles 257-320)
+                // Each sprite takes 8 cycles to fetch data
+                fetchSpriteData()
             }
         }
         
@@ -621,7 +645,7 @@ extension NES {
             // Skip if sprites are disabled
             guard registers.mask.contains(.showSprites) else { return }
             
-            // Calculate which sprite we're fetching and which operation within that sprite's fetch
+            // Calculate which sprite is being fetching and which operation within that sprite's fetch
             let spriteIndex = (cycle - 257) / 8
             let fetchCycle = (cycle - 257) % 8
             

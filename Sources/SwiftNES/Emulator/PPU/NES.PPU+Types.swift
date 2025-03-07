@@ -120,9 +120,43 @@ extension NES.PPU {
     }
     
     struct SecondaryOAM {
+        /// The maximum number of sprites per scanline (hardware limit)
         static let capacity = 8
+        
+        /// Array of sprites visible on the current scanline, limited to 8
         var sprites: [(y: UInt8, tile: UInt8, attributes: UInt8, x: UInt8)] = []
+        
+        /// Indicates if sprite 0 is among the visible sprites (for sprite 0 hit detection)
         var sprite0Present = false
+        
+        /// Adds a sprite to secondary OAM if there's room (enforces 8 sprite limit)
+        /// - Parameters:
+        ///   - y: Y position (top of sprite)
+        ///   - tile: Tile index
+        ///   - attributes: Attribute byte
+        ///   - x: X position (left of sprite)
+        ///   - isSprite0: Whether this is sprite 0
+        /// - Returns: True if the sprite was added, false if the secondary OAM is full
+        mutating func addSprite(y: UInt8, tile: UInt8, attributes: UInt8, x: UInt8, isSprite0: Bool) -> Bool {
+            // Enforce the 8 sprite per scanline limit
+            guard sprites.count < Self.capacity else { return false }
+            
+            // Add the sprite
+            sprites.append((y: y, tile: tile, attributes: attributes, x: x))
+            
+            // Track if sprite 0 is present
+            if isSprite0 {
+                sprite0Present = true
+            }
+            
+            return true
+        }
+        
+        /// Clears all sprites from secondary OAM
+        mutating func clear() {
+            sprites.removeAll()
+            sprite0Present = false
+        }
     }
     
     /// Struct to track sprite pattern data for the current scanline
