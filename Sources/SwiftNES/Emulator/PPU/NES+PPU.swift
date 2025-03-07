@@ -409,7 +409,8 @@ extension NES {
                         
                         // Check if this is sprite 0 for hit detection
                         if spriteData[i].isSprite0 && bgIsOpaque &&
-                           cycle != 255 && registers.mask.contains(.showBackground) {
+                           cycle != 255 && // No sprite 0 hit on last visible pixel
+                           registers.mask.contains(.showBackground) {
                             // Sprite 0 hit occurs when a non-zero pixel of sprite 0 overlaps
                             // with a non-zero pixel of the background
                             isSpriteZeroHit = true
@@ -424,9 +425,9 @@ extension NES {
                 }
             }
             
-            // Sprite 0 hit detection (don't set if within in the left 8 pixels and clipping is enabled)
+            // Sprite 0 hit detection (don't set if within the left 8 pixels and clipping is enabled)
             if isSpriteZeroHit &&
-               !(cycle <= 8 && !registers.mask.contains(.showBackgroundLeft8Pixels)) &&
+               !(cycle <= 8 && !registers.mask.contains(.showSpritesLeft8Pixels)) &&
                !registers.status.contains(.sprite0Hit) {
                 registers.status.insert(.sprite0Hit)
             }
@@ -436,7 +437,10 @@ extension NES {
             let y = scanline
             var paletteIndex: UInt8
             
-            if spritePixel == 0 {
+            if !registers.mask.contains(.showBackground) && !registers.mask.contains(.showSprites) {
+                // If both background and sprites are disabled, show the universal background color
+                paletteIndex = 0  // $3F00 is the universal background color
+            } else if spritePixel == 0 {
                 // No sprite pixel, use background
                 paletteIndex = bgPaletteIndex
             } else if !bgIsOpaque {
@@ -451,15 +455,15 @@ extension NES {
                 }
             }
             
-            // If both background and sprites are disabled, show the backdrop color
-            if !registers.mask.contains(.showBackground) && !registers.mask.contains(.showSprites) {
-                paletteIndex = 0  // $3F00 is the universal background color
-            }
-            
             // Final address in palette RAM
             let paletteAddr = 0x3F00 + UInt16(paletteIndex)
             let colorIndex = memory.readPalette(from: paletteAddr)
-            let color = colorFromPaletteIndex(colorIndex)
+            
+            // Apply grayscale mode if enabled
+            let finalColorIndex = registers.mask.contains(.greyscale) ? colorIndex & 0x30 : colorIndex
+            
+            // Apply color emphasis if enabled
+            let color = applyColorEmphasis(colorFromPaletteIndex(finalColorIndex))
             
             frameBuffer.setPixel(x: x, y: y, color: color)
             
@@ -695,6 +699,41 @@ extension NES {
             default:
                 break // Should never happen
             }
+        }
+        
+        /// Applies color emphasis bits to the specified color
+        /// - Parameter color: The original RGB color
+        /// - Returns: The modified color with emphasis applied
+        private func applyColorEmphasis(_ color: UInt32) -> UInt32 {
+            // If no emphasis bits are set, return the original color
+            if !registers.mask.contains([.emphasizeRed, .emphasizeGreen, .emphasizeBlue]) {
+                return color
+            }
+            
+            // Extract RGB components
+            let r = (color >> 16) & 0xFF
+            let g = (color >> 8) & 0xFF
+            let b = color & 0xFF
+            
+            // Apply emphasis - the real hardware attenuates the non-emphasized colors by about 15-20%
+            var newR = r
+            var newG = g
+            var newB = b
+            
+            if !registers.mask.contains(.emphasizeRed) {
+                newR = UInt32(Float(r) * 0.8)
+            }
+            
+            if !registers.mask.contains(.emphasizeGreen) {
+                newG = UInt32(Float(g) * 0.8)
+            }
+            
+            if !registers.mask.contains(.emphasizeBlue) {
+                newB = UInt32(Float(b) * 0.8)
+            }
+            
+            // Combine components back into a single color
+            return (newR << 16) | (newG << 8) | newB
         }
         
         private static let masterPalette: [UInt32] = [
