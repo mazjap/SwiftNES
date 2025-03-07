@@ -176,18 +176,18 @@ extension NES.PPU.Registers {
             
             writeToggle.toggle()
         case 0x06:
-            if !writeToggle {
-                // Second write (low byte)
-                tempVramAddress = (tempVramAddress & 0xFF00) | UInt16(value) // Set low byte
-                currentVramAddress = tempVramAddress // Copy `temp` to `current` on second write
-            } else {
+            if writeToggle {
                 // First write (high byte)
                 tempVramAddress = (tempVramAddress & 0x00FF) | (UInt16(value & 0x3F) << 8) // Set high byte, clear unused bits
+            } else {
+                // Second write (low byte)
+                tempVramAddress = (tempVramAddress & 0xFF00) | UInt16(value)
+                currentVramAddress = tempVramAddress // Copy temp to current on second write
             }
             
             writeToggle.toggle()
         case 0x07: data = value
-        default: fatalError("Read request to non-existent PPU Register: \(String(format: "%02x", register))")
+        default: fatalError("Write request to non-existent PPU Register: \(String(format: "%02x", register))")
         }
     }
 }

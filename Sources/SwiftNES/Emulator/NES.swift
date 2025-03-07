@@ -42,12 +42,19 @@ public class NintendoEntertainmentSystem {
         guard memoryManager.cartridge != nil else { throw NESError.cartridge(.noCartridge) }
         
         while true {
-            // Emulation loop
+            let prevNmiPending = ppu.nmiPending
+            
+            // Execute one CPU instruction
             let cpuCycles = cpu.executeNextInstruction()
             
             // PPU steps 3 times per cpu step
             for _ in 0..<cpuCycles * 3 {
                 ppu.step()
+                
+                // Check if NMI was triggered during this PPU cycle
+                if !prevNmiPending && ppu.nmiPending && cpu.registers.status.readFlag(.interrupt) == false {
+                    cpu.triggerNMI()
+                }
             }
             
             for _ in 0..<cpuCycles {

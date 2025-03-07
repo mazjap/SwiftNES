@@ -136,11 +136,59 @@ extension NES {
         }
         
         func write(_ value: UInt8, to register: UInt8) {
+            // Save old values to detect important changes
+            let oldValue: UInt8 = switch register {
+                case 0x00: registers.ctrl.rawValue
+                case 0x01: registers.mask.rawValue
+                default: 0
+            }
+            
+            let isRenderingActive = (scanline >= 0 && scanline < 240) && (registers.mask.contains(.showBackground) || registers.mask.contains(.showSprites))
+            
+            // Special handling for PPUCTRL (NMI generation)
+            if register == 0x00 {
+                writeControl(value)
+            } else {
+                // Standard register write
+                registers.write(value, to: register)
+            }
+            
+            // Handle mid-frame register effects
+            guard isRenderingActive else { return }
+            
             switch register {
             case 0x00: // PPUCTRL
-                writeControl(value)
-            default:
-                registers.write(value, to: register)
+                // Handle nametable selection changes
+                if (value & 0x03) != (oldValue & 0x03) && cycle >= 1 && cycle <= 256 {
+                    let nameTableBits = UInt16(value & 0x03) << 10
+                    registers.currentVramAddress = (registers.currentVramAddress & 0xF3FF) | nameTableBits
+                }
+                
+                // Changes to sprite size or pattern tables take effect immediately for subsequent sprite evaluations
+            case 0x01: // PPUMASK
+                let enabledBgBefore = (oldValue & 0x08) != 0
+                let enabledBgAfter = (value & 0x08) != 0
+                
+                if enabledBgBefore != enabledBgAfter {
+                    // Immediately changing background rendering during a frame
+                    // can cause various glitches/artifacts on real hardware
+                    
+                    // For example, turning off background mid-scanline can
+                    // make the rest of the scanline show universal background color
+                }
+                
+                let enabledSpritesBefore = (oldValue & 0x10) != 0
+                let enabledSpritesAfter = (value & 0x10) != 0
+                
+                if enabledSpritesBefore != enabledSpritesAfter {
+                    // Similar effects for sprites
+                    // For highly accurate emulation, track when rendering is enabled/disabled
+                    // and adjust the scanline rendering accordingly
+                }
+            case 0x05, 0x06: // PPUSCROLL, PPUADDR
+                // These can cause corruption to the internal state when written during rendering
+                // TODO: - (Implement for high accuracy)
+            default: break
             }
         }
         
