@@ -562,62 +562,6 @@ extension NES {
             emuLogger.debug("PPU evaluated sprites for scanline \(targetScanline): found \(spriteCount) sprites")
         }
         
-        /// Fetches pattern data for sprites
-        private func fetchSpritePatterns() {
-            // Skip if sprites are disabled
-            guard registers.mask.contains(.showSprites) else { return }
-            
-            // Determine which pattern table to use for sprites
-            let patternTableAddress: UInt16 = registers.ctrl.contains(.spritePatternTableAddress) ? 0x1000 : 0x0000
-            
-            for i in 0..<secondaryOAM.sprites.count {
-                let sprite = secondaryOAM.sprites[i]
-                
-                // Calculate which row of the sprite is needed
-                let targetScanline = scanline == 261 ? 0 : scanline + 1
-                var spriteRow = (targetScanline - Int(sprite.y) - 1) & 0x7 // For 8x8 sprites
-                
-                // Handle vertical flipping
-                if (sprite.attributes & 0x80) != 0 {
-                    spriteRow = 7 - spriteRow
-                }
-                
-                // Handle 8x16 sprite mode
-                let tileIndex: UInt16
-                if registers.ctrl.contains(.spriteSize) {
-                    // 8x16 sprites: bit 0 of tile index selects pattern table
-                    let tableSelect: UInt16 = (sprite.tile & 0x01) == 0 ? 0x0000 : 0x1000
-                    
-                    // Use top or bottom half of sprite based on row
-                    let halfSelect = (targetScanline - Int(sprite.y) - 1) >= 8 ? 1 : 0
-                    
-                    // Adjust for vertical flipping in 8x16 mode
-                    let adjustedHalf = (sprite.attributes & 0x80) != 0 ? 1 - halfSelect : halfSelect
-                    
-                    // Calculate tile index without the bank bit
-                    tileIndex = tableSelect + (UInt16(sprite.tile & 0xFE) + UInt16(adjustedHalf)) * 16
-                } else {
-                    // 8x8 sprites
-                    tileIndex = patternTableAddress + UInt16(sprite.tile) * 16
-                }
-                
-                // Calculate the address for this sprite row
-                let patternAddress = tileIndex + UInt16(spriteRow)
-                
-                // Fetch pattern data (low and high bytes)
-                let patternLow = memory.read(from: patternAddress)
-                let patternHigh = memory.read(from: patternAddress + 8)
-                
-                spriteData[i] = SpriteData(
-                    patternLow: patternLow,
-                    patternHigh: patternHigh,
-                    attributes: sprite.attributes,
-                    x: sprite.x,
-                    isSprite0: i == 0 && secondaryOAM.sprite0Present
-                )
-            }
-        }
-        
         /// Integrate sprite evaluation into the PPU cycle processing
         private func updateSpriteEvaluation() {
             guard (scanline >= 0 && scanline < 240) || scanline == 261 else {
@@ -649,7 +593,7 @@ extension NES {
             // Skip if sprites are disabled
             guard registers.mask.contains(.showSprites) else { return }
             
-            // Calculate which sprite is being fetching and which operation within that sprite's fetch
+            // Calculate which sprite is being fetched and which operation within that sprite's fetch
             let spriteIndex = (cycle - 257) / 8
             let fetchCycle = (cycle - 257) % 8
             
@@ -743,7 +687,8 @@ extension NES {
                         patternHigh: spriteFetchState.patternHighByte,
                         attributes: spriteFetchState.attributes,
                         x: spriteFetchState.xPosition,
-                        isSprite0: spriteFetchState.isSprite0
+                        isSprite0: spriteFetchState.isSprite0,
+                        active: true
                     )
                 }
                 
