@@ -127,23 +127,13 @@ extension NES.PPU {
     
     /// Struct to track sprite pattern data for the current scanline
     struct SpriteData {
-        // Pattern data (low and high bytes)
         var patternLow: UInt8 = 0
         var patternHigh: UInt8 = 0
-        
-        // Sprite attributes
         var attributes: UInt8 = 0
-        
-        // X position counter
         var xCounter: UInt8 = 0
-        
-        // Is this sprite 0?
         var isSprite0: Bool = false
-        
-        // Is this sprite active?
         var active: Bool = false
         
-        /// Reset sprite data
         mutating func reset() {
             patternLow = 0
             patternHigh = 0
@@ -153,29 +143,34 @@ extension NES.PPU {
             active = false
         }
         
-        /// Initialize with sprite data
-        init(patternLow: UInt8, patternHigh: UInt8, attributes: UInt8, x: UInt8, isSprite0: Bool) {
+        init(
+            patternLow: UInt8 = 0,
+            patternHigh: UInt8 = 0,
+            attributes: UInt8 = 0,
+            x: UInt8 = 0,
+            isSprite0: Bool = false,
+            active: Bool = false
+        ) {
             self.patternLow = patternLow
             self.patternHigh = patternHigh
             self.attributes = attributes
             self.xCounter = x
             self.isSprite0 = isSprite0
-            self.active = true
+            self.active = active
         }
-        
-        /// Default initializer
-        init() {}
         
         /// Get the color index for this sprite at the current position
         /// - Returns: Color index (0-3) or nil if transparent
         func getColorIndex() -> UInt8? {
-            // If not active or x counter hasn't reached 0, no pixel
-            if !active || xCounter > 0 {
-                return nil
-            }
+            // If not active, no pixel
+            if !active { return nil }
+            
+            // If x counter hasn't reached 0, no pixel yet
+            if xCounter > 0 { return nil }
             
             // Get the bit position (depends on horizontal flip)
-            let bit = (attributes & 0x40) != 0 ? 0 : 7
+            let isFlipped = (attributes & 0x40) != 0
+            let bit = isFlipped ? 0 : 7
             
             // Get the pixel bits from pattern data
             let lowBit = (patternLow >> bit) & 0x01
@@ -188,17 +183,11 @@ extension NES.PPU {
             return colorIndex != 0 ? colorIndex : nil
         }
         
-        /// Shift the sprite pattern data left by one bit
+        /// Shift the sprite pattern data for the next pixel
         mutating func shift() {
-            // If x counter is still counting down, decrement it
-            if xCounter > 0 {
-                xCounter -= 1
-                return
-            }
-            
-            // Otherwise, shift the pattern data
+            // If the sprite is horizontally flipped, shift right instead of left
             if (attributes & 0x40) != 0 {
-                // Horizontal flip - shift right
+                // Horizontally flipped - shift right
                 patternLow >>= 1
                 patternHigh >>= 1
             } else {
@@ -206,6 +195,47 @@ extension NES.PPU {
                 patternLow <<= 1
                 patternHigh <<= 1
             }
+        }
+    }
+    
+    enum SpriteFetchOperation {
+        case garbageNT // Garbage nametable fetch
+        case garbageAT // Garbage attribute fetch (not used but included for completeness)
+        case patternLow // Sprite pattern table low byte
+        case patternHigh // Sprite pattern table high byte
+    }
+    
+    /// State tracking for sprite fetching during cycles 257-320
+    struct SpriteFetchState {
+        var currentSprite: Int = 0 // Current sprite being fetched (0-7)
+        var operation: SpriteFetchOperation = .garbageNT  // Current fetch operation
+        var fetchCycle: Int = 0 // Cycle within the current sprite fetch (0-7)
+        
+        // Temporary data for the current sprite being fetched
+        var tileIndex: UInt8 = 0
+        var attributes: UInt8 = 0
+        var xPosition: UInt8 = 0
+        var yPosition: UInt8 = 0
+        var spriteRowY: Int = 0 // Which row of the tile we need
+        var isSprite0: Bool = false // Whether this is sprite 0
+        var patternTableAddress: UInt16 = 0 // Base address in pattern table
+        var patternLowByte: UInt8 = 0 // Low byte of pattern data
+        var patternHighByte: UInt8 = 0 // High byte of pattern data
+        
+        /// Reset the sprite fetch state for a new sprite evaluation phase
+        mutating func reset() {
+            currentSprite = 0
+            operation = .garbageNT
+            fetchCycle = 0
+            tileIndex = 0
+            attributes = 0
+            xPosition = 0
+            yPosition = 0
+            spriteRowY = 0
+            isSprite0 = false
+            patternTableAddress = 0
+            patternLowByte = 0
+            patternHighByte = 0
         }
     }
 }
