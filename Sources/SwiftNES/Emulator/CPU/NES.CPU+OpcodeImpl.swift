@@ -453,11 +453,7 @@ extension NES.CPU {
     
     /// AND + ROR:
     /// An "Illegal" Opcode.
-    // TODO: - Verify implementation (sources conflict on how ARR should be implemented):
-    // https://www.nesdev.org/wiki/Programming_with_unofficial_opcodes
-    // https://www.masswerk.at/nowgobang/2021/6502-illegal-opcodes#ARR
-    // https://c74project.com/wp-content/uploads/2020/04/c74-6502-undocumented-opcodes.pdf
-    func arr(value: inout UInt8) {
+    func arr(value: UInt8) {
         emuLogger.debug("arr")
         
         // Perform AND operation
@@ -465,13 +461,18 @@ extension NES.CPU {
         
         // Rotate right by one bit
         let oldCarry: UInt8 = registers.status.readFlag(.carry) ? 1 : 0
-        let newCarry = (result & 0x40) != 0
         let rotatedResult = (result >> 1) | (oldCarry << 7)
         
-        // Update flags
+        // Carry flag should be set based on bit 6 of the result which is a weird quirk
+        // (Using bit 7 before rotation, instead of bit 6 after rotation. Same result)
+        registers.status.setFlag(.carry, to: (result & 0x40) != 0)
+        
+        // Update zero and negative flags normally
         updateZeroNegativeFlags(for: rotatedResult)
         
-        let vFlag = ((result & 0x40) ^ (result & 0x20)) != 0 // Calculate V as bit 6 XOR bit 5
+        // Set overflow flag based on XOR of bits 5 and 6 of the AND result
+        // Another quirk of ARR
+        let vFlag = ((result & 0x40) ^ (result & 0x20)) != 0
         registers.status.setFlag(.overflow, to: vFlag)
         
         // Update accumulator with the result

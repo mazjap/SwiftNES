@@ -194,7 +194,7 @@ extension NES {
             0x60 : .noParam(rts),           0x61 : .nonMutating(adc),       0x62 : .noParam(stp),
             0x63 : .mutating(rra),          0x64 : .noParam(nop),           0x65 : .nonMutating(adc),
             0x66 : .mutating(ror),          0x67 : .mutating(rra),          0x68 : .noParam(pla),
-            0x69 : .nonMutating(adc),       0x6A : .noParam(rorA),          0x6B : .mutating(arr),
+            0x69 : .nonMutating(adc),       0x6A : .noParam(rorA),          0x6B : .nonMutating(arr),
             0x6C : .nonMutatingAddr(jmp),   0x6D : .nonMutating(adc),       0x6E : .mutating(ror),
             0x6F : .mutating(rra),          0x70 : .nonMutatingBPC(bvs),    0x71 : .nonMutating(adc),
             0x72 : .noParam(stp),           0x73 : .mutating(rra),          0x74 : .noParam(nop),
