@@ -1,18 +1,18 @@
 extension NES {
     public class PPU {
         var registers: Registers
-        var cycle: Int = 0 // 0-340 pixels per scanline
-        var scanline: Int = 0 // 0-261 scanlines per frame
-        var frame: Int = 0
-        var isOddFrame: Bool = false // Used for skipped cycle on odd frames
+        var cycle: Int // 0-340 pixels per scanline
+        var scanline: Int // 0-261 scanlines per frame
+        var frame: Int
+        var isOddFrame: Bool // Used for skipped cycle on odd frames
         var memory: Memory
-        var nmiPending = false
+        var nmiPending: Bool
         var triggerNMI: () -> Void
-        var bgFetchState = BackgroundFetchState()
+        var bgFetchState: BackgroundFetchState
         var frameBuffer: FrameBuffer
-        var secondaryOAM = SecondaryOAM()
-        var spriteData: [SpriteData] = Array(repeating: SpriteData(), count: 8)
-        var spriteFetchState = SpriteFetchState()
+        var secondaryOAM: SecondaryOAM
+        var spriteData: [SpriteData]
+        var spriteFetchState: SpriteFetchState
         
         // TODO: - Solidify Result Error type to specific cases
         var frameCallback: ((Result<Frame, Error>) -> Void)?
@@ -21,20 +21,29 @@ extension NES {
         init(memoryManager: MMU, triggerNMI: @escaping () -> Void) {
             let memory = Memory()
             
-            self.memory = memory
-            self.triggerNMI = triggerNMI
-            
             self.registers = Registers(
                 memory: memory,
                 ctrl: .init(rawValue: 0),
                 mask: .init(rawValue: 0),
-                status: .init(rawValue: 0),
+                status: .vblank,
                 oamAddr: 0,
                 scroll: 0,
                 addr: 0
             )
-            
+            self.cycle = 0
+            self.scanline = 0
+            self.frame = 0
+            self.isOddFrame = false
+            self.memory = memory
+            self.nmiPending = false
+            self.triggerNMI = triggerNMI
+            self.bgFetchState = BackgroundFetchState()
             self.frameBuffer = FrameBuffer()
+            self.secondaryOAM = SecondaryOAM()
+            self.spriteData = Array(repeating: SpriteData(), count: 8)
+            self.spriteFetchState = SpriteFetchState()
+            
+            self.reset(cartridge: memoryManager.cartridge)
         }
         
         // MARK: - Internal Functions
@@ -110,7 +119,7 @@ extension NES {
                 scanline += 1
                 if scanline > 261 {
                     scanline = 0
-                    frame += 1
+                    frame &+= 1
                     isOddFrame = !isOddFrame
                     
                     // Skip cycle 0 on odd frames when rendering is enabled
@@ -122,8 +131,15 @@ extension NES {
         }
         
         func reset(cartridge: Cartridge?) {
-            // TODO: - Implement me
+            registers.reset()
             memory.reset(cartridge: cartridge)
+            
+            bgFetchState.reset()
+            secondaryOAM.clear()
+            for i in 0..<spriteData.count {
+                spriteData[i].reset()
+            }
+            spriteFetchState.reset()
         }
         
         func read(from register: UInt8) -> UInt8 {
@@ -188,6 +204,7 @@ extension NES {
             case 0x05, 0x06: // PPUSCROLL, PPUADDR
                 // These can cause corruption to the internal state when written during rendering
                 // TODO: - (Implement for high accuracy)
+                break
             default: break
             }
         }

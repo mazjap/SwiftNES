@@ -177,17 +177,36 @@ extension NES.PPU.Registers {
             writeToggle.toggle()
         case 0x06:
             if writeToggle {
-                // First write (high byte)
-                tempVramAddress = (tempVramAddress & 0x00FF) | (UInt16(value & 0x3F) << 8) // Set high byte, clear unused bits
-            } else {
                 // Second write (low byte)
                 tempVramAddress = (tempVramAddress & 0xFF00) | UInt16(value)
                 currentVramAddress = tempVramAddress // Copy temp to current on second write
+            } else {
+                // First write (high byte)
+                tempVramAddress = (tempVramAddress & 0x00FF) | (UInt16(value & 0x3F) << 8) // Set high byte, clear unused bits
             }
             
             writeToggle.toggle()
         case 0x07: data = value
         default: fatalError("Write request to non-existent PPU Register: \(String(format: "%02x", register))")
         }
+    }
+    
+    mutating func reset() {
+        ctrl.rawValue = 0
+        mask.rawValue = 0
+        oamAddr = 0
+        fineXScroll = 0
+        scroll = 0
+        tempVramAddress = 0
+        currentVramAddress = 0
+        addr = 0
+        writeToggle = false
+        
+        // NESWiki says PPUStatus should be U??x xxxx after reset, where:
+        // U is unchanged
+        // ? is unknown
+        // x is irrelevant
+        // I'm just going to leave it all unchanged and refactor later if needed
+        // FIXME: Add status reset?
     }
 }

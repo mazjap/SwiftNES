@@ -13,14 +13,14 @@ extension NES.PPU {
         private var paletteRam: [UInt8] = []
         private weak var cartridge: NES.Cartridge?
         
-        init() {}
-        
-        func reset(cartridge: NES.Cartridge?) {
-            self.cartridge = cartridge
-            
+        init() {
             vram = [UInt8](repeating: 0, count: Size.nametable)
             oamRam = [UInt8](repeating: 0, count: Size.spriteRAM)
             paletteRam = [UInt8](repeating: 0, count: Size.paletteRAM)
+        }
+
+        func reset(cartridge: NES.Cartridge?) {
+            self.cartridge = cartridge
             
             if cartridge?.mapper.mirroringMode == .fourScreen {
                 extendedVram = [UInt8](repeating: 0, count: Size.nametable)
