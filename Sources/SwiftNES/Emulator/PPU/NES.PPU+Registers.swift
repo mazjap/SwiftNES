@@ -1,6 +1,6 @@
 extension NES.PPU {
     struct Registers {
-        private let memory: Memory
+        private let memoryManager: MMU
         
         /// Control Register ($2000) write-only
         /// Controls basic PPU operations and configures PPU memory access patterns
@@ -22,9 +22,9 @@ extension NES.PPU {
         /// Read/write data from/to OAM at the address specified by OAMADDR
         /// - Note: Each write to `oamData` automatically increments `oamAddr` as a side effect
         var oamData: UInt8 {
-            get { memory.readOAM(from: oamAddr) }
+            get { memoryManager.readOAM(from: oamAddr) }
             set {
-                memory.writeOAM(newValue, to: oamAddr)
+                memoryManager.writeOAM(newValue, to: oamAddr)
                 oamAddr &+= 1
             }
         }
@@ -44,7 +44,7 @@ extension NES.PPU {
         /// buffer with the corresponding nametable data.
         var data: UInt8 {
             mutating get {
-                let memoryValue = memory.read(from: addr)
+                let memoryValue = memoryManager.read(from: addr)
                 
                 // Increment before any potential read buffering
                 incrementDataAddress()
@@ -55,12 +55,12 @@ extension NES.PPU {
                     return bufferedValue
                 } else { // Palette data - return new value, but also store in buffer
                     // Mirror palette addresses 3F00-3FFF to 2F00-2FFF for the buffer
-                    ppuDataReadBuffer = memory.read(from: 0x2000 | (addr & 0x0FFF))
+                    ppuDataReadBuffer = memoryManager.read(from: 0x2000 | (addr & 0x0FFF))
                     return memoryValue
                 }
             }
             set {
-                memory.write(newValue, to: addr)
+                memoryManager.write(newValue, to: addr)
                 incrementDataAddress()
             }
         }
@@ -72,8 +72,8 @@ extension NES.PPU {
         var currentVramAddress: UInt16 = 0 // Current VRAM address register
         var fineXScroll: UInt8 = 0 // Fine X scroll (3 bits)
         
-        init(memory: Memory, ctrl: PPUCtrl, mask: PPUMask, status: PPUStatus, oamAddr: UInt8, scroll: UInt16, addr: UInt16, writeToggle: Bool = false) {
-            self.memory = memory
+        init(memoryManager: MMU, ctrl: PPUCtrl, mask: PPUMask, status: PPUStatus, oamAddr: UInt8, scroll: UInt16, addr: UInt16, writeToggle: Bool = false) {
+            self.memoryManager = memoryManager
             self.ctrl = ctrl
             self.mask = mask
             self.status = status

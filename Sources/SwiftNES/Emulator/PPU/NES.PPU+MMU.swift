@@ -1,5 +1,7 @@
 extension NES.PPU {
-    class Memory {
+    public typealias MMU = MemoryManagementUnit
+    
+    public class MemoryManagementUnit: Memory {
         private enum Size {
             static let kilobyte = 1024
             static let nametable = 2 * kilobyte // 2KB
@@ -29,7 +31,7 @@ extension NES.PPU {
             }
         }
         
-        func read(from address: UInt16) -> UInt8 {
+        public func read(from address: UInt16) -> UInt8 {
             switch address & 0x3FFF { // Mirror everything above $3FFF
             case 0x0000...0x1FFF: // Pattern Tables
                 guard let cartridge else {
@@ -57,7 +59,7 @@ extension NES.PPU {
             }
         }
         
-        func write(_ value: UInt8, to address: UInt16) {
+        public func write(_ value: UInt8, to address: UInt16) {
             switch address & 0x3FFF {
             case 0x0000...0x1FFF: // Pattern Tables
                 guard let cartridge else {

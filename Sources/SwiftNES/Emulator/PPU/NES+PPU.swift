@@ -5,7 +5,7 @@ extension NES {
         var scanline: Int // 0-261 scanlines per frame
         var frame: Int
         var isOddFrame: Bool // Used for skipped cycle on odd frames
-        var memory: Memory
+        var memoryManager: MMU
         var nmiPending: Bool
         var triggerNMI: () -> Void
         var bgFetchState: BackgroundFetchState
@@ -19,10 +19,10 @@ extension NES {
         public internal(set) var renderState: RenderState = .idle
         
         init(cartridge: Cartridge?, triggerNMI: @escaping () -> Void) {
-            let memory = Memory()
+            let memoryManager = MMU()
             
             self.registers = Registers(
-                memory: memory,
+                memoryManager: memoryManager,
                 ctrl: .init(rawValue: 0),
                 mask: .init(rawValue: 0),
                 status: .vblank,
@@ -34,7 +34,7 @@ extension NES {
             self.scanline = 0
             self.frame = 0
             self.isOddFrame = false
-            self.memory = memory
+            self.memoryManager = memoryManager
             self.nmiPending = false
             self.triggerNMI = triggerNMI
             self.bgFetchState = BackgroundFetchState()
@@ -132,7 +132,7 @@ extension NES {
         
         func reset(cartridge: Cartridge?) {
             registers.reset()
-            memory.reset(cartridge: cartridge)
+            memoryManager.reset(cartridge: cartridge)
             
             bgFetchState.reset()
             secondaryOAM.clear()
@@ -302,13 +302,13 @@ extension NES {
                 bgFetchState.operation = .nametable
             case 2: // Second cycle of nametable fetch - data becomes available
                 let nametableAddr = 0x2000 | (registers.currentVramAddress & 0x0FFF)
-                bgFetchState.nametableByte = memory.read(from: nametableAddr)
+                bgFetchState.nametableByte = memoryManager.read(from: nametableAddr)
             case 3: // Attribute fetch
                 bgFetchState.operation = .attribute
             case 4: // Second cycle of attribute fetch - data becomes available
                 let v = registers.currentVramAddress
                 let attributeAddr = 0x23C0 | (v & 0x0C00) | ((v >> 4) & 0x38) | ((v >> 2) & 0x07)
-                bgFetchState.attributeByte = memory.read(from: attributeAddr)
+                bgFetchState.attributeByte = memoryManager.read(from: attributeAddr)
                 
                 // Calculate attribute bits
                 let shift = ((v >> 4) & 4) | (v & 2)
@@ -317,12 +317,12 @@ extension NES {
                 bgFetchState.operation = .patternLow
             case 6: // Second cycle of pattern low byte fetch - data becomes available
                 let patternAddr = registers.ctrl.backgroundPatternTableBaseAddress | (UInt16(bgFetchState.nametableByte) << 4) | ((registers.currentVramAddress >> 12) & 7)
-                bgFetchState.patternLowByte = memory.read(from: patternAddr)
+                bgFetchState.patternLowByte = memoryManager.read(from: patternAddr)
             case 7: // Pattern high byte fetch
                 bgFetchState.operation = .patternHigh
             case 0: // Second cycle of pattern high byte (cycle 8/0) - data becomes available
                 let patternAddr = registers.ctrl.backgroundPatternTableBaseAddress | (UInt16(bgFetchState.nametableByte) << 4) | ((registers.currentVramAddress >> 12) & 7) | 8
-                bgFetchState.patternHighByte = memory.read(from: patternAddr)
+                bgFetchState.patternHighByte = memoryManager.read(from: patternAddr)
                 
                 // Load shift registers at end of sequence
                 loadBackgroundShiftRegisters()
@@ -522,7 +522,7 @@ extension NES {
             
             // Final address in palette RAM
             let paletteAddr = 0x3F00 + UInt16(paletteIndex)
-            let colorIndex = memory.readPalette(from: paletteAddr)
+            let colorIndex = memoryManager.readPalette(from: paletteAddr)
             
             // Apply grayscale mode if enabled
             let finalColorIndex = registers.mask.contains(.greyscale) ? colorIndex & 0x30 : colorIndex
@@ -569,7 +569,7 @@ extension NES {
             // Check first 64 sprites
             while m < 64 {
                 // Read Y coordinate from OAM
-                let spriteY = memory.readOAM(from: UInt8(n))
+                let spriteY = memoryManager.readOAM(from: UInt8(n))
                 
                 // Check if this sprite is in range for the next scanline
                 let spriteRow = targetScanline - Int(spriteY) - 1
@@ -579,9 +579,9 @@ extension NES {
                     
                     // Try to add the sprite to secondary OAM, respecting the 8 sprite limit
                     if !inOverflowMode {
-                        let tileIndex = memory.readOAM(from: UInt8(n + 1))
-                        let attributes = memory.readOAM(from: UInt8(n + 2))
-                        let spriteX = memory.readOAM(from: UInt8(n + 3))
+                        let tileIndex = memoryManager.readOAM(from: UInt8(n + 1))
+                        let attributes = memoryManager.readOAM(from: UInt8(n + 2))
+                        let spriteX = memoryManager.readOAM(from: UInt8(n + 3))
                         
                         let wasAdded = secondaryOAM.addSprite(
                             y: spriteY,
@@ -739,7 +739,7 @@ extension NES {
             case 5: // Sixth cycle - Pattern table low byte fetch completes
                 // Read the low byte of the pattern
                 if spriteIndex < secondaryOAM.sprites.count {
-                    spriteFetchState.patternLowByte = memory.read(from: spriteFetchState.patternTableAddress)
+                    spriteFetchState.patternLowByte = memoryManager.read(from: spriteFetchState.patternTableAddress)
                 }
                 
             case 6: // Seventh cycle - Pattern table high byte fetch
@@ -748,7 +748,7 @@ extension NES {
             case 7: // Eighth cycle - Pattern table high byte fetch completes, load to sprite shift registers
                 // Read the high byte of the pattern
                 if spriteIndex < secondaryOAM.sprites.count {
-                    spriteFetchState.patternHighByte = memory.read(from: spriteFetchState.patternTableAddress + 8)
+                    spriteFetchState.patternHighByte = memoryManager.read(from: spriteFetchState.patternTableAddress + 8)
                     
                     // Store the completed sprite data in our sprite data array
                     spriteData[spriteIndex] = SpriteData(

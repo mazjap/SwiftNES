@@ -110,6 +110,6 @@ public class NintendoEntertainmentSystem {
     public func load(cartridge: Cartridge?) {
         self.cartridge = cartridge
         cpu.memoryManager.cartridge = cartridge
-        ppu.memory.cartridge = cartridge
+        ppu.memoryManager.cartridge = cartridge
     }
 }
