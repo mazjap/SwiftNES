@@ -1,20 +1,22 @@
-extension NES {
-    /// Represents the Memory Management Unit (MMU) of the NES.
+extension NES.CPU {
+    public typealias MMU = MemoryManagementUnit
+    
+    /// Represents the CPU's address space within the NES.
     /// Handles memory mapping and access to various components including:
     /// - Internal RAM (0x0000-0x1FFF, mirrored every 0x800 bytes)
     /// - PPU registers (0x2000-0x3FFF, mirrored every 8 bytes)
     /// - APU and I/O registers (0x4000-0x4017)
     /// - Cartridge space (0x4020-0xFFFF)
-    public class MMU: Memory {
-        var internalRAM: RandomAccessMemory
-        public var cartridge: Cartridge?
+    public class MemoryManagementUnit: Memory {
+        var internalRAM: NES.RandomAccessMemory
+        var cartridge: NES.Cartridge?
         var readPPURegister: ((_ register: UInt8) -> UInt8)?
         var writePPURegister: ((_ value: UInt8, _ register: UInt8) -> Void)?
         var handleOAMDMA: ((UInt8) -> Void)?
         
         public init(
-            internalRAM: RandomAccessMemory = .init(),
-            cartridge: Cartridge? = nil,
+            internalRAM: NES.RandomAccessMemory = .init(),
+            cartridge: NES.Cartridge? = nil,
             readPPURegister: ((_ register: UInt8) -> UInt8)? = nil,
             writePPURegister: ((_ value: UInt8, _ register: UInt8) -> Void)? = nil,
             handleOAMDMA: ((UInt8) -> Void)? = nil

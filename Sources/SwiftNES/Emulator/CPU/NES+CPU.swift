@@ -1,10 +1,10 @@
 extension NES {
     public class CPU {
-        unowned var memoryManager: MMU
         var irqPending: Bool
         var nmiPending: Bool
         var registers: Registers
         var lastInstruction: UInt8 = 0
+        public internal(set) var memoryManager: MMU
         public internal(set) var clockCycleCount: UInt16
         
         public init(memoryManager: MMU) {

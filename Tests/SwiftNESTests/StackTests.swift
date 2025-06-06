@@ -5,7 +5,7 @@ import Testing
 class StackTests {
     @Test("Stack pointer decrements when pushed")
     func testStackPointerDecrementOnPush() async throws {
-        let mmu = NES.MMU()
+        let mmu = NES.CPU.MMU()
         let cpu = NES.CPU(memoryManager: mmu)
         let initialSP = cpu.registers.stackPointer
         
@@ -17,7 +17,7 @@ class StackTests {
     
     @Test("Stack pointer increments when popped")
     func testStackPointerIncrementOnPop() async throws {
-        let mmu = NES.MMU()
+        let mmu = NES.CPU.MMU()
         let cpu = NES.CPU(memoryManager: mmu)
         
         cpu.push(0x42)
@@ -31,7 +31,7 @@ class StackTests {
     // Not technically a stack overflow, just a stack wrap (but stackOverflow makes me feel like a haxor 😎)
     @Test("Stack handles forward page wrap correctly")
     func testStackOverflow() async throws {
-        let mmu = NES.MMU()
+        let mmu = NES.CPU.MMU()
         let cpu = NES.CPU(memoryManager: mmu)
         
         // Fill the entire stack page
@@ -55,7 +55,7 @@ class StackTests {
     
     @Test("Stack handles backward page wrap correctly")
     func testStackUnderflow() {
-        let mmu = NES.MMU()
+        let mmu = NES.CPU.MMU()
         let cpu = NES.CPU(memoryManager: mmu)
         
         // Start with empty stack
@@ -68,7 +68,7 @@ class StackTests {
     
     @Test("Stack peek reads correct value")
     func testStackPeek() async throws {
-        let mmu = NES.MMU()
+        let mmu = NES.CPU.MMU()
         let cpu = NES.CPU(memoryManager: mmu)
         
         cpu.push(0x42)
@@ -81,7 +81,7 @@ class StackTests {
     
     @Test("Stack operations verify range")
     func testStackAddressing() async throws {
-        let mmu = NES.MMU()
+        let mmu = NES.CPU.MMU()
         let cpu = NES.CPU(memoryManager: mmu)
         cpu.reset()
         
@@ -98,7 +98,7 @@ class StackTests {
     
     @Test("Stack operations stay within stack page")
     func testStackPageBoundaries() {
-        let mmu = NES.MMU()
+        let mmu = NES.CPU.MMU()
         let cpu = NES.CPU(memoryManager: mmu)
         
         // Write to memory just before and after stack page
@@ -116,7 +116,7 @@ class StackTests {
     
     @Test("Stack maintains integrity during mixed operations")
     func testStackMixedOperations() {
-        let mmu = NES.MMU()
+        let mmu = NES.CPU.MMU()
         let cpu = NES.CPU(memoryManager: mmu)
         
         // Mix of pushes and pops

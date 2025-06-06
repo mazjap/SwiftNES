@@ -1,4 +1,4 @@
-extension NES.MMU {
+extension NES.CPU.MemoryManagementUnit {
     enum MemoryMap {
         static let internalRamMask: UInt16 = 0x07FF
         

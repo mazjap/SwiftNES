@@ -18,7 +18,7 @@ extension NES {
         var frameCallback: ((Result<Frame, Error>) -> Void)?
         public internal(set) var renderState: RenderState = .idle
         
-        init(memoryManager: MMU, triggerNMI: @escaping () -> Void) {
+        init(cartridge: Cartridge?, triggerNMI: @escaping () -> Void) {
             let memory = Memory()
             
             self.registers = Registers(
@@ -43,7 +43,7 @@ extension NES {
             self.spriteData = Array(repeating: SpriteData(), count: 8)
             self.spriteFetchState = SpriteFetchState()
             
-            self.reset(cartridge: memoryManager.cartridge)
+            self.reset(cartridge: cartridge)
         }
         
         // MARK: - Internal Functions

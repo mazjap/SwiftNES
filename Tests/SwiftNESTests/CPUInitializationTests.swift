@@ -41,7 +41,7 @@ class CPUInitializationTests {
     @Test("OAM DMA")
     func testOAMDMA() {
         let nes = NES(cartridge: NES.Cartridge(mapper: NES.Cartridge.MapperTest()))
-        let mmu = nes.memoryManager
+        let mmu = nes.cpu.memoryManager
         let cpu = nes.cpu
         
         // Set PC to 0x8000 on reset/start

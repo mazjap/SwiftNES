@@ -7,11 +7,11 @@ extension NES.PPU {
             static let paletteRAM = 32 // 32B
         }
         
-        private var vram: [UInt8] = []
-        private var extendedVram: [UInt8]?
-        private var oamRam: [UInt8] = []
-        private var paletteRam: [UInt8] = []
-        private weak var cartridge: NES.Cartridge?
+        var vram: [UInt8] = []
+        var extendedVram: [UInt8]?
+        var oamRam: [UInt8] = []
+        var paletteRam: [UInt8] = []
+        var cartridge: NES.Cartridge?
         
         init() {
             vram = [UInt8](repeating: 0, count: Size.nametable)

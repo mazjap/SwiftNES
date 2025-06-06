@@ -21,15 +21,15 @@ public class NintendoEntertainmentSystem {
     public var cpu: CPU
     public var ppu: PPU
     public var apu: APU
-    public var memoryManager: MMU
     public var input: InputHandler
+    public private(set) var cartridge: Cartridge?
     
     public init(cartridge: Cartridge? = nil) {
-        let memoryManager = MMU(cartridge: cartridge)
-        self.memoryManager = memoryManager
+        self.cartridge = cartridge
+        let memoryManager = CPU.MMU(cartridge: cartridge)
         
         self.cpu = CPU(memoryManager: memoryManager)
-        self.ppu = PPU(memoryManager: memoryManager, triggerNMI: { [unowned cpu] in
+        self.ppu = PPU(cartridge: cartridge, triggerNMI: { [unowned cpu] in
             cpu.triggerNMI()
         })
         self.apu = APU()
@@ -54,7 +54,7 @@ public class NintendoEntertainmentSystem {
     }
     
     public func run(options: NESRunOption? = nil) throws -> NESRunResult {
-        guard memoryManager.cartridge != nil else { throw NESError.cartridge(.noCartridge) }
+        guard cartridge != nil else { throw NESError.cartridge(.noCartridge) }
         
         var totalCycles: UInt64 = 0
         var totalInstructions = 0
@@ -101,9 +101,15 @@ public class NintendoEntertainmentSystem {
     
     public func reset() {
         cpu.reset()
-        ppu.reset(cartridge: memoryManager.cartridge)
+        ppu.reset(cartridge: cartridge)
         apu.reset()
         
         // TODO: - Possibly reset memoryManager & input
+    }
+    
+    public func load(cartridge: Cartridge?) {
+        self.cartridge = cartridge
+        cpu.memoryManager.cartridge = cartridge
+        ppu.memory.cartridge = cartridge
     }
 }

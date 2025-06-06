@@ -39,14 +39,14 @@ extension NES.Cartridge {
 }
 
 extension NES.CPU {
-    convenience init(memoryManager: NES.MMU, registers: Registers, clockCycleCount: UInt16) {
+    convenience init(memoryManager: NES.CPU.MMU, registers: Registers, clockCycleCount: UInt16) {
         self.init(memoryManager: memoryManager)
         self.registers = registers
         self.clockCycleCount = clockCycleCount
     }
 }
 
-extension NES.MMU {
+extension NES.CPU.MMU {
     convenience init(usingTestMapper: Bool) {
         self.init(cartridge: .init(mapper: NES.Cartridge.MapperTest()))
     }
@@ -70,7 +70,7 @@ struct CPUTestContext {
     var expected: ExpectedState
     
     var cpu: NES.CPU { nes.cpu }
-    var mmu: NES.MMU { nes.memoryManager }
+    var mmu: NES.CPU.MMU { cpu.memoryManager }
     
     /// Uses the cpu's current stack pointer to check the current stack item offset by 1 + `back`
     /// - Parameter back: The offset to apply to the current stack pointer. Defaults to 0

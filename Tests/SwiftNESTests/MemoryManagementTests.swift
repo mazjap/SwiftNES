@@ -8,7 +8,7 @@ class MemoryManagementTests {
 
     @Test("Single write affects all mirrors")
     func testBasicMirroring() {
-        let mmu = NES.MMU(usingTestMapper: true)
+        let mmu = NES.CPU.MMU(usingTestMapper: true)
         
         mmu.write(0xFF, to: 0x0200)
         
@@ -21,7 +21,7 @@ class MemoryManagementTests {
 
     @Test("Writing to different mirrors affects all mirrors")
     func testMirrorWriteVariations() {
-        let mmu = NES.MMU(usingTestMapper: true)
+        let mmu = NES.CPU.MMU(usingTestMapper: true)
         
         // Write to each mirror and verify all mirrors update
         mmu.write(0xFF, to: 0x0200)  // First mirror
@@ -39,7 +39,7 @@ class MemoryManagementTests {
 
     @Test("Writing at start/end of mirror regions")
     func testMirrorBoundaries() {
-        let mmu = NES.MMU(usingTestMapper: true)
+        let mmu = NES.CPU.MMU(usingTestMapper: true)
         
         // Test first byte of each mirror
         mmu.write(0xAA, to: 0x0000)
@@ -56,7 +56,7 @@ class MemoryManagementTests {
 
     @Test("Reading/writing across mirror boundaries")
     func testCrossMirrorOperations() {
-        let mmu = NES.MMU(usingTestMapper: true)
+        let mmu = NES.CPU.MMU(usingTestMapper: true)
         
         // Write a pattern across mirror boundary
         for i in 0..<16 {
@@ -72,7 +72,7 @@ class MemoryManagementTests {
 
     @Test("RAM mirrors don't affect other memory regions")
     func testMirrorToRegionIsolation() {
-        let mmu = NES.MMU(usingTestMapper: true)
+        let mmu = NES.CPU.MMU(usingTestMapper: true)
         
         // Write pattern to first mirror
         mmu.write(0xAA, to: 0x0200)
@@ -90,7 +90,7 @@ class MemoryManagementTests {
     @Test("Memory regions are properly isolated")
     func testRegionIsolation() {
         let nes = NES(cartridge: .init(mapper: NES.Cartridge.MapperTest()))
-        let mmu = nes.memoryManager
+        let mmu = nes.cpu.memoryManager
         // TODO: - Implement APU and IO + their memory mappings for this to pass
         
         // Write near region boundaries
@@ -111,7 +111,7 @@ class MemoryManagementTests {
     @Test("PPU register mirroring behavior")
     func testPPURegisterMirroring() {
         let nes = NES(cartridge: .init(mapper: NES.Cartridge.MapperTest()))
-        let mmu = nes.memoryManager
+        let mmu = nes.cpu.memoryManager
         
         // PPU has 8 registers (0x2000-0x2007) mirrored every 8 bytes up to 0x3FFF
         mmu.write(0x42, to: 0x2000)  // PPUCTRL
@@ -125,7 +125,7 @@ class MemoryManagementTests {
     @Test("PPU register individual access")
     func testPPURegisterAccess() {
         let nes = NES(cartridge: .init(mapper: NES.Cartridge.MapperTest()))
-        let mmu = nes.memoryManager
+        let mmu = nes.cpu.memoryManager
         
         // TODO: - Add all PPU registers
         mmu.write(0x42, to: 0x2000) // PPUCTRL
@@ -143,7 +143,7 @@ class MemoryManagementTests {
     @Test("APU register access")
     func testAPURegisterAccess() {
         let nes = NES(cartridge: .init(mapper: NES.Cartridge.MapperTest()))
-        let mmu = nes.memoryManager
+        let mmu = nes.cpu.memoryManager
         
         // TODO: - Add all APU registers
         mmu.write(0x42, to: 0x4000) // Pulse 1 duty
@@ -159,7 +159,7 @@ class MemoryManagementTests {
     @Test("I/O register access")
     func testIORegisterAccess() {
         let nes = NES(cartridge: .init(mapper: NES.Cartridge.MapperTest()))
-        let mmu = nes.memoryManager
+        let mmu = nes.cpu.memoryManager
         
         // Test controller ports
         mmu.write(0x42, to: 0x4016) // Controller 1
@@ -173,7 +173,7 @@ class MemoryManagementTests {
     
     @Test("Basic cartridge space access")
     func testCartridgeSpaceAccess() {
-        let mmu = NES.MMU(usingTestMapper: true)
+        let mmu = NES.CPU.MMU(usingTestMapper: true)
         
         // Test basic read/write to cartridge space (0x4020-0xFFFF)
         mmu.write(0x42, to: 0x4020)
@@ -186,7 +186,7 @@ class MemoryManagementTests {
     @Test("Cartridge space boundaries")
     func testCartridgeSpaceBoundaries() {
         let nes = NES(cartridge: .init(mapper: NES.Cartridge.MapperTest()))
-        let mmu = nes.memoryManager
+        let mmu = nes.cpu.memoryManager
         
         // Write at boundaries between APU/IO and cartridge space
         mmu.write(0x42, to: 0x4017) // Last APU register
@@ -199,7 +199,7 @@ class MemoryManagementTests {
 
     @Test("Missing cartridge handling")
     func testMissingCartridge() {
-        let mmu = NES.MMU() // No cartridge
+        let mmu = NES.CPU.MMU() // No cartridge
         
         // Writing to cartridge space with no cartridge should have no effect
         mmu.write(0xFF, to: 0x4020)

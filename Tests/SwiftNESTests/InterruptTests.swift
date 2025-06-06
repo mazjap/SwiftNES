@@ -10,12 +10,12 @@ class InterruptTests: TestBase {
         let nes = createTestNES(withPcAtAddress: pc)
         
         // Initialize test vectors
-        nes.memoryManager.write(0xFA, to: 0xFFFA) // NMI low
-        nes.memoryManager.write(0x10, to: 0xFFFB) // NMI high
-        nes.memoryManager.write(0xFC, to: 0xFFFC) // Reset low
-        nes.memoryManager.write(0x10, to: 0xFFFD) // Reset high
-        nes.memoryManager.write(0xFE, to: 0xFFFE) // IRQ low
-        nes.memoryManager.write(0x10, to: 0xFFFF) // IRQ high
+        nes.cpu.memoryManager.write(0xFA, to: 0xFFFA) // NMI low
+        nes.cpu.memoryManager.write(0x10, to: 0xFFFB) // NMI high
+        nes.cpu.memoryManager.write(0xFC, to: 0xFFFC) // Reset low
+        nes.cpu.memoryManager.write(0x10, to: 0xFFFD) // Reset high
+        nes.cpu.memoryManager.write(0xFE, to: 0xFFFE) // IRQ low
+        nes.cpu.memoryManager.write(0x10, to: 0xFFFF) // IRQ high
         
         return CPUTestContext(
             nes: nes,
