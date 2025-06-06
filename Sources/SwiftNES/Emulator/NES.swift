@@ -2,6 +2,21 @@ import Foundation
 
 public typealias NES = NintendoEntertainmentSystem
 
+public enum NESMaxRunCount: Sendable {
+    case cycles(UInt64)
+    case instructions(UInt64)
+}
+
+public enum NESRunResult: Sendable {
+    case limitReached(NESMaxRunCount)
+    case instructionOccurred(UInt8)
+}
+
+public enum NESRunOption: Sendable {
+    case maxRunCount(NESMaxRunCount)
+    case specificInstruction(Set<UInt8>)
+}
+
 public class NintendoEntertainmentSystem {
     public var cpu: CPU
     public var ppu: PPU
@@ -38,8 +53,11 @@ public class NintendoEntertainmentSystem {
         // - Configure input handling
     }
     
-    public func run() throws {
+    public func run(options: NESRunOption? = nil) throws -> NESRunResult {
         guard memoryManager.cartridge != nil else { throw NESError.cartridge(.noCartridge) }
+        
+        var totalCycles: UInt64 = 0
+        var totalInstructions = 0
         
         while true {
             let prevNmiPending = ppu.nmiPending
@@ -47,7 +65,10 @@ public class NintendoEntertainmentSystem {
             // Execute one CPU instruction
             let cpuCycles = cpu.executeNextInstruction()
             
-            // PPU steps 3 times per cpu step
+            totalCycles += UInt64(cpuCycles)
+            totalInstructions += 1
+            
+            // PPU steps 3 times per CPU cycle
             for _ in 0..<cpuCycles * 3 {
                 ppu.step()
                 
@@ -57,11 +78,24 @@ public class NintendoEntertainmentSystem {
                 }
             }
             
+            // APU steps once per CPU cycle
             for _ in 0..<cpuCycles {
                 apu.step()
             }
             
-            // Handle other components as needed
+            // Early exit check
+            switch options {
+            case let .maxRunCount(.cycles(maxCycles)):
+                return .limitReached(.cycles(maxCycles))
+            case let .maxRunCount(.instructions(maxInstructions)):
+                return .limitReached(.instructions(maxInstructions))
+            case let .specificInstruction(instructionSet):
+                if instructionSet.contains(cpu.lastInstruction) {
+                    return .instructionOccurred(cpu.lastInstruction)
+                }
+            case .none:
+                break
+            }
         }
     }
     

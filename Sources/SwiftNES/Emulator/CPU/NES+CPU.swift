@@ -4,6 +4,7 @@ extension NES {
         var irqPending: Bool
         var nmiPending: Bool
         var registers: Registers
+        var lastInstruction: UInt8 = 0
         public internal(set) var clockCycleCount: UInt16
         
         public init(memoryManager: MMU) {
@@ -121,6 +122,8 @@ extension NES {
             } else if irqPending {
                 handleIRQ()
             }
+            
+            lastInstruction = opcode
             
             return clockCycleCount
         }

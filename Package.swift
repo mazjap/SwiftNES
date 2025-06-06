@@ -24,7 +24,12 @@ let package = Package(
         .testTarget(
             name: "SwiftNESTest",
             dependencies: ["SwiftNES"],
-            resources: [.copy("SwiftNESTests/cpu_dummy_reads.nes")]
+            resources: [
+                .copy("SwiftNESTests/Test Programs/cpu_dummy_reads.nes"),
+                .copy("SwiftNESTests/Test Programs/branch_basics.nes"),
+                .copy("SwiftNESTests/Test Programs/backward_branch.nes"),
+                .copy("SwiftNESTests/Test Programs/forward_branch.nes")
+            ]
         )
     ],
     swiftLanguageModes: [.v6]
