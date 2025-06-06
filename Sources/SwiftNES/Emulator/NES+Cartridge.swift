@@ -1,8 +1,8 @@
 extension NES {
-    public class Cartridge {
+    public class Cartridge: @unchecked Sendable {
         var mapper: Mapper
         
-        public init(mapper: Mapper) {
+        init(mapper: Mapper) {
             self.mapper = mapper
         }
     }
