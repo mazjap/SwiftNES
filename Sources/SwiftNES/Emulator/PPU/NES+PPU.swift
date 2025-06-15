@@ -59,10 +59,12 @@ extension NES {
             updateAddressDuringRendering()
             
             // Add sprite evaluation after address updates
-            updateSpriteEvaluation()
+            if 0..<240 ~= scanline || scanline == 261 {
+                updateSpriteEvaluation()
+            }
             
             // Active scanlines (0-239)
-            if scanline >= 0 && scanline < 240 {
+            if 0..<240 ~= scanline {
                 if cycle == 0 {
                     // Idle cycle
                     renderState = .idle
@@ -276,7 +278,7 @@ extension NES {
             if scanline == 261 {
                 if cycle == 0 {
                     bgFetchState.reset()
-                } else if cycle >= 280 && cycle <= 304 { // Between cycles 280-304, copy vertical bits
+                } else if 280...304 ~= cycle { // Between cycles 280-304, copy vertical bits
                     // Copy vertical bits from t to v (coarse Y, fine Y, nametable select Y)
                     registers.currentVramAddress = (registers.currentVramAddress & ~0x7BE0) | (registers.tempVramAddress & 0x7BE0)
                 }
@@ -285,9 +287,8 @@ extension NES {
         
         /// Performs background tile fetching based on current PPU cycle
         private func fetchBackgroundTile() {
-            guard (scanline >= 0 && scanline < 240 && cycle >= 1 && cycle <= 256) ||
-                  (scanline == 261 && cycle >= 321 && cycle <= 336) else {
-                emuLogger.warning("`fetchBackgroundTile()` called outside visible area! scanline \(self.scanline), cycle \(self.cycle)")
+            guard shouldFetchBackgroundTiles() else {
+                emuLogger.warning("PPU's `fetchBackgroundTile()` called outside visible area! scanline \(self.scanline), cycle \(self.cycle)")
                 return
             }
             
@@ -388,9 +389,8 @@ extension NES {
         
         /// Gets the color for the current background pixel
         private func getBackgroundPixel() -> UInt8 {
-            // Only get background pixels during visible scanlines and cycles
-            guard scanline >= 0 && scanline < 240 && cycle >= 1 && cycle <= 256 else {
-                emuLogger.warning("`getBackgroundPixel()` called outside visible area! scanline \(self.scanline), cycle \(self.cycle)")
+            guard shouldRenderPixels() else {
+                emuLogger.warning("PPU's `getBackgroundPixel()` called outside visible area! scanline \(self.scanline), cycle \(self.cycle)")
                 return 0
             }
             
@@ -431,8 +431,7 @@ extension NES {
         /// Gets the appropriate pixel color based on background and sprite data,
         /// handling sprite transparency and priority.
         private func renderPixel() {
-            // Only render within visible area
-            guard cycle >= 1 && cycle <= 256 && scanline >= 0 && scanline < 240 else {
+            guard shouldRenderPixels() else {
                 emuLogger.error("PPU's `renderPixel()` called outside visible area! scanline \(self.scanline), cycle \(self.cycle)")
                 return
             }
@@ -539,8 +538,7 @@ extension NES {
         /// Evaluates which sprites will be visible on the next scanline and populates secondary OAM
         /// Enforces the 8 sprite per scanline limit and handles overflow flag
         private func evaluateSpritesForNextScanline() {
-            // Only evaluate sprites during visible scanlines (0-239) and pre-render scanline (261)
-            guard (scanline >= 0 && scanline < 240) || scanline == 261 else {
+            guard shouldEvaluateSprites() else {
                 emuLogger.error("PPU's `evaluateSpritesForNextScanline()` called outside visible area! scanline \(self.scanline), cycle \(self.cycle)")
                 return
             }
@@ -633,7 +631,7 @@ extension NES {
         
         /// Integrate sprite evaluation into the PPU cycle processing
         private func updateSpriteEvaluation() {
-            guard (scanline >= 0 && scanline < 240) || scanline == 261 else {
+            guard shouldEvaluateSprites() else {
                 emuLogger.error("PPU's `updateSpriteEvaluation()` called outside visible area! scanline \(self.scanline), cycle \(self.cycle)")
                 return
             }
@@ -819,6 +817,44 @@ extension NES {
             0xE9E681, 0xCEF481, 0xB6FB9A, 0xA9FAC3, // 0x38-0x3B
             0xA9F0F4, 0xB8B8B8, 0x000000, 0x000000  // 0x3C-0x3F
         ]
+    }
+}
+
+extension NES.PPU {
+    @inline(__always)
+    private func isVisibleScanline() -> Bool {
+        0..<240 ~= scanline
+    }
+    
+    @inline(__always)
+    private func isPreRenderScanline() -> Bool {
+        scanline == 261
+    }
+    
+    @inline(__always)
+    private func isVisibleCycle() -> Bool {
+        cycle >= 1 && cycle <= 256
+    }
+    
+    @inline(__always)
+    private func isPrefetchCycle() -> Bool {
+        cycle >= 321 && cycle <= 336
+    }
+    
+    @inline(__always)
+    private func shouldRenderPixels() -> Bool {
+        isVisibleScanline() && isVisibleCycle()
+    }
+    
+    @inline(__always)
+    private func shouldFetchBackgroundTiles() -> Bool {
+        (isVisibleScanline() && (isVisibleCycle() || isPrefetchCycle())) ||
+        (isPreRenderScanline() && isPrefetchCycle())
+    }
+    
+    @inline(__always)
+    private func shouldEvaluateSprites() -> Bool {
+        (isVisibleScanline() || isPreRenderScanline())
     }
 }
 
