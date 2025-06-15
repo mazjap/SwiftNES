@@ -17,7 +17,8 @@ extension NES {
         // TODO: - Solidify Result Error type to specific cases
         var frameCallback: ((Result<Frame, Error>) -> Void)?
         public internal(set) var renderState: RenderState = .idle
-        
+       
+        @_optimize(none)
         init(cartridge: Cartridge?, triggerNMI: @escaping () -> Void) {
             let memoryManager = MMU()
             
