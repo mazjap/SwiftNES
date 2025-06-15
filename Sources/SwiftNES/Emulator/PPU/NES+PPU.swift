@@ -3,7 +3,7 @@ extension NES {
         var registers: Registers
         @BoundInteger<UInt16>(range: 0...340) var cycle = 0
         @BoundInteger<UInt16>(range: 0...261) var scanline = 0
-        var frame: UInt
+        internal(set) public var frame: UInt
         var isOddFrame: Bool // Used for skipped cycle on odd frames
         var memoryManager: MMU
         var nmiPending: Bool
