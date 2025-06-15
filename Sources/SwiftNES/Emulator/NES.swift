@@ -99,6 +99,56 @@ public class NintendoEntertainmentSystem {
         }
     }
     
+    public func runWithCallback(with options: NESRunOption? = nil, _ callback: @escaping () async -> Void) async throws -> NESRunResult {
+        guard cartridge != nil else { throw NESError.cartridge(.noCartridge) }
+        
+        var totalCycles: UInt64 = 0
+        var totalInstructions = 0
+        
+        while true {
+            let prevNmiPending = ppu.nmiPending
+            
+            // Execute one CPU instruction
+            let cpuCycles = cpu.executeNextInstruction()
+            
+            totalCycles += UInt64(cpuCycles)
+            totalInstructions += 1
+            
+            // PPU steps 3 times per CPU cycle
+            for _ in 0..<cpuCycles * 3 {
+                ppu.step()
+                
+                // Check if NMI was triggered during this PPU cycle
+                if !prevNmiPending && ppu.nmiPending && cpu.registers.status.readFlag(.interrupt) == false {
+                    cpu.triggerNMI()
+                }
+            }
+            
+            // APU steps once per CPU cycle
+            for _ in 0..<cpuCycles {
+                apu.step()
+            }
+            
+            // Early exit check
+            switch options {
+            case let .maxRunCount(.cycles(maxCycles)):
+                return .limitReached(.cycles(maxCycles))
+            case let .maxRunCount(.instructions(maxInstructions)):
+                return .limitReached(.instructions(maxInstructions))
+            case let .specificInstruction(instructionSet):
+                if instructionSet.contains(cpu.lastInstruction) {
+                    return .instructionOccurred(cpu.lastInstruction)
+                }
+            case .none:
+                break
+            }
+            
+            await callback()
+            
+            try await Task.sleep(nanoseconds: 20000)
+        }
+    }
+    
     public func reset() {
         cpu.reset()
         ppu.reset(cartridge: cartridge)
