@@ -1,4 +1,4 @@
-import Foundation
+#if DEBUG
 import OSLog
 
 extension Logger {
@@ -11,3 +11,13 @@ extension Logger {
 }
 
 let emuLogger = Logger.emu
+#else
+final class Logger: Sendable {
+    func error(_ message: String) {}
+    func notice(_ message: String) {}
+    func warning(_ message: String) {}
+    func debug(_ message: String) {}
+}
+
+let emuLogger = Logger()
+#endif
