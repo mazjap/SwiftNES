@@ -1,9 +1,9 @@
 extension NES {
     public class PPU {
         var registers: Registers
-        var cycle: Int // 0-340 pixels per scanline
-        var scanline: Int // 0-261 scanlines per frame
-        var frame: Int
+        @BoundInteger<UInt16>(range: 0...340) var cycle = 0
+        @BoundInteger<UInt16>(range: 0...261) var scanline = 0
+        var frame: UInt
         var isOddFrame: Bool // Used for skipped cycle on odd frames
         var memoryManager: MMU
         var nmiPending: Bool
@@ -49,77 +49,83 @@ extension NES {
         // MARK: - Internal Functions
         
         func step() {
-            // Pre-render scanline - clear VBlank, sprite 0 hit, sprite overflow, and pending nmi interrupt
-            if scanline == 261 && cycle == 1 {
-                registers.status.remove([.vblank, .sprite0Hit, .spriteOverflow])
-                nmiPending = false
-            }
-            
-            // Update VRAM address registers during rendering
-            updateAddressDuringRendering()
-            
-            // Add sprite evaluation after address updates
-            if 0..<240 ~= scanline || scanline == 261 {
-                updateSpriteEvaluation()
-            }
-            
-            // Active scanlines (0-239)
-            if 0..<240 ~= scanline {
-                if cycle == 0 {
-                    // Idle cycle
-                    renderState = .idle
-                    bgFetchState.reset()
-                } else if cycle <= 256 {
-                    // Visible pixels + tile/sprite fetching
-                    renderState = .visible
-                    renderPixel()
-                    
-                    // Every 8 cycles, increment coarse X
-                    if cycle % 8 == 0 {
-                        incrementHorizontalPosition()
-                    }
-                    
-                    // Fetch background tiles during visible cycles
-                    fetchBackgroundTile()
-                    
-                    if cycle == 256 {
-                        // At the end of scanline, increment Y position
-                        incrementVerticalPosition()
-                    }
-                } else if cycle <= 336 {
-                    // Prefetch first two tiles of next line
-                    renderState = .prefetch
-                    
-                    // Continue fetching during prefetch cycles
-                    fetchBackgroundTile()
-                    
-                    // At 328 and 336, we need to increment the horizontal position
-                    if cycle == 328 || cycle == 336 {
-                        incrementHorizontalPosition()
-                    }
+            switch (scanline, cycle) {
+            case (0..<240, 0):
+                bgFetchState.reset()
+            case (0..<240, 1...256):
+                // Visible pixels + tile/sprite fetching
+                renderState = .visible
+                renderPixel()
+                
+                // Every 8 cycles, increment coarse X
+                if cycle % 8 == 0 {
+                    incrementHorizontalPosition()
                 }
-            }
-            
-            // Start of VBlank (scanline 241)
-            if scanline == 241 {
-                if cycle == 1 {
-                    renderState = .idle
-                    registers.status.insert(.vblank)
-                    outputFrame()
-                    // Don't trigger NMI yet, just set pending
-                    nmiPending = true
-                } else if cycle == 3 && nmiPending && registers.ctrl.contains(.generateNMI) {
-                    // Now actually trigger the NMI if it wasn't suppressed
+                
+                // Fetch background tiles during visible cycles
+                fetchBackgroundTile()
+                
+                if cycle == 256 {
+                    // At the end of scanline, increment Y position
+                    incrementVerticalPosition()
+                }
+            case (0..<240, 257...320):
+                renderState = .spriteEval
+                updateSpriteEvaluation()
+                
+                if cycle == 257 {
+                    // Copy horizontal scroll bits
+                    updateAddressDuringRendering()
+                }
+            case (0..<240, 321...336):
+                renderState = .prefetch
+                fetchBackgroundTile() // ✅ ADD THIS - prefetch tiles
+                
+                if cycle == 328 || cycle == 336 {
+                    incrementHorizontalPosition()
+                }
+            case (0..<240, 337...340):
+                renderState = .idle
+            case (241, 1):
+                renderState = .idle
+                registers.status.insert(.vblank)
+                outputFrame()
+                // Don't trigger NMI yet, just set pending
+                nmiPending = true
+            case (241, 3):
+                if nmiPending && registers.ctrl.contains(.generateNMI) {
+                    // Actually trigger the NMI if it wasn't suppressed
                     triggerNMI()
                 }
+            case (261, 1):
+                registers.status.remove([.vblank, .sprite0Hit, .spriteOverflow])
+                nmiPending = false
+                bgFetchState.reset()
+            case (261, 257...320):
+                renderState = .spriteEval
+                updateSpriteEvaluation()
+                
+                if cycle == 257 {
+                    updateAddressDuringRendering()
+                }
+            case (261, 280...304):
+                // Copy vertical scroll bits from temp to current
+                updateAddressDuringRendering()
+            case (261, 321...336):
+                renderState = .prefetch
+                fetchBackgroundTile() // Prefetch for scanline 0
+                
+                if cycle == 328 || cycle == 336 {
+                    incrementHorizontalPosition()
+                }
+            case (_, _):
+                renderState = .idle
             }
             
             // Advance PPU state
-            cycle += 1
-            if cycle > 340 {
+            if _cycle.isAtUpperLimit {
                 cycle = 0
-                scanline += 1
-                if scanline > 261 {
+                if _scanline.isAtUpperLimit {
                     scanline = 0
                     frame &+= 1
                     isOddFrame = !isOddFrame
@@ -128,7 +134,11 @@ extension NES {
                     if isOddFrame && (registers.mask.contains(.showBackground) || registers.mask.contains(.showSprites)) {
                         cycle = 1
                     }
+                } else {
+                    scanline += 1
                 }
+            } else {
+                cycle += 1
             }
         }
         
