@@ -55,7 +55,7 @@ extension NES.PPU {
 
 extension NES.PPU {
     /// Tracks current fetch operation during the 8-cycle pattern
-    enum FetchOperation {
+    public enum FetchOperation {
         case nametable
         case attribute
         case patternLow
@@ -82,31 +82,31 @@ extension NES.PPU {
     /// State needed for background tile fetching
     public struct BackgroundFetchState {
         // Current fetch operation
-        var operation: FetchOperation = .nametable
+        public var operation: FetchOperation = .nametable
         
         // Temporary data for current tile fetch
-        var nametableByte: UInt8 = 0
-        var attributeByte: UInt8 = 0
-        var patternLowByte: UInt8 = 0
-        var patternHighByte: UInt8 = 0
+        public var nametableByte: UInt8 = 0
+        public var attributeByte: UInt8 = 0
+        public var patternLowByte: UInt8 = 0
+        public var patternHighByte: UInt8 = 0
         
         // Current tile's palette attribute (2 bits)
-        var tileAttribute: UInt8 = 0
+        public var tileAttribute: UInt8 = 0
         
         // Pattern table shift registers (16 bits each)
-        var patternShiftLow: UInt16 = 0
-        var patternShiftHigh: UInt16 = 0
+        public var patternShiftLow: UInt16 = 0
+        public var patternShiftHigh: UInt16 = 0
         
         // Attribute shift registers (8 bits, but only 2 bits used)
-        var attributeShiftLow: UInt8 = 0
-        var attributeShiftHigh: UInt8 = 0
+        public var attributeShiftLow: UInt8 = 0
+        public var attributeShiftHigh: UInt8 = 0
         
         // Attribute latches for next tile
-        var attributeLatchLow: Bool = false
-        var attributeLatchHigh: Bool = false
+        public var attributeLatchLow: Bool = false
+        public var attributeLatchHigh: Bool = false
         
         // Reset back to initial state
-        mutating func reset() {
+        public mutating func reset() {
             operation = .nametable
             nametableByte = 0
             attributeByte = 0
@@ -121,13 +121,13 @@ extension NES.PPU {
     
     public struct SecondaryOAM {
         /// The maximum number of sprites per scanline (hardware limit)
-        static let capacity = 8
+        public static let capacity = 8
         
         /// Array of sprites visible on the current scanline, limited to 8
-        var sprites: [(y: UInt8, tile: UInt8, attributes: UInt8, x: UInt8)] = []
+        public var sprites: [(y: UInt8, tile: UInt8, attributes: UInt8, x: UInt8)] = []
         
         /// Indicates if sprite 0 is among the visible sprites (for sprite 0 hit detection)
-        var sprite0Present = false
+        public var sprite0Present = false
         
         /// Adds a sprite to secondary OAM if there's room (enforces 8 sprite limit)
         /// - Parameters:
@@ -137,7 +137,7 @@ extension NES.PPU {
         ///   - x: X position (left of sprite)
         ///   - isSprite0: Whether this is sprite 0
         /// - Returns: True if the sprite was added, false if the secondary OAM is full
-        mutating func addSprite(y: UInt8, tile: UInt8, attributes: UInt8, x: UInt8, isSprite0: Bool) -> Bool {
+        public  mutating func addSprite(y: UInt8, tile: UInt8, attributes: UInt8, x: UInt8, isSprite0: Bool) -> Bool {
             // Enforce the 8 sprite per scanline limit
             guard sprites.count < Self.capacity else { return false }
             
@@ -153,7 +153,7 @@ extension NES.PPU {
         }
         
         /// Clears all sprites from secondary OAM
-        mutating func clear() {
+        public mutating func clear() {
             sprites.removeAll()
             sprite0Present = false
         }
@@ -161,14 +161,14 @@ extension NES.PPU {
     
     /// Struct to track sprite pattern data for the current scanline
     public struct SpriteData {
-        var patternLow: UInt8 = 0
-        var patternHigh: UInt8 = 0
-        var attributes: UInt8 = 0
-        var xCounter: UInt8 = 0
-        var isSprite0: Bool = false
-        var active: Bool = false
+        public var patternLow: UInt8 = 0
+        public var patternHigh: UInt8 = 0
+        public var attributes: UInt8 = 0
+        public var xCounter: UInt8 = 0
+        public var isSprite0: Bool = false
+        public var active: Bool = false
         
-        mutating func reset() {
+        public mutating func reset() {
             patternLow = 0
             patternHigh = 0
             attributes = 0
@@ -177,7 +177,7 @@ extension NES.PPU {
             active = false
         }
         
-        init(
+        public init(
             patternLow: UInt8 = 0,
             patternHigh: UInt8 = 0,
             attributes: UInt8 = 0,
@@ -195,7 +195,7 @@ extension NES.PPU {
         
         /// Get the color index for this sprite at the current position
         /// - Returns: Color index (0-3) or nil if transparent
-        func getColorIndex() -> UInt8? {
+        public func getColorIndex() -> UInt8? {
             // If not active, no pixel
             if !active { return nil }
             
@@ -218,7 +218,7 @@ extension NES.PPU {
         }
         
         /// Shift the sprite pattern data for the next pixel
-        mutating func shift() {
+        public mutating func shift() {
             // If the sprite is horizontally flipped, shift right instead of left
             if (attributes & 0x40) != 0 {
                 // Horizontally flipped - shift right
@@ -232,7 +232,7 @@ extension NES.PPU {
         }
     }
     
-    enum SpriteFetchOperation {
+    public enum SpriteFetchOperation {
         case garbageNT // Garbage nametable fetch
         case garbageAT // Garbage attribute fetch (not used but included for completeness)
         case patternLow // Sprite pattern table low byte
@@ -241,23 +241,23 @@ extension NES.PPU {
     
     /// State tracking for sprite fetching during cycles 257-320
     public struct SpriteFetchState {
-        var currentSprite: Int = 0 // Current sprite being fetched (0-7)
-        var operation: SpriteFetchOperation = .garbageNT  // Current fetch operation
-        var fetchCycle: Int = 0 // Cycle within the current sprite fetch (0-7)
+        public var currentSprite: Int = 0 // Current sprite being fetched (0-7)
+        public var operation: SpriteFetchOperation = .garbageNT  // Current fetch operation
+        public var fetchCycle: Int = 0 // Cycle within the current sprite fetch (0-7)
         
         // Temporary data for the current sprite being fetched
-        var tileIndex: UInt8 = 0
-        var attributes: UInt8 = 0
-        var xPosition: UInt8 = 0
-        var yPosition: UInt8 = 0
-        var spriteRowY: Int = 0 // Which row of the tile we need
-        var isSprite0: Bool = false // Whether this is sprite 0
-        var patternTableAddress: UInt16 = 0 // Base address in pattern table
-        var patternLowByte: UInt8 = 0 // Low byte of pattern data
-        var patternHighByte: UInt8 = 0 // High byte of pattern data
+        public var tileIndex: UInt8 = 0
+        public var attributes: UInt8 = 0
+        public var xPosition: UInt8 = 0
+        public var yPosition: UInt8 = 0
+        public var spriteRowY: Int = 0 // Which row of the tile we need
+        public var isSprite0: Bool = false // Whether this is sprite 0
+        public var patternTableAddress: UInt16 = 0 // Base address in pattern table
+        public var patternLowByte: UInt8 = 0 // Low byte of pattern data
+        public var patternHighByte: UInt8 = 0 // High byte of pattern data
         
         /// Reset the sprite fetch state for a new sprite evaluation phase
-        mutating func reset() {
+        public mutating func reset() {
             currentSprite = 0
             operation = .garbageNT
             fetchCycle = 0

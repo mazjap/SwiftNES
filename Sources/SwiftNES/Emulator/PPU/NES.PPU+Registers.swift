@@ -67,12 +67,12 @@ extension NES.PPU {
         
         private var lastDataBusValue: UInt8 = 0 // Used when accessing write-only registers
         private var ppuDataReadBuffer: UInt8 = 0 // Last pulled value from memory
-        var writeToggle = false  // Toggles between high/low byte
-        var tempVramAddress: UInt16 = 0 // Temporary VRAM address register
-        var currentVramAddress: UInt16 = 0 // Current VRAM address register
-        var fineXScroll: UInt8 = 0 // Fine X scroll (3 bits)
+        public var writeToggle = false  // Toggles between high/low byte
+        public var tempVramAddress: UInt16 = 0 // Temporary VRAM address register
+        public var currentVramAddress: UInt16 = 0 // Current VRAM address register
+        public var fineXScroll: UInt8 = 0 // Fine X scroll (3 bits)
         
-        init(memoryManager: MMU, ctrl: PPUCtrl, mask: PPUMask, status: PPUStatus, oamAddr: UInt8, scroll: UInt16, addr: UInt16, writeToggle: Bool = false) {
+        public init(memoryManager: MMU, ctrl: PPUCtrl, mask: PPUMask, status: PPUStatus, oamAddr: UInt8, scroll: UInt16, addr: UInt16, writeToggle: Bool = false) {
             self.memoryManager = memoryManager
             self.ctrl = ctrl
             self.mask = mask
