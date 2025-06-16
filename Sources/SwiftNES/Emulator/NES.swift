@@ -5,6 +5,7 @@ public typealias NES = NintendoEntertainmentSystem
 public enum NESMaxRunCount: Sendable {
     case cycles(UInt64)
     case instructions(UInt64)
+    case frames(UInt64)
 }
 
 public enum NESRunResult: Sendable {
@@ -86,9 +87,17 @@ public class NintendoEntertainmentSystem {
             // Early exit check
             switch options {
             case let .maxRunCount(.cycles(maxCycles)):
-                return .limitReached(.cycles(maxCycles))
+                if totalCycles >= maxCycles {
+                    return .limitReached(.cycles(maxCycles))
+                }
             case let .maxRunCount(.instructions(maxInstructions)):
-                return .limitReached(.instructions(maxInstructions))
+                if totalInstructions >= maxInstructions {
+                    return .limitReached(.instructions(maxInstructions))
+                }
+            case let .maxRunCount(.frames(maxFrames)):
+                if ppu.frame >= maxFrames {
+                    return .limitReached(.frames(maxFrames))
+                }
             case let .specificInstruction(instructionSet):
                 if instructionSet.contains(cpu.lastInstruction) {
                     return .instructionOccurred(cpu.lastInstruction)
@@ -139,6 +148,10 @@ public class NintendoEntertainmentSystem {
                 if totalInstructions >= maxInstructions {
                     return .limitReached(.instructions(maxInstructions))
                 }
+            case let .maxRunCount(.frames(maxFrames)):
+                if ppu.frame >= maxFrames {
+                    return .limitReached(.frames(maxFrames))
+                }
             case let .specificInstruction(instructionSet):
                 if instructionSet.contains(cpu.lastInstruction) {
                     return .instructionOccurred(cpu.lastInstruction)
@@ -149,7 +162,7 @@ public class NintendoEntertainmentSystem {
             
             await callback()
             
-            try await Task.sleep(nanoseconds: 20000)
+            try await Task.sleep(nanoseconds: 1)
         }
     }
     
