@@ -1,8 +1,8 @@
 extension NES {
     public class PPU {
         public var registers: Registers
-        @BoundInteger<UInt16>(range: 0...340) var cycle = 0
-        @BoundInteger<UInt16>(range: 0...261) var scanline = 0
+        @BoundInteger<UInt16>(range: 0...340) public var cycle = 0
+        @BoundInteger<UInt16>(range: 0...261) public var scanline = 0
         internal(set) public var frame: UInt
         public var isOddFrame: Bool // Used for skipped cycle on odd frames
         public var memoryManager: MMU
