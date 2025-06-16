@@ -132,9 +132,13 @@ public class NintendoEntertainmentSystem {
             // Early exit check
             switch options {
             case let .maxRunCount(.cycles(maxCycles)):
-                return .limitReached(.cycles(maxCycles))
+                if totalCycles >= maxCycles {
+                    return .limitReached(.cycles(maxCycles))
+                }
             case let .maxRunCount(.instructions(maxInstructions)):
-                return .limitReached(.instructions(maxInstructions))
+                if totalInstructions >= maxInstructions {
+                    return .limitReached(.instructions(maxInstructions))
+                }
             case let .specificInstruction(instructionSet):
                 if instructionSet.contains(cpu.lastInstruction) {
                     return .instructionOccurred(cpu.lastInstruction)
