@@ -9,19 +9,19 @@ extension NES.PPU {
             static let paletteRAM = 32 // 32B
         }
         
-        var vram: [UInt8] = []
-        var extendedVram: [UInt8]?
-        var oamRam: [UInt8] = []
-        var paletteRam: [UInt8] = []
-        var cartridge: NES.Cartridge?
+        public var vram: [UInt8] = []
+        public var extendedVram: [UInt8]?
+        public var oamRam: [UInt8] = []
+        public var paletteRam: [UInt8] = []
+        public var cartridge: NES.Cartridge?
         
-        init() {
+        public init() {
             vram = [UInt8](repeating: 0, count: Size.nametable)
             oamRam = [UInt8](repeating: 0, count: Size.spriteRAM)
             paletteRam = [UInt8](repeating: 0, count: Size.paletteRAM)
         }
 
-        func reset(cartridge: NES.Cartridge?) {
+        public func reset(cartridge: NES.Cartridge?) {
             self.cartridge = cartridge
             
             if cartridge?.mapper.mirroringMode == .fourScreen {
@@ -86,15 +86,15 @@ extension NES.PPU {
         }
         
         // For OAM DMA and sprite operations
-        func readOAM(from address: UInt8) -> UInt8 {
+        public func readOAM(from address: UInt8) -> UInt8 {
             oamRam[Int(address)]
         }
         
-        func writeOAM(_ value: UInt8, to address: UInt8) {
+        public func writeOAM(_ value: UInt8, to address: UInt8) {
             oamRam[Int(address)] = value
         }
         
-        func readPalette(from address: UInt16) -> UInt8 {
+        public func readPalette(from address: UInt16) -> UInt8 {
             let paletteAddr = Int(address & 0x1F)
             
             // $3F10/$3F14/$3F18/$3F1C mirror $3F00/$3F04/$3F08/$3F0C
@@ -105,7 +105,7 @@ extension NES.PPU {
             return paletteRam[paletteAddr]
         }
 
-        func writePalette(_ value: UInt8, to address: UInt16) {
+        public func writePalette(_ value: UInt8, to address: UInt16) {
             let paletteAddr = Int(address & 0x1F)
             
             // $3F10/$3F14/$3F18/$3F1C mirror $3F00/$3F04/$3F08/$3F0C
@@ -121,7 +121,7 @@ extension NES.PPU {
         ///   - tileIndex: Index of the tile in pattern table (0-255)
         ///   - table: Which pattern table to use (0 or 1)
         /// - Returns: Array of 8 bytes for the low bit plane and 8 bytes for the high bit plane
-        func fetchTileData(tileIndex: UInt8, table: UInt8) -> (lowPlane: [UInt8], highPlane: [UInt8]) {
+        public func fetchTileData(tileIndex: UInt8, table: UInt8) -> (lowPlane: [UInt8], highPlane: [UInt8]) {
             let baseAddr = UInt16(table) * 0x1000 // Each table is 4KB (0x1000 bytes)
             let tileAddr = baseAddr + UInt16(tileIndex) * 16 // Each tile is 16 bytes
             
@@ -146,7 +146,7 @@ extension NES.PPU {
         ///   - lowByte: Byte from the low bit plane
         ///   - highByte: Byte from the high bit plane
         /// - Returns: Array of 8 2-bit values representing pixel pattern indices
-        func decodeTileRow(lowByte: UInt8, highByte: UInt8) -> [UInt8] {
+        public func decodeTileRow(lowByte: UInt8, highByte: UInt8) -> [UInt8] {
             var row = [UInt8](repeating: 0, count: 8)
             
             for bit in 0..<8 {
@@ -163,7 +163,7 @@ extension NES.PPU {
         ///   - tileIndex: Index of the tile in pattern table (0-255)
         ///   - table: Which pattern table to use (0 or 1)
         /// - Returns: 8x8 array of pattern indices (0-3)
-        func fetchDecodedTile(tileIndex: UInt8, table: UInt8) -> [[UInt8]] {
+        public func fetchDecodedTile(tileIndex: UInt8, table: UInt8) -> [[UInt8]] {
             let (lowPlane, highPlane) = fetchTileData(tileIndex: tileIndex, table: table)
             var tile = [[UInt8]](repeating: [UInt8](repeating: 0, count: 8), count: 8)
             
@@ -175,7 +175,7 @@ extension NES.PPU {
         }
         
         /// Resolve a nametable address based on Cartridge's mirroring mode
-        func resolveNametableAddress(_ address: UInt16) -> (isExtended: Bool, address: UInt16)? {
+        public func resolveNametableAddress(_ address: UInt16) -> (isExtended: Bool, address: UInt16)? {
             // Normalize the address to the nametable range (0x2000-0x2FFF)
             let normalizedAddr = 0x2000 | (address & 0xFFF)
             
