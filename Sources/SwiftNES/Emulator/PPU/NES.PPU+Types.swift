@@ -62,7 +62,7 @@ extension NES.PPU {
         case patternHigh
     }
     
-    struct FrameBuffer {
+    public struct FrameBuffer {
         private var pixels: [UInt32]
         
         init() {
@@ -80,7 +80,7 @@ extension NES.PPU {
     }
     
     /// State needed for background tile fetching
-    struct BackgroundFetchState {
+    public struct BackgroundFetchState {
         // Current fetch operation
         var operation: FetchOperation = .nametable
         
@@ -119,7 +119,7 @@ extension NES.PPU {
         }
     }
     
-    struct SecondaryOAM {
+    public struct SecondaryOAM {
         /// The maximum number of sprites per scanline (hardware limit)
         static let capacity = 8
         
@@ -160,7 +160,7 @@ extension NES.PPU {
     }
     
     /// Struct to track sprite pattern data for the current scanline
-    struct SpriteData {
+    public struct SpriteData {
         var patternLow: UInt8 = 0
         var patternHigh: UInt8 = 0
         var attributes: UInt8 = 0
@@ -240,7 +240,7 @@ extension NES.PPU {
     }
     
     /// State tracking for sprite fetching during cycles 257-320
-    struct SpriteFetchState {
+    public struct SpriteFetchState {
         var currentSprite: Int = 0 // Current sprite being fetched (0-7)
         var operation: SpriteFetchOperation = .garbageNT  // Current fetch operation
         var fetchCycle: Int = 0 // Cycle within the current sprite fetch (0-7)

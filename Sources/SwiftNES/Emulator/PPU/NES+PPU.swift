@@ -1,18 +1,18 @@
 extension NES {
     public class PPU {
-        var registers: Registers
+        public var registers: Registers
         @BoundInteger<UInt16>(range: 0...340) var cycle = 0
         @BoundInteger<UInt16>(range: 0...261) var scanline = 0
         internal(set) public var frame: UInt
-        var isOddFrame: Bool // Used for skipped cycle on odd frames
-        var memoryManager: MMU
-        var nmiPending: Bool
-        var triggerNMI: () -> Void
-        var bgFetchState: BackgroundFetchState
-        var frameBuffer: FrameBuffer
-        var secondaryOAM: SecondaryOAM
-        var spriteData: [SpriteData]
-        var spriteFetchState: SpriteFetchState
+        public var isOddFrame: Bool // Used for skipped cycle on odd frames
+        public var memoryManager: MMU
+        public var nmiPending: Bool
+        public var triggerNMI: () -> Void
+        public var bgFetchState: BackgroundFetchState
+        public var frameBuffer: FrameBuffer
+        public var secondaryOAM: SecondaryOAM
+        public var spriteData: [SpriteData]
+        public var spriteFetchState: SpriteFetchState
         
         // TODO: - Solidify Result Error type to specific cases
         var frameCallback: ((Result<Frame, Error>) -> Void)?
