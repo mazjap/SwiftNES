@@ -8,11 +8,11 @@ extension NES.CPU {
     /// - APU and I/O registers (0x4000-0x4017)
     /// - Cartridge space (0x4020-0xFFFF)
     public class MemoryManagementUnit: Memory {
-        var internalRAM: NES.RandomAccessMemory
-        var cartridge: NES.Cartridge?
-        var readPPURegister: ((_ register: UInt8) -> UInt8)?
-        var writePPURegister: ((_ value: UInt8, _ register: UInt8) -> Void)?
-        var handleOAMDMA: ((UInt8) -> Void)?
+        public var internalRAM: NES.RandomAccessMemory
+        public var cartridge: NES.Cartridge?
+        public var readPPURegister: ((_ register: UInt8) -> UInt8)?
+        public var writePPURegister: ((_ value: UInt8, _ register: UInt8) -> Void)?
+        public var handleOAMDMA: ((UInt8) -> Void)?
         
         public init(
             internalRAM: NES.RandomAccessMemory = .init(),
@@ -34,7 +34,7 @@ extension NES.CPU {
         ///   - modify: A closure that receives a mutable reference to the value at the address
         /// - Note: This method handles memory mirroring and component-specific access rules
         @_disfavoredOverload
-        func access(at address: UInt16, modify: (inout UInt8) -> Void) {
+        public func access(at address: UInt16, modify: (inout UInt8) -> Void) {
             var defaultReturn: UInt8 = 0
             
             switch address {
