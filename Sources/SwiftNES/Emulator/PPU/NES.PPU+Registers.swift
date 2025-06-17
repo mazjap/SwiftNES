@@ -65,8 +65,8 @@ extension NES.PPU {
             }
         }
         
-        private var lastDataBusValue: UInt8 = 0 // Used when accessing write-only registers
-        private var ppuDataReadBuffer: UInt8 = 0 // Last pulled value from memory
+        public var lastDataBusValue: UInt8 = 0 // Used when accessing write-only registers
+        public var ppuDataReadBuffer: UInt8 = 0 // Last pulled value from memory
         public var writeToggle = false  // Toggles between high/low byte
         public var tempVramAddress: UInt16 = 0 // Temporary VRAM address register
         public var currentVramAddress: UInt16 = 0 // Current VRAM address register
@@ -88,7 +88,7 @@ extension NES.PPU {
 // MARK: - Convenience
 
 extension NES.PPU.Registers {
-    private var scrollX: UInt8 {
+    public var scrollX: UInt8 {
         get {
             UInt8(scroll & 0xFF)
         }
@@ -97,7 +97,7 @@ extension NES.PPU.Registers {
         }
     }
     
-    private var scrollY: UInt8 {
+    public var scrollY: UInt8 {
         get {
             UInt8(scroll >> 8)
         }
@@ -106,7 +106,7 @@ extension NES.PPU.Registers {
         }
     }
     
-    private var addrHigh: UInt8 {
+    public var addrHigh: UInt8 {
         get {
             UInt8(addr >> 8)
         }
@@ -115,7 +115,7 @@ extension NES.PPU.Registers {
         }
     }
     
-    private var addrLow: UInt8 {
+    public var addrLow: UInt8 {
         get {
             UInt8(addr & 0xFF)
         }
@@ -124,11 +124,11 @@ extension NES.PPU.Registers {
         }
     }
     
-    private mutating func incrementDataAddress() {
+    public mutating func incrementDataAddress() {
         addr = (addr + ctrl.vramAddressIncrement) & 0x3FFF
     }
     
-    mutating func read(from register: UInt8) -> UInt8 {
+    public mutating func read(from register: UInt8) -> UInt8 {
         let value = {
             switch register {
                 // Write-only registers return last data bus value
@@ -151,7 +151,7 @@ extension NES.PPU.Registers {
         return value
     }
     
-    mutating func write(_ value: UInt8, to register: UInt8) {
+    public mutating func write(_ value: UInt8, to register: UInt8) {
         lastDataBusValue = value
         
         switch register {
@@ -191,7 +191,7 @@ extension NES.PPU.Registers {
         }
     }
     
-    mutating func reset() {
+    public mutating func reset() {
         ctrl.rawValue = 0
         mask.rawValue = 0
         oamAddr = 0
