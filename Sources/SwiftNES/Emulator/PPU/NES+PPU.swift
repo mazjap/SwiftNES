@@ -460,43 +460,48 @@ extension NES {
             
             // Only process sprites if they're enabled
             if registers.mask.contains(.showSprites) && (cycle > 8 || registers.mask.contains(.showSpritesLeft8Pixels)) {
-                // Check all sprites for this pixel
+                for i in 0..<spriteData.count {
+                    if spriteData[i].active && spriteData[i].xCounter > 0 {
+                        spriteData[i].xCounter -= 1
+                    }
+                }
+                
                 for i in 0..<spriteData.count {
                     if !spriteData[i].active { continue }
                     
-                    // Skip if sprite is still counting down X position
-                    if spriteData[i].xCounter > 0 {
-                        spriteData[i].xCounter -= 1
-                        continue
-                    }
-                    
-                    // Get the sprite pixel color index (0-3)
-                    if let colorIndex = spriteData[i].getColorIndex() {
-                        // Non-transparent sprite pixel found
-                        spritePixel = colorIndex
-                        
-                        // Sprite palette is in bits 0-1 of the attribute byte
-                        // Sprite palettes are stored at $3F10-$3F1F (palette indices 4-7)
-                        spritePalette = 4 + (spriteData[i].attributes & 0x03)
-                        
-                        // Priority is in bit 5 of the attribute byte (0: in front of background, 1: behind background)
-                        spriteIsBehind = (spriteData[i].attributes & 0x20) != 0
-                        
-                        // Check if this is sprite 0 for hit detection
-                        if spriteData[i].isSprite0 && bgIsOpaque &&
-                           cycle != 255 && // No sprite 0 hit on last visible pixel
-                           registers.mask.contains(.showBackground) {
-                            // Sprite 0 hit occurs when a non-zero pixel of sprite 0 overlaps
-                            // with a non-zero pixel of the background
-                            isSpriteZeroHit = true
+                    // Only render if the sprite has reached its X position (counter = 0)
+                    if spriteData[i].xCounter == 0 {
+                        // Get the sprite pixel color index (0-3)
+                        if let colorIndex = spriteData[i].getColorIndex() {
+                            // Non-transparent sprite pixel found
+                            spritePixel = colorIndex
+                            
+                            // Sprite palette is in bits 0-1 of the attribute byte
+                            // Sprite palettes are stored at $3F10-$3F1F (palette indices 4-7)
+                            spritePalette = 4 + (spriteData[i].attributes & 0x03)
+                            
+                            // Priority is in bit 5 of the attribute byte (0: in front of background, 1: behind background)
+                            spriteIsBehind = (spriteData[i].attributes & 0x20) != 0
+                            
+                            // Check if this is sprite 0 for hit detection
+                            if spriteData[i].isSprite0 && bgIsOpaque &&
+                               cycle != 255 && // No sprite 0 hit on last visible pixel
+                               registers.mask.contains(.showBackground) {
+                                // Sprite 0 hit occurs when a non-zero pixel of sprite 0 overlaps
+                                // with a non-zero pixel of the background
+                                isSpriteZeroHit = true
+                            }
+                            
+                            // Stop at the first non-transparent pixel (sprites are already in priority order)
+                            break
                         }
-                        
-                        // Stop at the first non-transparent pixel (sprites are already in priority order)
-                        break
                     }
-                    
-                    // Shift the sprite pattern for the next pixel
-                    spriteData[i].shift()
+                }
+                
+                for i in 0..<spriteData.count {
+                    if spriteData[i].active && spriteData[i].xCounter == 0 {
+                        spriteData[i].shift()
+                    }
                 }
             }
             
