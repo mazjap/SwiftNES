@@ -671,94 +671,76 @@ extension NES {
         /// Enforces the 8 sprite per scanline limit and handles overflow flag
         public func evaluateSpritesForNextScanline() {
             guard shouldEvaluateSprites() else {
-                emuLogger.error("PPU's `evaluateSpritesForNextScanline()` called outside visible area! scanline \(self.scanline), cycle \(self.cycle)")
-                return
-            }
-            
-            // Clear secondary OAM for the new scanline
-            secondaryOAM.clear()
-            
-            // Determine the target scanline (next scanline, or 0 for pre-render)
-            let targetScanline = scanline == 261 ? 0 : scanline + 1
-            
-            // Determine sprite height based on current sprite size flag
-            let spriteHeight = registers.ctrl.contains(.spriteSize) ? 16 : 8
-            
-            // Sprite overflow flag starts cleared
-            registers.status.remove(.spriteOverflow)
-            
-            // Evaluate all 64 sprites in primary OAM
-            var spriteCount = 0
-            var n = 0 // Primary OAM index (0-255)
-            
-            // Buggy sprite overflow implementation to match hardware bug
-            var m = 0 // Sprite index in evaluation (0-63)
-            var overflowBugCounter = 0 // For accurate overflow bug behavior
-            var inOverflowMode = false // Track if we're in overflow evaluation mode
-            
-            // Check first 64 sprites
-            while m < 64 {
-                // Read Y coordinate from OAM
-                let spriteY = memoryManager.readOAM(from: UInt8(n))
+                    emuLogger.error("PPU's `evaluateSpritesForNextScanline()` called outside visible area! scanline \(self.scanline), cycle \(self.cycle)")
+                    return
+                }
                 
-                // Check if this sprite is in range for the next scanline
-                let spriteRow = targetScanline - Int(spriteY) - 1
+                // Clear secondary OAM for the new scanline
+                secondaryOAM.clear()
                 
-                if spriteRow >= 0 && spriteRow < spriteHeight {
-                    // Sprite is visible on the next scanline
+                // Determine the target scanline (next scanline, or 0 for pre-render)
+                let targetScanline = scanline == 261 ? 0 : scanline + 1
+                
+                // Determine sprite height based on current sprite size flag
+                let spriteHeight = registers.ctrl.contains(.spriteSize) ? 16 : 8
+                
+                // Sprite overflow flag starts cleared
+                registers.status.remove(.spriteOverflow)
+                
+                print("🔍 Evaluating sprites for scanline \(targetScanline), height=\(spriteHeight)")
+                
+                // Evaluate all 64 sprites in primary OAM
+                var spriteCount = 0
+                
+                for spriteIndex in 0..<64 {
+                    let oamBase = spriteIndex * 4
                     
-                    // Try to add the sprite to secondary OAM, respecting the 8 sprite limit
-                    if !inOverflowMode {
-                        let tileIndex = memoryManager.readOAM(from: UInt8(n + 1))
-                        let attributes = memoryManager.readOAM(from: UInt8(n + 2))
-                        let spriteX = memoryManager.readOAM(from: UInt8(n + 3))
-                        
+                    // Read sprite data from OAM
+                    let spriteY = memoryManager.readOAM(from: UInt8(oamBase))
+                    let tileIndex = memoryManager.readOAM(from: UInt8(oamBase + 1))
+                    let attributes = memoryManager.readOAM(from: UInt8(oamBase + 2))
+                    let spriteX = memoryManager.readOAM(from: UInt8(oamBase + 3))
+                    
+                    // CRITICAL FIX: Correct NES sprite Y positioning logic
+                    // On NES, sprite Y position is where the BOTTOM of the sprite will be
+                    // So a sprite with Y=127 will have its bottom edge on scanline 127
+                    // and its top edge on scanline (127 - spriteHeight + 1)
+                    
+                    let spriteTopScanline = Int(spriteY) + 1 - spriteHeight
+                    let spriteBottomScanline = Int(spriteY)
+                    
+                    // Check if target scanline intersects with this sprite
+                    let isVisible = targetScanline >= spriteTopScanline && targetScanline <= spriteBottomScanline
+                    
+                    if spriteIndex < 4 { // Debug first few sprites
+                        print("  Sprite \(spriteIndex): Y=\(spriteY), X=\(spriteX)")
+                        print("    Range: scanlines \(spriteTopScanline)-\(spriteBottomScanline)")
+                        print("    Visible on \(targetScanline): \(isVisible)")
+                    }
+                    
+                    if isVisible {
+                        // Try to add the sprite to secondary OAM
                         let wasAdded = secondaryOAM.addSprite(
                             y: spriteY,
                             tile: tileIndex,
                             attributes: attributes,
                             x: spriteX,
-                            isSprite0: m == 0
+                            isSprite0: spriteIndex == 0
                         )
                         
-                        if !wasAdded {
-                            // We've hit the 8 sprite limit - enter overflow mode and set the flag
-                            registers.status.insert(.spriteOverflow)
-                            inOverflowMode = true
-                        } else {
+                        if wasAdded {
                             spriteCount += 1
+                            print("  ✅ Added sprite \(spriteIndex) to secondary OAM (X=\(spriteX))")
+                        } else {
+                            // Hit the 8 sprite limit - set overflow flag
+                            registers.status.insert(.spriteOverflow)
+                            print("  ⚠️  Sprite overflow at sprite \(spriteIndex)")
+                            break
                         }
-                    } else {
-                        // We're in overflow mode - set the overflow flag but don't add the sprite
-                        registers.status.insert(.spriteOverflow)
                     }
                 }
                 
-                // Increment sprite index
-                m += 1
-                n += 4
-                
-                // Hardware bug implementation:
-                // After the 8th sprite, reuse the same n counter for address calculations
-                // but don't actually write to secondary OAM
-                if inOverflowMode {
-                    // The hardware bug is complex - it increments n for every sprite tested
-                    // but then incorrectly uses (n & 0x1F) as the low bits of the OAM address
-                    // for the next evaluation, leading to comparing Y positions with sprite
-                    // attribute/X data
-                    overflowBugCounter += 1
-                    
-                    if overflowBugCounter == 3 {
-                        // After 3 increments, the counter points to the next sprite's Y position
-                        // In hardware, this makes the PPU incorrectly load from the next sprite's
-                        // attribute byte instead of Y coordinate
-                        // For simplicity, just break from the loop as the detection is already done
-                        break
-                    }
-                }
-            }
-            
-            emuLogger.debug("PPU evaluated sprites for scanline \(targetScanline): found \(spriteCount) sprites")
+                print("🎯 Found \(spriteCount) sprites for scanline \(targetScanline)")
         }
         
         /// Integrate sprite evaluation into the PPU cycle processing
@@ -784,6 +766,45 @@ extension NES {
                 // Sprite pattern fetching (cycles 257-320)
                 // Each sprite takes 8 cycles to fetch data
                 fetchSpriteData()
+            }
+        }
+        
+        public func debugCurrentEvaluationFailure() {
+            print("🐛 DEBUGGING CURRENT EVALUATION FAILURE")
+            
+            let targetScanline = scanline == 261 ? 0 : scanline + 1
+            let spriteHeight = 8
+            
+            // Test the current (broken) logic vs fixed logic
+            let sprite0Y = memoryManager.readOAM(from: 0)
+            
+            print("Sprite 0 Y position: \(sprite0Y)")
+            print("Target scanline: \(targetScanline)")
+            print("Sprite height: \(spriteHeight)")
+            
+            // Current (broken) logic from your code:
+            let currentLogicSpriteRow = targetScanline - Int(sprite0Y) - 1
+            let currentLogicVisible = currentLogicSpriteRow >= 0 && currentLogicSpriteRow < spriteHeight
+            
+            print("\nCURRENT (BROKEN) LOGIC:")
+            print("  spriteRow = \(targetScanline) - \(sprite0Y) - 1 = \(currentLogicSpriteRow)")
+            print("  visible = \(currentLogicSpriteRow) >= 0 && \(currentLogicSpriteRow) < \(spriteHeight) = \(currentLogicVisible)")
+            
+            // Fixed logic:
+            let fixedTopScanline = Int(sprite0Y) + 1 - spriteHeight
+            let fixedBottomScanline = Int(sprite0Y)
+            let fixedVisible = targetScanline >= fixedTopScanline && targetScanline <= fixedBottomScanline
+            
+            print("\nFIXED LOGIC:")
+            print("  spriteTopScanline = \(sprite0Y) + 1 - \(spriteHeight) = \(fixedTopScanline)")
+            print("  spriteBottomScanline = \(sprite0Y)")
+            print("  visible = \(targetScanline) >= \(fixedTopScanline) && \(targetScanline) <= \(fixedBottomScanline) = \(fixedVisible)")
+            
+            if currentLogicVisible != fixedVisible {
+                print("\n🚨 LOGIC DIFFERENCE DETECTED!")
+                print("   Current logic says: \(currentLogicVisible)")
+                print("   Fixed logic says: \(fixedVisible)")
+                print("   This explains why sprites aren't being evaluated!")
             }
         }
         
