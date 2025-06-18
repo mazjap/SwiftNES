@@ -60,28 +60,27 @@ extension NES.PPU {
         }
         
         public func write(_ value: UInt8, to address: UInt16) {
-            switch address & 0x3FFF {
+            let normalizedAddr = address & 0x3FFF // Mirror addresses above $3FFF
+            
+            switch normalizedAddr {
             case 0x0000...0x1FFF: // Pattern Tables
                 guard let cartridge else {
-                    emuLogger.error("Attempted to write to pattern table with no cartridge present")
+                    print("❌ No cartridge for pattern table write")
                     return
                 }
+                cartridge.write(value, to: normalizedAddr)
                 
-                cartridge.write(value, to: address)
             case 0x2000...0x2FFF: // Nametables
-                if let (isExtended, resolvedAddress) = resolveNametableAddress(address) {
-                    if isExtended, extendedVram != nil {
-                        extendedVram![Int(resolvedAddress)] = value
-                    } else {
-                        vram[Int(resolvedAddress)] = value
-                    }
-                }
+                writeToNametable(value, address: normalizedAddr)
+                
             case 0x3000...0x3EFF: // Nametable mirrors
-                write(value, to: address & 0x2FFF)
+                writeToNametable(value, address: normalizedAddr & 0x2FFF)
+                
             case 0x3F00...0x3FFF: // Palette RAM
-                write(value, to: address)
+                writePaletteFixed(value, to: normalizedAddr)
+                
             default:
-                emuLogger.error("PPU attempted to write \(String(format: "0x%02X", value)) to invalid address: \(String(format: "0x%04X", address))")
+                print("❌ Invalid PPU write address: $\(String(address, radix: 16, uppercase: true))")
             }
         }
         
@@ -108,9 +107,12 @@ extension NES.PPU {
         public func writePalette(_ value: UInt8, to address: UInt16) {
             let paletteAddr = Int(address & 0x1F)
             
-            // $3F10/$3F14/$3F18/$3F1C mirror $3F00/$3F04/$3F08/$3F0C
+            print("🎨 Palette write: [$\(String(address, radix: 16, uppercase: true))] -> palette[\(paletteAddr)] = $\(String(value, radix: 16, uppercase: true))")
+            
+            // Handle mirroring: $3F10/$3F14/$3F18/$3F1C mirror $3F00/$3F04/$3F08/$3F0C
             if paletteAddr & 0x13 == 0x10 {
                 paletteRam[paletteAddr & 0xF] = value
+                print("   (mirrored to index \(paletteAddr & 0xF))")
             } else {
                 paletteRam[paletteAddr] = value
             }
@@ -172,6 +174,18 @@ extension NES.PPU {
             }
             
             return tile
+        }
+        
+        func writeToNametable(_ value: UInt8, address: UInt16) {
+            if let (isExtended, resolvedAddress) = resolveNametableAddress(address) {
+                if isExtended, extendedVram != nil {
+                    extendedVram![Int(resolvedAddress)] = value
+                } else {
+                    vram[Int(resolvedAddress)] = value
+                }
+                
+                print("🏠 Nametable write: [$\(String(address, radix: 16, uppercase: true))] -> vram[\(resolvedAddress)] = $\(String(value, radix: 16, uppercase: true))")
+            }
         }
         
         /// Resolve a nametable address based on Cartridge's mirroring mode

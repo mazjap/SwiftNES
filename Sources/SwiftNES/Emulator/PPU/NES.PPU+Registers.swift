@@ -155,39 +155,56 @@ extension NES.PPU.Registers {
         lastDataBusValue = value
         
         switch register {
-        case 0x00: ctrl.rawValue = value
-        case 0x01: mask.rawValue = value
+        case 0x00:
+            ctrl.rawValue = value
+            tempVramAddress = (tempVramAddress & 0xF3FF) | ((UInt16(value) & 0x03) << 10)
+        case 0x01:
+            mask.rawValue = value
         case 0x02:
-            // Status register is read-only
-            emuLogger.warning("Attempted write to read-only PPU status register")
             return
-        case 0x03: oamAddr = value
-        case 0x04: oamData = value
+        case 0x03:
+            oamAddr = value
+        case 0x04:
+            oamData = value
         case 0x05:
             if writeToggle {
                 // Second write (Y scroll)
-                tempVramAddress = (tempVramAddress & 0x8FFF) | (UInt16(value & 0x7) << 12) // Fine Y scroll (3 bits)
-                tempVramAddress = (tempVramAddress & 0xFC1F) | (UInt16(value & 0xF8) << 2) // Coarse Y scroll (5 bits)
+                tempVramAddress = (tempVramAddress & 0x8FFF) | (UInt16(value & 0x7) << 12) // Fine Y scroll
+                tempVramAddress = (tempVramAddress & 0xFC1F) | (UInt16(value & 0xF8) << 2) // Coarse Y scroll
             } else {
                 // First write (X scroll)
-                fineXScroll = value & 0x7 // Fine X scroll (3 bits)
-                tempVramAddress = (tempVramAddress & 0xFFE0) | (UInt16(value) >> 3) // Coarse X scroll (5 bits)
+                fineXScroll = value & 0x7 // Fine X scroll
+                tempVramAddress = (tempVramAddress & 0xFFE0) | (UInt16(value) >> 3) // Coarse X scroll
             }
-            
             writeToggle.toggle()
         case 0x06:
             if writeToggle {
-                // Second write (low byte)
+                // Second write (low byte) - CRITICAL FIX
                 tempVramAddress = (tempVramAddress & 0xFF00) | UInt16(value)
-                currentVramAddress = tempVramAddress // Copy temp to current on second write
+                currentVramAddress = tempVramAddress // Copy temp to current
+                
+                // CRITICAL: Update the public addr property that your code uses
+                addr = currentVramAddress
+                
+                print("🔧 PPUADDR set to: $\(String(currentVramAddress, radix: 16, uppercase: true))")
             } else {
                 // First write (high byte)
-                tempVramAddress = (tempVramAddress & 0x00FF) | (UInt16(value & 0x3F) << 8) // Set high byte, clear unused bits
+                tempVramAddress = (tempVramAddress & 0x00FF) | (UInt16(value & 0x3F) << 8)
             }
-            
             writeToggle.toggle()
-        case 0x07: data = value
-        default: fatalError("Write request to non-existent PPU Register: \(String(format: "%02x", register))")
+        case 0x07:
+            // CRITICAL FIX: Use currentVramAddress, not the broken addr property
+            let writeAddr = currentVramAddress
+            print("🔧 PPUDATA write: $\(String(value, radix: 16, uppercase: true)) -> $\(String(writeAddr, radix: 16, uppercase: true))")
+            
+            // Write to memory
+            memoryManager.write(value, to: writeAddr)
+            
+            // Increment address
+            currentVramAddress = (currentVramAddress + ctrl.vramAddressIncrement) & 0x3FFF
+            addr = currentVramAddress // Keep public property in sync
+        default:
+            break
         }
     }
     
