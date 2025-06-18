@@ -13,6 +13,7 @@ extension NES {
         public var secondaryOAM: SecondaryOAM
         public var spriteData: [SpriteData]
         public var spriteFetchState: SpriteFetchState
+        public var isDoingDebugRender = false
         
         // TODO: - Solidify Result Error type to specific cases
         var frameCallback: ((Result<Frame, Error>) -> Void)?
@@ -56,7 +57,12 @@ extension NES {
             case (0..<240, 1...256):
                 // Visible pixels + tile/sprite fetching
                 renderState = .visible
-                renderPixel()
+                
+                if isDoingDebugRender {
+                    renderPixelWithDebug()
+                } else {
+                    renderPixel()
+                }
                 
                 // Every 8 cycles, increment coarse X
                 if cycle % 8 == 0 {
@@ -437,6 +443,116 @@ extension NES {
             let paletteIndex = (paletteHigh << 3) | (paletteLow << 2) | pixelHigh | pixelLow
             
             return paletteIndex
+        }
+        
+        public func renderPixelWithDebug() {
+            guard shouldRenderPixels() else { return }
+            
+            let x = cycle - 1
+            let y = scanline
+            
+            // Debug specific pixels
+            let shouldDebugThisPixel = (y == 50 && x % 50 == 0) // Debug every 50th pixel on scanline 50
+            
+            if shouldDebugThisPixel {
+                print("\n🔍 DEBUG PIXEL (\(x), \(y)):")
+            }
+            
+            // Get the background pixel
+            let bgPixel = getBackgroundPixel()
+            let bgPaletteIndex = bgPixel & 0x0F
+            let bgIsOpaque = bgPaletteIndex % 4 != 0
+            
+            if shouldDebugThisPixel {
+                print("  Background: palette=\(bgPaletteIndex), opaque=\(bgIsOpaque)")
+            }
+            
+            // Sprite processing with debug
+            var spritePixel: UInt8 = 0
+            var spritePalette: UInt8 = 0
+            var spriteIsBehind: Bool = false
+            var isSpriteZeroHit: Bool = false
+            
+            if registers.mask.contains(.showSprites) && (cycle > 8 || registers.mask.contains(.showSpritesLeft8Pixels)) {
+                
+                // Debug active sprites at this pixel
+                if shouldDebugThisPixel {
+                    print("  Active sprites:")
+                    for i in 0..<spriteData.count {
+                        if spriteData[i].active {
+                            print("    Sprite \(i): XCounter=\(spriteData[i].xCounter)")
+                        }
+                    }
+                }
+                
+                // Decrement X counters for ALL sprites
+                for i in 0..<spriteData.count {
+                    if spriteData[i].active && spriteData[i].xCounter > 0 {
+                        spriteData[i].xCounter -= 1
+                    }
+                }
+                
+                // Check for sprite pixels
+                for i in 0..<spriteData.count {
+                    if !spriteData[i].active { continue }
+                    
+                    if spriteData[i].xCounter == 0 {
+                        if let colorIndex = spriteData[i].getColorIndex() {
+                            spritePixel = colorIndex
+                            spritePalette = 4 + (spriteData[i].attributes & 0x03)
+                            spriteIsBehind = (spriteData[i].attributes & 0x20) != 0
+                            
+                            if shouldDebugThisPixel {
+                                print("  Sprite \(i) RENDERING: color=\(colorIndex), palette=\(spritePalette)")
+                            }
+                            
+                            if spriteData[i].isSprite0 && bgIsOpaque &&
+                               cycle != 255 && registers.mask.contains(.showBackground) {
+                                isSpriteZeroHit = true
+                            }
+                            
+                            break
+                        }
+                    }
+                }
+                
+                // Shift sprite patterns
+                for i in 0..<spriteData.count {
+                    if spriteData[i].active && spriteData[i].xCounter == 0 {
+                        spriteData[i].shift()
+                    }
+                }
+            }
+            
+            // Final pixel determination
+            var paletteIndex: UInt8
+            
+            if !registers.mask.contains(.showBackground) && !registers.mask.contains(.showSprites) {
+                paletteIndex = 0
+            } else if spritePixel == 0 {
+                paletteIndex = bgPaletteIndex
+            } else if !bgIsOpaque {
+                paletteIndex = (spritePalette << 2) | spritePixel
+            } else {
+                if spriteIsBehind {
+                    paletteIndex = bgPaletteIndex
+                } else {
+                    paletteIndex = (spritePalette << 2) | spritePixel
+                }
+            }
+            
+            if shouldDebugThisPixel {
+                print("  Final palette index: \(paletteIndex)")
+            }
+            
+            // Rest of rendering...
+            let paletteAddr = 0x3F00 + UInt16(paletteIndex)
+            let colorIndex = memoryManager.readPalette(from: paletteAddr)
+            let finalColorIndex = registers.mask.contains(.greyscale) ? colorIndex & 0x30 : colorIndex
+            let color = applyColorEmphasis(colorFromPaletteIndex(finalColorIndex))
+            
+            frameBuffer.setPixel(x: x, y: y, color: color)
+            shiftBackgroundRegisters()
         }
         
         /// Gets the appropriate pixel color based on background and sprite data,
