@@ -23,9 +23,34 @@ extension NES.CPU {
         ) {
             self.internalRAM = internalRAM
             self.cartridge = cartridge
-            self.readPPURegister = readPPURegister
             self.writePPURegister = writePPURegister
             self.handleOAMDMA = handleOAMDMA
+            
+            self.readPPURegister = { register in
+                guard let readPPURegister else { return 0 }
+                let result = readPPURegister(register)
+                
+                print("While reading from PPU at register 0x\(String(register, radix: 16))")
+                return result
+            }
+            
+            self.writePPURegister = { register, value in
+                guard let writePPURegister else { return }
+                
+                let regNames = ["PPUCTRL", "PPUMASK", "PPUSTATUS", "OAMADDR", "OAMDATA", "PPUSCROLL", "PPUADDR", "PPUDATA"]
+                let regName = register < regNames.count ? regNames[Int(register)] : "UNKNOWN"
+                
+                print("📝 PPU Write: \(regName) = $\(String(value, radix: 16, uppercase: true))")
+                
+                // Special handling for palette-related writes
+                if register == 0x06 { // PPUADDR
+                    print("   📍 PPUADDR write - setting address pointer")
+                } else if register == 0x07 { // PPUDATA
+                    // This is tricky - we need to know what the current address is
+                    print("   📝 PPUDATA write - writing to PPU memory")
+                    print("   💡 Check if PPUADDR was recently set to $3F00-$3F1F for palette writes")
+                }
+            }
         }
         
         /// Accesses memory at the specified address and allows modification of the value.
