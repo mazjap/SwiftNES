@@ -1,7 +1,7 @@
 @propertyWrapper
 struct BoundInteger<Storage> where Storage: BinaryInteger {
-    private let range: ClosedRange<Storage>
-    private var _value: Storage
+    public let range: ClosedRange<Storage>
+    public var _value: Storage
     
     var wrappedValue: Int {
         get { Int(_value) }

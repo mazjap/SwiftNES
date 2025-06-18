@@ -2,7 +2,7 @@ extension NES.PPU {
     public typealias MMU = MemoryManagementUnit
     
     public class MemoryManagementUnit: Memory {
-        private enum Size {
+        public enum Size {
             static let kilobyte = 1024
             static let nametable = 2 * kilobyte // 2KB
             static let spriteRAM = 256 // 256B

@@ -75,7 +75,7 @@ extension NES.Cartridge {
     class Mapper1: Mapper {
         let prgROM: [UInt8]
         let chrROM: [UInt8]
-        private var chrRAM: [UInt8]?
+        public var chrRAM: [UInt8]?
         var hasCHRRAM: Bool { chrROM.count == 0 || chrROM.count <= 8192 }
         
         let prgStart: UInt16 = 0x8000
@@ -84,19 +84,19 @@ extension NES.Cartridge {
         var mirroringMode: NametableMirroring
         
         // Registers
-        private var shiftRegister: UInt8 = 0x10
-        private var controlRegister: UInt8 = 0x0C
-        private var chrBank0: UInt8 = 0
-        private var chrBank1: UInt8 = 0
-        private var prgBank: UInt8 = 0
+        public var shiftRegister: UInt8 = 0x10
+        public var controlRegister: UInt8 = 0x0C
+        public var chrBank0: UInt8 = 0
+        public var chrBank1: UInt8 = 0
+        public var prgBank: UInt8 = 0
         
         // Optional PRG RAM (8KB)
-        private var prgRAM: [UInt8]
-        private var prgRAMEnabled: Bool = true
+        public var prgRAM: [UInt8]
+        public var prgRAMEnabled: Bool = true
         
         // Calculated values for faster lookup
-        private var prgBankMode: UInt8 { (controlRegister >> 2) & 0x03 }
-        private var chrBankMode: UInt8 { (controlRegister >> 4) & 0x01 }
+        public var prgBankMode: UInt8 { (controlRegister >> 2) & 0x03 }
+        public var chrBankMode: UInt8 { (controlRegister >> 4) & 0x01 }
         
         init(programMemory: [UInt8], characterMemory: [UInt8], mirroringMode: NametableMirroring = .horizontal) {
             self.prgROM = programMemory
@@ -135,7 +135,7 @@ extension NES.Cartridge {
             }
         }
         
-        private func readCHR(from address: UInt16) -> UInt8 {
+        public func readCHR(from address: UInt16) -> UInt8 {
             // 4KB CHR bank mode (chrBankMode == 0) or 8KB CHR bank mode (chrBankMode == 1)
             if chrBankMode == 0 {
                 // 4KB bank mode: two separate switchable banks
@@ -174,7 +174,7 @@ extension NES.Cartridge {
             }
         }
         
-        private func readPRG(from address: UInt16) -> UInt8 {
+        public func readPRG(from address: UInt16) -> UInt8 {
             // Calculate which 16KB bank to use based on prgBankMode and address
             let bankNumber: Int
             let bankOffset: Int
@@ -273,7 +273,7 @@ extension NES.Cartridge {
             }
         }
         
-        private func updateRegister(value: UInt8, address: UInt16) {
+        public func updateRegister(value: UInt8, address: UInt16) {
             let region = (address >> 13) & 0x03
             
             switch region {

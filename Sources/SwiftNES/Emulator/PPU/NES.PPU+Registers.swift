@@ -1,6 +1,6 @@
 extension NES.PPU {
     public struct Registers {
-        private let memoryManager: MMU
+        public let memoryManager: MMU
         
         /// Control Register ($2000) write-only
         /// Controls basic PPU operations and configures PPU memory access patterns

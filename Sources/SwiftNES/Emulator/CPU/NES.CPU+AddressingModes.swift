@@ -113,7 +113,7 @@ extension NES.CPU {
     }
     
     /// Calculates whether adding an offset to an address causes a page boundary crossing (oops cycle)
-    fileprivate func isCrossingPageBoundary(addr: UInt16, offset: UInt8) -> Bool {
+    public func isCrossingPageBoundary(addr: UInt16, offset: UInt8) -> Bool {
         let initialPage = addr & 0xFF00
         let offsetAddr = addr &+ UInt16(offset)
         let finalPage = offsetAddr & 0xFF00

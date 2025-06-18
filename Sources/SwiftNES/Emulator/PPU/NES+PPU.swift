@@ -222,18 +222,18 @@ extension NES {
             }
         }
         
-        // MARK: - Private Functions
+        // MARK: - public Functions
         
-        private func colorFromPaletteIndex(_ index: UInt8) -> UInt32 {
+        public func colorFromPaletteIndex(_ index: UInt8) -> UInt32 {
             Self.masterPalette[Int(index & 0x3F)]
         }
         
-        private func outputFrame() {
+        public func outputFrame() {
             guard let frameCallback else { return }
             frameCallback(.success(frameBuffer.makeFrame()))
         }
         
-        private func incrementHorizontalPosition() {
+        public func incrementHorizontalPosition() {
             guard registers.mask.contains(.showBackground) || registers.mask.contains(.showSprites) else { return }
             
             // Increment coarse X
@@ -246,7 +246,7 @@ extension NES {
             }
         }
 
-        private func incrementVerticalPosition() {
+        public func incrementVerticalPosition() {
             guard registers.mask.contains(.showBackground) || registers.mask.contains(.showSprites) else { return }
             
             // Increment fine Y
@@ -275,7 +275,7 @@ extension NES {
         }
         
         /// Updates the VRAM address registers during active rendering
-        private func updateAddressDuringRendering() {
+        public func updateAddressDuringRendering() {
             // Only update if rendering is enabled
             guard registers.mask.contains(.showBackground) || registers.mask.contains(.showSprites) else { return }
             
@@ -297,7 +297,7 @@ extension NES {
         }
         
         /// Performs background tile fetching based on current PPU cycle
-        private func fetchBackgroundTile() {
+        public func fetchBackgroundTile() {
             guard shouldFetchBackgroundTiles() else {
                 emuLogger.warning("PPU's `fetchBackgroundTile()` called outside visible area! scanline \(self.scanline), cycle \(self.cycle)")
                 return
@@ -344,7 +344,7 @@ extension NES {
         }
         
         /// Loads the shift registers with new tile data at the end of each fetch cycle
-        private func loadBackgroundShiftRegisters() {
+        public func loadBackgroundShiftRegisters() {
             // Shift existing data left by 8 and load new data into low byte
             bgFetchState.patternShiftLow = (bgFetchState.patternShiftLow << 8) | UInt16(bgFetchState.patternLowByte)
             bgFetchState.patternShiftHigh = (bgFetchState.patternShiftHigh << 8) | UInt16(bgFetchState.patternHighByte)
@@ -359,7 +359,7 @@ extension NES {
         }
         
         /// Handle PPUSTATUS register read with proper NMI timing
-        private func readStatus() -> UInt8 {
+        public func readStatus() -> UInt8 {
             let currentStatus = registers.status.readAndClear()
             registers.writeToggle = false
             
@@ -373,7 +373,7 @@ extension NES {
         }
         
         /// Handle PPUCTRL register write with proper NMI timing
-        private func writeControl(_ value: UInt8) {
+        public func writeControl(_ value: UInt8) {
             let oldNMIEnabled = registers.ctrl.contains(.generateNMI)
             registers.ctrl.rawValue = value
             
@@ -386,7 +386,7 @@ extension NES {
         }
         
         /// Shifts all background registers by one bit
-        private func shiftBackgroundRegisters() {
+        public func shiftBackgroundRegisters() {
             guard registers.mask.contains(.showBackground) else {
                 return
             }
@@ -399,7 +399,7 @@ extension NES {
         }
         
         /// Gets the color for the current background pixel
-        private func getBackgroundPixel() -> UInt8 {
+        public func getBackgroundPixel() -> UInt8 {
             guard shouldRenderPixels() else {
                 emuLogger.warning("PPU's `getBackgroundPixel()` called outside visible area! scanline \(self.scanline), cycle \(self.cycle)")
                 return 0
@@ -441,7 +441,7 @@ extension NES {
         
         /// Gets the appropriate pixel color based on background and sprite data,
         /// handling sprite transparency and priority.
-        private func renderPixel() {
+        public func renderPixel() {
             guard shouldRenderPixels() else {
                 emuLogger.error("PPU's `renderPixel()` called outside visible area! scanline \(self.scanline), cycle \(self.cycle)")
                 return
@@ -553,7 +553,7 @@ extension NES {
         
         /// Evaluates which sprites will be visible on the next scanline and populates secondary OAM
         /// Enforces the 8 sprite per scanline limit and handles overflow flag
-        private func evaluateSpritesForNextScanline() {
+        public func evaluateSpritesForNextScanline() {
             guard shouldEvaluateSprites() else {
                 emuLogger.error("PPU's `evaluateSpritesForNextScanline()` called outside visible area! scanline \(self.scanline), cycle \(self.cycle)")
                 return
@@ -646,7 +646,7 @@ extension NES {
         }
         
         /// Integrate sprite evaluation into the PPU cycle processing
-        private func updateSpriteEvaluation() {
+        public func updateSpriteEvaluation() {
             guard shouldEvaluateSprites() else {
                 emuLogger.error("PPU's `updateSpriteEvaluation()` called outside visible area! scanline \(self.scanline), cycle \(self.cycle)")
                 return
@@ -672,7 +672,7 @@ extension NES {
         }
         
         /// Performs the sprite data fetching for the current cycle
-        private func fetchSpriteData() {
+        public func fetchSpriteData() {
             // Skip if sprites are disabled
             guard registers.mask.contains(.showSprites) else { return }
             
@@ -783,7 +783,7 @@ extension NES {
         /// Applies color emphasis bits to the specified color
         /// - Parameter color: The original RGB color
         /// - Returns: The modified color with emphasis applied
-        private func applyColorEmphasis(_ color: UInt32) -> UInt32 {
+        public func applyColorEmphasis(_ color: UInt32) -> UInt32 {
             // If no emphasis bits are set, return the original color
             if !registers.mask.contains([.emphasizeRed, .emphasizeGreen, .emphasizeBlue]) {
                 return color
@@ -815,7 +815,7 @@ extension NES {
             return (newR << 16) | (newG << 8) | newB
         }
         
-        private static let masterPalette: [UInt32] = [
+        public static let masterPalette: [UInt32] = [
             0x626262, 0x001FB2, 0x2404C8, 0x5200B2, // 0x00-0x03
             0x730076, 0x800024, 0x730B00, 0x522800, // 0x04-0x07
             0x244400, 0x005700, 0x005C00, 0x005324, // 0x08-0x0B
@@ -838,38 +838,38 @@ extension NES {
 
 extension NES.PPU {
     @inline(__always)
-    private func isVisibleScanline() -> Bool {
+    public func isVisibleScanline() -> Bool {
         0..<240 ~= scanline
     }
     
     @inline(__always)
-    private func isPreRenderScanline() -> Bool {
+    public func isPreRenderScanline() -> Bool {
         scanline == 261
     }
     
     @inline(__always)
-    private func isVisibleCycle() -> Bool {
+    public func isVisibleCycle() -> Bool {
         cycle >= 1 && cycle <= 256
     }
     
     @inline(__always)
-    private func isPrefetchCycle() -> Bool {
+    public func isPrefetchCycle() -> Bool {
         cycle >= 321 && cycle <= 336
     }
     
     @inline(__always)
-    private func shouldRenderPixels() -> Bool {
+    public func shouldRenderPixels() -> Bool {
         isVisibleScanline() && isVisibleCycle()
     }
     
     @inline(__always)
-    private func shouldFetchBackgroundTiles() -> Bool {
+    public func shouldFetchBackgroundTiles() -> Bool {
         (isVisibleScanline() && (isVisibleCycle() || isPrefetchCycle())) ||
         (isPreRenderScanline() && isPrefetchCycle())
     }
     
     @inline(__always)
-    private func shouldEvaluateSprites() -> Bool {
+    public func shouldEvaluateSprites() -> Bool {
         (isVisibleScanline() || isPreRenderScanline())
     }
 }

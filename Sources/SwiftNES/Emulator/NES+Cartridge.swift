@@ -23,7 +23,7 @@ extension NES.Cartridge {
         try self.init(fileData: bytes)
     }
     
-    private convenience init(fileData: [UInt8]) throws {
+    public convenience init(fileData: [UInt8]) throws {
         guard fileData.count > 16 // Header size
         else { throw NESError.cartridge(.invalidHeader(fileData)) }
         

@@ -3,7 +3,7 @@ import Foundation
 extension NES {
     public class RandomAccessMemory: Memory {
         public let size: UInt16
-        private(set) var memory: [UInt8]
+        public var memory: [UInt8]
         
         public init(size: UInt16 = 0x800) {
             self.size = size

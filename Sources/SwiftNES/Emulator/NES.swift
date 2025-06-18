@@ -23,7 +23,7 @@ public class NintendoEntertainmentSystem {
     public var ppu: PPU
     public var apu: APU
     public var input: InputHandler
-    public private(set) var cartridge: Cartridge?
+    public public(set) var cartridge: Cartridge?
     
     public init(cartridge: Cartridge? = nil) {
         self.cartridge = cartridge

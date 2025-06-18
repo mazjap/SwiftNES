@@ -19,7 +19,7 @@ extension NES.PPU.Registers {
         }
         
         /// Mask for base nametable selection (bits 0-1)
-        private static let baseNametableMask = PPUCtrl(rawValue: 0b11)
+        public static let baseNametableMask = PPUCtrl(rawValue: 0b11)
         
         /// VRAM address increment per CPU read/write of PPUDATA
         /// false: increment by 1, true: increment by 32

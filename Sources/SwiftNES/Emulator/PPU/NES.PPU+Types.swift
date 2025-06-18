@@ -63,7 +63,7 @@ extension NES.PPU {
     }
     
     public struct FrameBuffer {
-        private var pixels: [UInt32]
+        public var pixels: [UInt32]
         
         init() {
             self.pixels = [UInt32](repeating: 0, count: 256 * 240)
