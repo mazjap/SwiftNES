@@ -5,7 +5,7 @@ extension NES {
         var registers: Registers
         var lastInstruction: UInt8 = 0
         public internal(set) var memoryManager: MMU
-        public internal(set) var clockCycleCount: UInt16
+        public internal(set) var clockCycleCount: UInt64
         
         public init(memoryManager: MMU) {
             self.memoryManager = memoryManager
@@ -58,7 +58,7 @@ extension NES {
         /// - Note: This includes the cycle for fetching the opcode and any additional cycles for addressing modes.
         @discardableResult // discardable for testing convenience
         public func executeNextInstruction() -> UInt16 {
-            clockCycleCount = 0
+            var currentClockCycleCount: UInt16 = 0
             let opcode = getOpcode()
             
             guard let timingForInstruction = Self.instructionTimings[opcode] else {
@@ -70,7 +70,9 @@ extension NES {
             switch codeToCallingMode[opcode] {
             case let .noParam(fun):
                 if Self.nops.contains(opcode) {
-                    _ = fetchAddress(for: opcode)
+                    if fetchAddress(for: opcode)?.pageBoundaryCrossed ?? false {
+                        pageCrossed = true
+                    }
                 } else if Self.impliedOps.contains(opcode) || Self.accumulatorOps.contains(opcode) {
                     fun()
                 } else {
@@ -115,7 +117,7 @@ extension NES {
                 fatalError("No opcode calling mode was found for opcode 0x\(String(opcode, radix: 16))")
             }
             
-            clockCycleCount += timingForInstruction.cycleCount(pageCrossed: pageCrossed, branchOccurred: branchOccurred)
+            currentClockCycleCount += timingForInstruction.cycleCount(pageCrossed: pageCrossed, branchOccurred: branchOccurred)
             
             if nmiPending {
                 handleNMI()
@@ -125,7 +127,8 @@ extension NES {
             
             lastInstruction = opcode
             
-            return clockCycleCount
+            clockCycleCount &+= UInt64(currentClockCycleCount)
+            return currentClockCycleCount
         }
         
         public func reset() {

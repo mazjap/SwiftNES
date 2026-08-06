@@ -453,30 +453,25 @@ extension NES.CPU {
     
     /// AND + ROR:
     /// An "Illegal" Opcode.
+    /// ANDs the accumulator with the value, then rotates the result right one bit.
+    /// Flag quirks (from the ADC-derived silicon path):
+    ///   - Carry = bit 6 of the rotated result
+    ///   - Overflow = bit 6 XOR bit 5 of the rotated result
     func arr(value: UInt8) {
         emuLogger.debug("arr")
         
-        // Perform AND operation
-        let result = registers.accumulator & value
-        
-        // Rotate right by one bit
+        let andResult = registers.accumulator & value
         let oldCarry: UInt8 = registers.status.readFlag(.carry) ? 1 : 0
-        let rotatedResult = (result >> 1) | (oldCarry << 7)
+        let rotated = (andResult >> 1) | (oldCarry << 7)
         
-        // Carry flag should be set based on bit 6 of the result which is a weird quirk
-        // (Using bit 7 before rotation, instead of bit 6 after rotation. Same result)
-        registers.status.setFlag(.carry, to: (result & 0x40) != 0)
+        registers.accumulator = rotated
+        updateZeroNegativeFlags()
         
-        // Update zero and negative flags normally
-        updateZeroNegativeFlags(for: rotatedResult)
+        registers.status.setFlag(.carry, to: (rotated & 0x40) != 0)
         
-        // Set overflow flag based on XOR of bits 5 and 6 of the AND result
-        // Another quirk of ARR
-        let vFlag = ((result & 0x40) ^ (result & 0x20)) != 0
-        registers.status.setFlag(.overflow, to: vFlag)
-        
-        // Update accumulator with the result
-        registers.accumulator = rotatedResult
+        let bit6 = (rotated >> 6) & 1
+        let bit5 = (rotated >> 5) & 1
+        registers.status.setFlag(.overflow, to: (bit6 ^ bit5) == 1)
     }
     
     /// Branch if Overflow Set:
@@ -795,7 +790,7 @@ extension NES.CPU {
         
         value &-= 1
         
-        let result = registers.accumulator - value
+        let result = registers.accumulator &- value
         
         registers.status.setFlag(.carry, to: registers.accumulator >= value)
         registers.status.setFlag(.zero, to: registers.accumulator == value)

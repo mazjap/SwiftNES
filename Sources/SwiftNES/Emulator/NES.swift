@@ -53,15 +53,13 @@ public class NintendoEntertainmentSystem {
         // - Configure input handling
     }
     
-    public func run(options: NESRunOption? = nil) throws -> NESRunResult {
+    func run(options: NESRunOption? = nil) throws -> NESRunResult {
         guard cartridge != nil else { throw NESError.cartridge(.noCartridge) }
         
         var totalCycles: UInt64 = 0
-        var totalInstructions = 0
-        
+        var totalInstructions: UInt64 = 0
+
         while true {
-            let prevNmiPending = ppu.nmiPending
-            
             // Execute one CPU instruction
             let cpuCycles = cpu.executeNextInstruction()
             
@@ -71,11 +69,6 @@ public class NintendoEntertainmentSystem {
             // PPU steps 3 times per CPU cycle
             for _ in 0..<cpuCycles * 3 {
                 ppu.step()
-                
-                // Check if NMI was triggered during this PPU cycle
-                if !prevNmiPending && ppu.nmiPending && cpu.registers.status.readFlag(.interrupt) == false {
-                    cpu.triggerNMI()
-                }
             }
             
             // APU steps once per CPU cycle
@@ -83,12 +76,18 @@ public class NintendoEntertainmentSystem {
                 apu.step()
             }
             
-            // Early exit check
+            // Early exit check. The counts carried back are the totals actually
+            // reached, which can overshoot the limit by up to one instruction —
+            // the loop only tests on instruction boundaries.
             switch options {
             case let .maxRunCount(.cycles(maxCycles)):
-                return .limitReached(.cycles(maxCycles))
+                if totalCycles >= maxCycles {
+                    return .limitReached(.cycles(totalCycles))
+                }
             case let .maxRunCount(.instructions(maxInstructions)):
-                return .limitReached(.instructions(maxInstructions))
+                if totalInstructions >= maxInstructions {
+                    return .limitReached(.instructions(totalInstructions))
+                }
             case let .specificInstruction(instructionSet):
                 if instructionSet.contains(cpu.lastInstruction) {
                     return .instructionOccurred(cpu.lastInstruction)
@@ -96,6 +95,83 @@ public class NintendoEntertainmentSystem {
             case .none:
                 break
             }
+        }
+    }
+    
+    public func run(options: NESRunOption? = nil, frameCallback: @escaping (Result<PPU.Frame, Error>) -> Void) throws -> NESRunResult {
+        ppu.setFrameCallback(frameCallback)
+        return try run(options: options)
+    }
+    
+    public enum FrameOrFinish: Sendable {
+        case frame(PPU.Frame)
+        case finish(NESRunResult)
+    }
+    
+    /// Runs the emulator on a dedicated thread, delivering each completed frame
+    /// through the returned stream.
+    ///
+    /// - Note: `AsyncThrowingStream`'s build closure runs synchronously, so the
+    ///   emulation loop *cannot* be started from inside it — doing so blocks the
+    ///   caller for as long as the emulator runs (forever, with no run options).
+    ///   The loop gets its own thread instead, and the returned stream is usable
+    ///   immediately.
+    ///
+    /// - Important: The emulator is handed off to that thread for the lifetime of
+    ///   the stream. Mutating this `NES` from anywhere else while the stream is
+    ///   alive is a data race.
+    ///
+    /// - Parameter framesPerSecond: Real-time pacing target. Unthrottled, the
+    ///   emulator produces frames as fast as the host can manage (~170fps on
+    ///   current hardware), which is both wrong for playback and faster than any
+    ///   consumer can render. Pass `0` to disable pacing and run flat out.
+    public func runStream(
+        options: NESRunOption? = nil,
+        framesPerSecond: Double = 60
+    ) throws -> AsyncThrowingStream<FrameOrFinish, Error> {
+        // Ownership moves to the emulation thread; see the note above.
+        nonisolated(unsafe) let emulator = self
+        let frameInterval = framesPerSecond > 0 ? 1 / framesPerSecond : 0
+
+        // `bufferingNewest(1)` keeps the consumer honest: if rendering a frame
+        // takes longer than producing one, the stale frames are dropped instead
+        // of piling up in an unbounded queue that the UI can never drain.
+        return AsyncThrowingStream(bufferingPolicy: .bufferingNewest(1)) { continuation in
+            let thread = Thread {
+                var nextFrameDeadline = Date.timeIntervalSinceReferenceDate
+
+                do {
+                    let result = try emulator.run(options: options) { frameResult in
+                        switch frameResult {
+                        case let .success(frame):
+                            continuation.yield(.frame(frame))
+
+                            guard frameInterval > 0 else { return }
+
+                            nextFrameDeadline += frameInterval
+                            let now = Date.timeIntervalSinceReferenceDate
+
+                            if now < nextFrameDeadline {
+                                Thread.sleep(forTimeInterval: nextFrameDeadline - now)
+                            } else {
+                                // Ran long. Resynchronize to now rather than
+                                // accumulating debt and then sprinting to repay it.
+                                nextFrameDeadline = now
+                            }
+                        case let .failure(error):
+                            continuation.finish(throwing: error)
+                        }
+                    }
+
+                    continuation.yield(.finish(result))
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+
+            thread.name = "com.mazjap.SwiftNES.emulation"
+            thread.start()
         }
     }
     
@@ -111,5 +187,10 @@ public class NintendoEntertainmentSystem {
         self.cartridge = cartridge
         cpu.memoryManager.cartridge = cartridge
         ppu.memoryManager.cartridge = cartridge
+
+        // The reset vector lives in the cartridge, so the CPU has to be reset
+        // *after* the swap. Without this the program counter keeps whatever the
+        // previous cartridge (or no cartridge at all) resolved to.
+        reset()
     }
 }

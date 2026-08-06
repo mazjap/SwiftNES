@@ -39,7 +39,7 @@ extension NES.Cartridge {
 }
 
 extension NES.CPU {
-    convenience init(memoryManager: NES.CPU.MMU, registers: Registers, clockCycleCount: UInt16) {
+    convenience init(memoryManager: NES.CPU.MMU, registers: Registers, clockCycleCount: UInt64) {
         self.init(memoryManager: memoryManager)
         self.registers = registers
         self.clockCycleCount = clockCycleCount

@@ -18,7 +18,7 @@ extension NES.PPU {
         public static let height: Int = 240
         public static let pixelCount: Int = width * height
         
-        /// In RGB format. Use the convenience functions, `toRGBA()` or `toBGRA()`
+        /// In RGB format. Use the convenience functions, `toARGB()` or `toABGR()`
         /// to get compatible color formats for your rendering method
         public let data: [UInt32]
         

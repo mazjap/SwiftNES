@@ -44,23 +44,23 @@ extension NES.PPU {
         /// buffer with the corresponding nametable data.
         var data: UInt8 {
             mutating get {
-                let memoryValue = memoryManager.read(from: addr)
+                let memoryValue = memoryManager.read(from: currentVramAddress)
                 
                 // Increment before any potential read buffering
                 incrementDataAddress()
                 
-                if addr < 0x3F00 { // Not palette data - return last buffered value, store new value in buffer
+                if currentVramAddress < 0x3F00 { // Not palette data - return last buffered value, store new value in buffer
                     let bufferedValue = ppuDataReadBuffer
                     ppuDataReadBuffer = memoryValue
                     return bufferedValue
                 } else { // Palette data - return new value, but also store in buffer
                     // Mirror palette addresses 3F00-3FFF to 2F00-2FFF for the buffer
-                    ppuDataReadBuffer = memoryManager.read(from: 0x2000 | (addr & 0x0FFF))
+                    ppuDataReadBuffer = memoryManager.read(from: 0x2000 | (currentVramAddress & 0x0FFF))
                     return memoryValue
                 }
             }
             set {
-                memoryManager.write(newValue, to: addr)
+                memoryManager.write(newValue, to: currentVramAddress)
                 incrementDataAddress()
             }
         }
@@ -125,7 +125,7 @@ extension NES.PPU.Registers {
     }
     
     private mutating func incrementDataAddress() {
-        addr = (addr + ctrl.vramAddressIncrement) & 0x3FFF
+        currentVramAddress = (currentVramAddress + ctrl.vramAddressIncrement) & 0x3FFF
     }
     
     mutating func read(from register: UInt8) -> UInt8 {

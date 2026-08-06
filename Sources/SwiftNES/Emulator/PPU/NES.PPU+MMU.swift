@@ -79,7 +79,7 @@ extension NES.PPU {
             case 0x3000...0x3EFF: // Nametable mirrors
                 write(value, to: address & 0x2FFF)
             case 0x3F00...0x3FFF: // Palette RAM
-                write(value, to: address)
+                writePalette(value, to: address)
             default:
                 emuLogger.error("PPU attempted to write \(String(format: "0x%02X", value)) to invalid address: \(String(format: "0x%04X", address))")
             }
