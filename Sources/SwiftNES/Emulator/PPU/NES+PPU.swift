@@ -332,18 +332,28 @@ extension NES {
         }
         
         /// Loads the shift registers with new tile data at the end of each fetch cycle
+        ///
+        /// The newly fetched tile goes into the **low** byte only; the high byte is
+        /// left alone because it holds the tile currently being drawn. The eight
+        /// shifts that happen before the next load walk this byte up into the high
+        /// half, one pixel at a time, so it arrives at the output (bit 15) exactly
+        /// when the tile in front of it has been consumed.
+        ///
+        /// Shifting the register by 8 here as well — as this used to — advances it
+        /// by 16 bits per 8 pixels, flushing each byte straight back out before a
+        /// single one of its bits ever reaches bit 15. That made every background
+        /// pixel read as transparent.
         private func loadBackgroundShiftRegisters() {
-            // Shift existing data left by 8 and load new data into low byte
-            bgFetchState.patternShiftLow = (bgFetchState.patternShiftLow << 8) | UInt16(bgFetchState.patternLowByte)
-            bgFetchState.patternShiftHigh = (bgFetchState.patternShiftHigh << 8) | UInt16(bgFetchState.patternHighByte)
-            
-            // Convert attribute bits to bytes for the next 8 pixels
-            let attrByteLow: UInt8 = (bgFetchState.tileAttribute & 0b01) != 0 ? 0xFF : 0x00
-            let attrByteHigh: UInt8 = (bgFetchState.tileAttribute & 0b10) != 0 ? 0xFF : 0x00
-            
-            // Shift existing attribute data left by 8 and load new data
-            bgFetchState.attributeShiftLow = (bgFetchState.attributeShiftLow << 8) | attrByteLow
-            bgFetchState.attributeShiftHigh = (bgFetchState.attributeShiftHigh << 8) | attrByteHigh
+            bgFetchState.patternShiftLow = (bgFetchState.patternShiftLow & 0xFF00) | UInt16(bgFetchState.patternLowByte)
+            bgFetchState.patternShiftHigh = (bgFetchState.patternShiftHigh & 0xFF00) | UInt16(bgFetchState.patternHighByte)
+
+            // The 2-bit attribute is expanded across the whole byte so every pixel
+            // of the tile samples the same palette selection.
+            let attrByteLow: UInt16 = (bgFetchState.tileAttribute & 0b01) != 0 ? 0x00FF : 0x0000
+            let attrByteHigh: UInt16 = (bgFetchState.tileAttribute & 0b10) != 0 ? 0x00FF : 0x0000
+
+            bgFetchState.attributeShiftLow = (bgFetchState.attributeShiftLow & 0xFF00) | attrByteLow
+            bgFetchState.attributeShiftHigh = (bgFetchState.attributeShiftHigh & 0xFF00) | attrByteHigh
         }
         
         /// Handle PPUSTATUS register read with proper NMI timing
@@ -416,10 +426,11 @@ extension NES {
                 return 0
             }
             
-            // Get palette bits from attribute shift registers
-            // Use bit 7 of the shift register (the bit that's about to shift out)
-            let paletteLow: UInt8 = (bgFetchState.attributeShiftLow & 0x80) != 0 ? 1 : 0
-            let paletteHigh: UInt8 = (bgFetchState.attributeShiftHigh & 0x80) != 0 ? 1 : 0
+            // Get palette bits from the attribute shift registers, sampled at the
+            // same position as the pattern bits so the palette selection tracks
+            // the tile it belongs to (and follows fine X scrolling with it)
+            let paletteLow: UInt8 = (bgFetchState.attributeShiftLow & bitMux) != 0 ? 1 : 0
+            let paletteHigh: UInt8 = (bgFetchState.attributeShiftHigh & bitMux) != 0 ? 1 : 0
             
             // Combine pattern and palette bits to get the palette entry
             // Format: 0bPPpp where PP is palette number and pp is pixel value

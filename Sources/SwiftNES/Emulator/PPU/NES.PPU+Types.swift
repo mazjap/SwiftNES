@@ -97,9 +97,11 @@ extension NES.PPU {
         var patternShiftLow: UInt16 = 0
         var patternShiftHigh: UInt16 = 0
         
-        // Attribute shift registers (8 bits, but only 2 bits used)
-        var attributeShiftLow: UInt8 = 0
-        var attributeShiftHigh: UInt8 = 0
+        // Attribute shift registers (16 bits each, matching the pattern
+        // shifters so a tile's palette selection reaches the output in step
+        // with its pattern bits)
+        var attributeShiftLow: UInt16 = 0
+        var attributeShiftHigh: UInt16 = 0
         
         // Attribute latches for next tile
         var attributeLatchLow: Bool = false
