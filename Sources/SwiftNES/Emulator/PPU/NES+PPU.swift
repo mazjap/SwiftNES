@@ -661,7 +661,9 @@ extension NES {
                 for i in 0..<spriteData.count {
                     spriteData[i].reset()
                 }
-            } else if cycle >= 257 && cycle <= 320 {
+            }
+            
+            if cycle >= 257 && cycle <= 320 {
                 // Sprite pattern fetching (cycles 257-320)
                 // Each sprite takes 8 cycles to fetch data
                 fetchSpriteData()
