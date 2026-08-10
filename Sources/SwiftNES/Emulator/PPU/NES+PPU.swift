@@ -459,45 +459,52 @@ extension NES {
             var spriteIsBehind: Bool = false
             var isSpriteZeroHit: Bool = false
             
-            // Only process sprites if they're enabled
+            // Pixel selection. Read-only: no sprite unit is modified here, so
+            // which sprite wins the pixel cannot affect any other sprite's state.
+            //
+            // `getColorIndex()` already returns nil for an inactive unit, a unit
+            // still counting down its X position, and a transparent pixel.
             if registers.mask.contains(.showSprites) && (cycle > 8 || registers.mask.contains(.showSpritesLeft8Pixels)) {
-                // Check all sprites for this pixel
+                // Lowest OAM index wins, so the first opaque pixel takes the dot
                 for i in 0..<spriteData.count {
-                    if !spriteData[i].active { continue }
-                    
-                    // Skip if sprite is still counting down X position
+                    guard let colorIndex = spriteData[i].getColorIndex() else { continue }
+
+                    spritePixel = colorIndex
+
+                    // Sprite palette is in bits 0-1 of the attribute byte
+                    // Sprite palettes are stored at $3F10-$3F1F (palette indices 4-7)
+                    spritePalette = 4 + (spriteData[i].attributes & 0x03)
+
+                    // Priority is in bit 5 of the attribute byte (0: in front of background, 1: behind background)
+                    spriteIsBehind = (spriteData[i].attributes & 0x20) != 0
+
+                    // Check if this is sprite 0 for hit detection
+                    if spriteData[i].isSprite0 && bgIsOpaque &&
+                       cycle != 255 && // No sprite 0 hit on last visible pixel
+                       registers.mask.contains(.showBackground) {
+                        // Sprite 0 hit occurs when a non-zero pixel of sprite 0 overlaps
+                        // with a non-zero pixel of the background
+                        isSpriteZeroHit = true
+                    }
+
+                    // Stop at the first non-transparent pixel (sprites are already in priority order)
+                    break
+                }
+            }
+
+            // Per-dot state advance, kept separate from selection loop above.
+            // Every active unit advances on every dot so units still waiting on
+            // their X position count down, units that have reached it shift out
+            // the pixel just consumed.
+            if registers.mask.contains(.showSprites) {
+                for i in 0..<spriteData.count {
+                    guard spriteData[i].active else { continue }
+
                     if spriteData[i].xCounter > 0 {
                         spriteData[i].xCounter -= 1
-                        continue
+                    } else {
+                        spriteData[i].shift()
                     }
-                    
-                    // Get the sprite pixel color index (0-3)
-                    if let colorIndex = spriteData[i].getColorIndex() {
-                        // Non-transparent sprite pixel found
-                        spritePixel = colorIndex
-                        
-                        // Sprite palette is in bits 0-1 of the attribute byte
-                        // Sprite palettes are stored at $3F10-$3F1F (palette indices 4-7)
-                        spritePalette = 4 + (spriteData[i].attributes & 0x03)
-                        
-                        // Priority is in bit 5 of the attribute byte (0: in front of background, 1: behind background)
-                        spriteIsBehind = (spriteData[i].attributes & 0x20) != 0
-                        
-                        // Check if this is sprite 0 for hit detection
-                        if spriteData[i].isSprite0 && bgIsOpaque &&
-                           cycle != 255 && // No sprite 0 hit on last visible pixel
-                           registers.mask.contains(.showBackground) {
-                            // Sprite 0 hit occurs when a non-zero pixel of sprite 0 overlaps
-                            // with a non-zero pixel of the background
-                            isSpriteZeroHit = true
-                        }
-                        
-                        // Stop at the first non-transparent pixel (sprites are already in priority order)
-                        break
-                    }
-                    
-                    // Shift the sprite pattern for the next pixel
-                    spriteData[i].shift()
                 }
             }
             
