@@ -85,17 +85,15 @@ extension NES {
                         incrementVerticalPosition()
                     }
                 } else if cycle <= 336 {
-                    // Prefetch first two tiles of next line
+                    // Sprite fetches (257-320, driven by updateSpriteEvaluation)
+                    // then the background prefetch for the next scanline (321-336)
                     renderState = .prefetch
-                    
-                    // Continue fetching during prefetch cycles
-                    fetchBackgroundTile()
-                    
-                    // At 328 and 336, we need to increment the horizontal position
-                    if cycle == 328 || cycle == 336 {
-                        incrementHorizontalPosition()
-                    }
+                    runBackgroundPrefetch()
                 }
+            }
+            
+            if scanline == 261 {
+                runBackgroundPrefetch()
             }
             
             // Start of VBlank (scanline 241)
@@ -283,10 +281,27 @@ extension NES {
             }
         }
         
+        /// Fetches the first two tiles of the *next* scanline (dots 321-336),
+        /// together with the shifts and coarse-X increments that belong to them.
+        private func runBackgroundPrefetch() {
+            guard cycle >= 321 && cycle <= 336 else { return }
+
+            if cycle >= 329 {
+                shiftBackgroundRegisters()
+            }
+
+            fetchBackgroundTile()
+
+            // At 328 and 336, we need to increment the horizontal position
+            if cycle == 328 || cycle == 336 {
+                incrementHorizontalPosition()
+            }
+        }
+
         /// Performs background tile fetching based on current PPU cycle
         private func fetchBackgroundTile() {
             guard (scanline >= 0 && scanline < 240 && cycle >= 1 && cycle <= 256) ||
-                  (scanline == 261 && cycle >= 321 && cycle <= 336) else {
+                  ((scanline < 240 || scanline == 261) && cycle >= 321 && cycle <= 336) else {
                 emuLogger.warning("`fetchBackgroundTile()` called outside visible area! scanline \(self.scanline), cycle \(self.cycle)")
                 return
             }
