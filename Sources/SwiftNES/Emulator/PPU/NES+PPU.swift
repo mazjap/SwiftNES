@@ -59,7 +59,9 @@ extension NES {
             updateAddressDuringRendering()
             
             // Add sprite evaluation after address updates
-            updateSpriteEvaluation()
+            if isRenderingScanline {
+                updateSpriteEvaluation()
+            }
             
             // Active scanlines (0-239)
             if scanline >= 0 && scanline < 240 {
@@ -152,9 +154,9 @@ extension NES {
         func write(_ value: UInt8, to register: UInt8) {
             // Save old values to detect important changes
             let oldValue: UInt8 = switch register {
-                case 0x00: registers.ctrl.rawValue
-                case 0x01: registers.mask.rawValue
-                default: 0
+            case 0x00: registers.ctrl.rawValue
+            case 0x01: registers.mask.rawValue
+            default: 0
             }
             
             let isRenderingActive = (scanline >= 0 && scanline < 240) && (registers.mask.contains(.showBackground) || registers.mask.contains(.showSprites))
@@ -209,6 +211,14 @@ extension NES {
         
         // MARK: - Private Functions
         
+        /// The scanlines that run the rendering pipeline: the 240 visible lines
+        /// plus the pre-render line. Scanline 240 and the vblank lines (241-260)
+        /// are not rendering scanlines — being on one is an ordinary state, not
+        /// an error condition.
+        private var isRenderingScanline: Bool {
+            (scanline >= 0 && scanline < 240) || scanline == 261
+        }
+        
         private func colorFromPaletteIndex(_ index: UInt8) -> UInt32 {
             Self.masterPalette[Int(index & 0x3F)]
         }
@@ -230,7 +240,7 @@ extension NES {
                 registers.currentVramAddress += 1 // Increment coarse X
             }
         }
-
+        
         private func incrementVerticalPosition() {
             guard registers.mask.contains(.showBackground) || registers.mask.contains(.showSprites) else { return }
             
@@ -285,23 +295,23 @@ extension NES {
         /// together with the shifts and coarse-X increments that belong to them.
         private func runBackgroundPrefetch() {
             guard cycle >= 321 && cycle <= 336 else { return }
-
+            
             if cycle >= 329 {
                 shiftBackgroundRegisters()
             }
-
+            
             fetchBackgroundTile()
-
+            
             // At 328 and 336, we need to increment the horizontal position
             if cycle == 328 || cycle == 336 {
                 incrementHorizontalPosition()
             }
         }
-
+        
         /// Performs background tile fetching based on current PPU cycle
         private func fetchBackgroundTile() {
             guard (scanline >= 0 && scanline < 240 && cycle >= 1 && cycle <= 256) ||
-                  ((scanline < 240 || scanline == 261) && cycle >= 321 && cycle <= 336) else {
+                    ((scanline < 240 || scanline == 261) && cycle >= 321 && cycle <= 336) else {
                 emuLogger.warning("`fetchBackgroundTile()` called outside visible area! scanline \(self.scanline), cycle \(self.cycle)")
                 return
             }
@@ -361,12 +371,12 @@ extension NES {
         private func loadBackgroundShiftRegisters() {
             bgFetchState.patternShiftLow = (bgFetchState.patternShiftLow & 0xFF00) | UInt16(bgFetchState.patternLowByte)
             bgFetchState.patternShiftHigh = (bgFetchState.patternShiftHigh & 0xFF00) | UInt16(bgFetchState.patternHighByte)
-
+            
             // The 2-bit attribute is expanded across the whole byte so every pixel
             // of the tile samples the same palette selection.
             let attrByteLow: UInt16 = (bgFetchState.tileAttribute & 0b01) != 0 ? 0x00FF : 0x0000
             let attrByteHigh: UInt16 = (bgFetchState.tileAttribute & 0b10) != 0 ? 0x00FF : 0x0000
-
+            
             bgFetchState.attributeShiftLow = (bgFetchState.attributeShiftLow & 0xFF00) | attrByteLow
             bgFetchState.attributeShiftHigh = (bgFetchState.attributeShiftHigh & 0xFF00) | attrByteHigh
         }
@@ -393,7 +403,7 @@ extension NES {
             // If NMI enabled during VBlank period and previously disabled,
             // and VBlank flag is set, trigger an NMI immediately
             if !oldNMIEnabled && registers.ctrl.contains(.generateNMI) &&
-               registers.status.contains(.vblank) && nmiPending {
+                registers.status.contains(.vblank) && nmiPending {
                 triggerNMI()
             }
         }
@@ -483,30 +493,30 @@ extension NES {
                 // Lowest OAM index wins, so the first opaque pixel takes the dot
                 for i in 0..<spriteData.count {
                     guard let colorIndex = spriteData[i].getColorIndex() else { continue }
-
+                    
                     spritePixel = colorIndex
-
+                    
                     // Sprite palette is in bits 0-1 of the attribute byte
                     // Sprite palettes are stored at $3F10-$3F1F (palette indices 4-7)
                     spritePalette = 4 + (spriteData[i].attributes & 0x03)
-
+                    
                     // Priority is in bit 5 of the attribute byte (0: in front of background, 1: behind background)
                     spriteIsBehind = (spriteData[i].attributes & 0x20) != 0
-
+                    
                     // Check if this is sprite 0 for hit detection
                     if spriteData[i].isSprite0 && bgIsOpaque &&
-                       cycle != 255 && // No sprite 0 hit on last visible pixel
-                       registers.mask.contains(.showBackground) {
+                        cycle != 255 && // No sprite 0 hit on last visible pixel
+                        registers.mask.contains(.showBackground) {
                         // Sprite 0 hit occurs when a non-zero pixel of sprite 0 overlaps
                         // with a non-zero pixel of the background
                         isSpriteZeroHit = true
                     }
-
+                    
                     // Stop at the first non-transparent pixel (sprites are already in priority order)
                     break
                 }
             }
-
+            
             // Per-dot state advance, kept separate from selection loop above.
             // Every active unit advances on every dot so units still waiting on
             // their X position count down, units that have reached it shift out
@@ -514,7 +524,7 @@ extension NES {
             if registers.mask.contains(.showSprites) {
                 for i in 0..<spriteData.count {
                     guard spriteData[i].active else { continue }
-
+                    
                     if spriteData[i].xCounter > 0 {
                         spriteData[i].xCounter -= 1
                     } else {
@@ -525,8 +535,8 @@ extension NES {
             
             // Sprite 0 hit detection (don't set if within the left 8 pixels and clipping is enabled)
             if isSpriteZeroHit &&
-               !(cycle <= 8 && !registers.mask.contains(.showSpritesLeft8Pixels)) &&
-               !registers.status.contains(.sprite0Hit) {
+                !(cycle <= 8 && !registers.mask.contains(.showSpritesLeft8Pixels)) &&
+                !registers.status.contains(.sprite0Hit) {
                 registers.status.insert(.sprite0Hit)
             }
             
@@ -665,11 +675,19 @@ extension NES {
         }
         
         /// Integrate sprite evaluation into the PPU cycle processing
+        ///
+        /// Sprite work only happens on rendering scanlines. This used to log an
+        /// error when it wasn't on one — but `step()` called it for all 341 dots
+        /// of all 262 scanlines, so the 21 non-rendering lines (240 and 241-260)
+        /// produced 7,161 error logs every frame. `.error` and `.warning` are
+        /// persisted by the unified logging system, unlike `.debug`, so that
+        /// alone accounted for roughly a quarter of the emulator's runtime.
+        ///
+        /// Being on a non-rendering scanline is a normal state, not a fault, so
+        /// the caller now checks `isRenderingScanline` and this stays as a plain
+        /// early return for anyone calling it directly.
         private func updateSpriteEvaluation() {
-            guard (scanline >= 0 && scanline < 240) || scanline == 261 else {
-                emuLogger.error("PPU's `updateSpriteEvaluation()` called outside visible area! scanline \(self.scanline), cycle \(self.cycle)")
-                return
-            }
+            guard isRenderingScanline else { return }
             
             if cycle == 257 {
                 // Start of sprite evaluation for next scanline
