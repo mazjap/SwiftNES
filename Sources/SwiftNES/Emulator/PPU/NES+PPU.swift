@@ -25,7 +25,9 @@ extension NES {
                 memoryManager: memoryManager,
                 ctrl: .init(rawValue: 0),
                 mask: .init(rawValue: 0),
-                status: .vblank,
+                // `reset(cartridge:)` below clears status anyway; seeding vblank
+                // here only made the starting state look deliberate when it wasn't
+                status: .init(rawValue: 0),
                 oamAddr: 0,
                 scroll: 0,
                 addr: 0
@@ -129,12 +131,36 @@ extension NES {
                 }
             }
         }
-        
+        /// Returns the PPU to its power-on state.
+        ///
+        /// This is reached both from `init` and from `NES.load(cartridge:)`, so it
+        /// has to put the chip at a known position in the frame, not just clear
+        /// the fetch scaffolding.
+        ///
+        /// PPUSTATUS is cleared here. Actual Hardware leaves it unchanged across a
+        /// reset but clears it at power-on, and since this method serves as power-on it
+        /// takes the power-on behavior. Hopefully that doesn't cause issues.
+        /// `Registers.reset()` leaves PPUSTATUS alone, like actual hardware.
+        ///
+        /// Note VRAM, OAM and palette RAM are intentionally not cleared.
         func reset(cartridge: Cartridge?) {
             registers.reset()
+            registers.status = .init(rawValue: 0)
             memoryManager.reset(cartridge: cartridge)
             
-            bgFetchState.reset()
+            // Frame sequencing
+            cycle = 0
+            scanline = 0
+            frame = 0
+            isOddFrame = false
+            nmiPending = false
+            renderState = .idle
+            
+            // Don't leave the previous cartridge's last frame on screen
+            frameBuffer = FrameBuffer()
+            
+            bgFetchState = BackgroundFetchState()
+            
             secondaryOAM.clear()
             for i in 0..<spriteData.count {
                 spriteData[i].reset()
