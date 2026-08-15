@@ -623,9 +623,6 @@ extension NES {
             // Determine sprite height based on current sprite size flag
             let spriteHeight = registers.ctrl.contains(.spriteSize) ? 16 : 8
             
-            // Sprite overflow flag starts cleared
-            registers.status.remove(.spriteOverflow)
-            
             // Evaluate all 64 sprites in primary OAM
             var spriteCount = 0
             var n = 0 // Primary OAM index (0-255)
