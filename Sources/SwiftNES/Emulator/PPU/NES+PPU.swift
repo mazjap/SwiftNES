@@ -6,8 +6,19 @@ extension NES {
         var frame: Int
         var isOddFrame: Bool // Used for skipped cycle on odd frames
         var memoryManager: MMU
-        var nmiPending: Bool
         var triggerNMI: () -> Void
+        
+        /// The NMI output level is (vblank flag AND PPUCTRL NMI enable). The CPU's
+        /// NMI input is edge sensitive, so the line is asserted only on a
+        /// false -> true transition of that level. This single rule covers vblank
+        /// start, enabling NMI part-way through vblank, and re-enabling after a
+        /// toggle, none of which need a special case of their own.
+        private var previousNMIOutputLevel = false
+        
+        /// Set when $2002 is read on the cycle immediately before vblank would be
+        /// set. On hardware the read and the set collide and the flag never gets
+        /// set that frame, so no NMI occurs either.
+        private var suppressVBlankThisFrame = false
         var bgFetchState: BackgroundFetchState
         var frameBuffer: FrameBuffer
         var secondaryOAM: SecondaryOAM
@@ -37,7 +48,6 @@ extension NES {
             self.frame = 0
             self.isOddFrame = false
             self.memoryManager = memoryManager
-            self.nmiPending = false
             self.triggerNMI = triggerNMI
             self.bgFetchState = BackgroundFetchState()
             self.frameBuffer = FrameBuffer()
@@ -54,7 +64,6 @@ extension NES {
             // Pre-render scanline - clear VBlank, sprite 0 hit, sprite overflow, and pending nmi interrupt
             if scanline == 261 && cycle == 1 {
                 registers.status.remove([.vblank, .sprite0Hit, .spriteOverflow])
-                nmiPending = false
             }
             
             // Update VRAM address registers during rendering
@@ -101,18 +110,22 @@ extension NES {
             }
             
             // Start of VBlank (scanline 241)
-            if scanline == 241 {
-                if cycle == 1 {
-                    renderState = .idle
+            if scanline == 241 && cycle == 1 {
+                renderState = .idle
+                
+                // A $2002 read on the cycle before this one collides with the flag
+                // being set, and the flag loses — it never gets set this frame.
+                if !suppressVBlankThisFrame {
                     registers.status.insert(.vblank)
-                    outputFrame()
-                    // Don't trigger NMI yet, just set pending
-                    nmiPending = true
-                } else if cycle == 3 && nmiPending && registers.ctrl.contains(.generateNMI) {
-                    // Now actually trigger the NMI if it wasn't suppressed
-                    triggerNMI()
                 }
+                suppressVBlankThisFrame = false
+                
+                outputFrame()
             }
+            
+            // The NMI line is sampled once per cycle; no register write or vblank
+            // transition needs to trigger it explicitly.
+            pollNMILine()
             
             // Advance PPU state
             cycle += 1
@@ -153,8 +166,9 @@ extension NES {
             scanline = 0
             frame = 0
             isOddFrame = false
-            nmiPending = false
             renderState = .idle
+            previousNMIOutputLevel = false
+            suppressVBlankThisFrame = false
             
             // Don't leave the previous cartridge's last frame on screen
             frameBuffer = FrameBuffer()
@@ -187,13 +201,7 @@ extension NES {
             
             let isRenderingActive = (scanline >= 0 && scanline < 240) && (registers.mask.contains(.showBackground) || registers.mask.contains(.showSprites))
             
-            // Special handling for PPUCTRL (NMI generation)
-            if register == 0x00 {
-                writeControl(value)
-            } else {
-                // Standard register write
-                registers.write(value, to: register)
-            }
+            registers.write(value, to: register)
             
             // Handle mid-frame register effects
             guard isRenderingActive else { return }
@@ -409,29 +417,35 @@ extension NES {
         
         /// Handle PPUSTATUS register read with proper NMI timing
         private func readStatus() -> UInt8 {
+            // Reading on the cycle immediately before vblank would be set races with
+            // the set and wins: the flag never gets set this frame, and with it no
+            // NMI. Note this is cycle 0 only — reading a cycle or two *after* the flag
+            // is set does not retroactively suppress the NMI, it has already fired.
+            if scanline == 241 && cycle == 0 {
+                suppressVBlankThisFrame = true
+            }
+            
             let currentStatus = registers.status.readAndClear()
             registers.writeToggle = false
-            
-            // If reading status exactly at VBlank set (race condition),
-            // prevent NMI from occurring this frame by clearing the pending flag
-            if scanline == 241 && cycle <= 3 {
-                nmiPending = false
-            }
             
             return currentStatus
         }
         
-        /// Handle PPUCTRL register write with proper NMI timing
-        private func writeControl(_ value: UInt8) {
-            let oldNMIEnabled = registers.ctrl.contains(.generateNMI)
-            registers.ctrl.rawValue = value
+        /// Samples the NMI output level and asserts the line on a rising edge.
+        ///
+        /// Called once per cycle. Replaces the two ad-hoc trigger sites this used to
+        /// have — a hardcoded fire at scanline 241 cycle 3, and a second fire inside
+        /// the PPUCTRL write path. Those could both run for the same vblank, so
+        /// enabling NMI at cycle 2 of scanline 241 raised the line twice.
+        private func pollNMILine() {
+            let level = registers.status.contains(.vblank)
+            && registers.ctrl.contains(.generateNMI)
             
-            // If NMI enabled during VBlank period and previously disabled,
-            // and VBlank flag is set, trigger an NMI immediately
-            if !oldNMIEnabled && registers.ctrl.contains(.generateNMI) &&
-                registers.status.contains(.vblank) && nmiPending {
+            if level && !previousNMIOutputLevel {
                 triggerNMI()
             }
+            
+            previousNMIOutputLevel = level
         }
         
         /// Shifts all background registers by one bit
