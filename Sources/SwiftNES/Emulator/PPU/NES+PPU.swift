@@ -474,8 +474,11 @@ extension NES {
                 return 0
             }
             
+            // Cycles 1...256 produce pixels x = 0...255
+            let x = cycle - 1
+            
             // If we're in the left 8 pixels and left clipping is enabled, return transparent
-            if cycle < 8 && !registers.mask.contains(.showBackgroundLeft8Pixels) {
+            if x < 8 && !registers.mask.contains(.showBackgroundLeft8Pixels) {
                 return 0
             }
             
@@ -513,6 +516,11 @@ extension NES {
                 return
             }
             
+            // Cycles 1...256 produce pixels x = 0...255. Every position test below is
+            // written against x rather than `cycle`, because the masks and the
+            // sprite 0 hit rule are all defined in screen coordinates.
+            let x = cycle - 1
+            
             // Get the background pixel
             let bgPixel = getBackgroundPixel()
             let bgPaletteIndex = bgPixel & 0x0F // 4 bits: palette entry within a palette
@@ -529,7 +537,7 @@ extension NES {
             //
             // `getColorIndex()` already returns nil for an inactive unit, a unit
             // still counting down its X position, and a transparent pixel.
-            if registers.mask.contains(.showSprites) && (cycle > 8 || registers.mask.contains(.showSpritesLeft8Pixels)) {
+            if registers.mask.contains(.showSprites) && (x >= 8 || registers.mask.contains(.showSpritesLeft8Pixels)) {
                 // Lowest OAM index wins, so the first opaque pixel takes the dot
                 for i in 0..<spriteData.count {
                     guard let colorIndex = spriteData[i].getColorIndex() else { continue }
@@ -545,7 +553,7 @@ extension NES {
                     
                     // Check if this is sprite 0 for hit detection
                     if spriteData[i].isSprite0 && bgIsOpaque &&
-                        cycle != 255 && // No sprite 0 hit on last visible pixel
+                        x != 255 && // No sprite 0 hit on last visible pixel
                         registers.mask.contains(.showBackground) {
                         // Sprite 0 hit occurs when a non-zero pixel of sprite 0 overlaps
                         // with a non-zero pixel of the background
@@ -575,13 +583,12 @@ extension NES {
             
             // Sprite 0 hit detection (don't set if within the left 8 pixels and clipping is enabled)
             if isSpriteZeroHit &&
-                !(cycle <= 8 && !registers.mask.contains(.showSpritesLeft8Pixels)) &&
+                !(x < 8 && !registers.mask.contains(.showSpritesLeft8Pixels)) &&
                 !registers.status.contains(.sprite0Hit) {
                 registers.status.insert(.sprite0Hit)
             }
             
             // Determine the final pixel color
-            let x = cycle - 1
             let y = scanline
             var paletteIndex: UInt8
             
