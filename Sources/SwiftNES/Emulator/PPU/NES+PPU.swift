@@ -867,35 +867,24 @@ extension NES {
         /// - Parameter color: The original RGB color
         /// - Returns: The modified color with emphasis applied
         private func applyColorEmphasis(_ color: UInt32) -> UInt32 {
-            // If no emphasis bits are set, return the original color
-            if !registers.mask.contains([.emphasizeRed, .emphasizeGreen, .emphasizeBlue]) {
-                return color
+            let emphasisBits: Registers.PPUMask = [.emphasizeRed, .emphasizeGreen, .emphasizeBlue]
+            
+            guard !registers.mask.isDisjoint(with: emphasisBits) else { return color }
+            
+            let emphasizeRed = registers.mask.contains(.emphasizeRed)
+            let emphasizeGreen = registers.mask.contains(.emphasizeGreen)
+            let emphasizeBlue = registers.mask.contains(.emphasizeBlue)
+            
+            // Real hardware attenuates by roughly 15-20%
+            func attenuate(_ value: UInt32, _ shouldAttenuate: Bool) -> UInt32 {
+                shouldAttenuate ? UInt32(Float(value) * 0.8) : value
             }
             
-            // Extract RGB components
-            let r = (color >> 16) & 0xFF
-            let g = (color >> 8) & 0xFF
-            let b = color & 0xFF
+            let r = attenuate((color >> 16) & 0xFF, emphasizeGreen || emphasizeBlue)
+            let g = attenuate((color >> 8) & 0xFF, emphasizeRed || emphasizeBlue)
+            let b = attenuate(color & 0xFF, emphasizeRed || emphasizeGreen)
             
-            // Apply emphasis - the real hardware attenuates the non-emphasized colors by about 15-20%
-            var newR = r
-            var newG = g
-            var newB = b
-            
-            if !registers.mask.contains(.emphasizeRed) {
-                newR = UInt32(Float(r) * 0.8)
-            }
-            
-            if !registers.mask.contains(.emphasizeGreen) {
-                newG = UInt32(Float(g) * 0.8)
-            }
-            
-            if !registers.mask.contains(.emphasizeBlue) {
-                newB = UInt32(Float(b) * 0.8)
-            }
-            
-            // Combine components back into a single color
-            return (newR << 16) | (newG << 8) | newB
+            return (r << 16) | (g << 8) | b
         }
         
         private static let masterPalette: [UInt32] = [
