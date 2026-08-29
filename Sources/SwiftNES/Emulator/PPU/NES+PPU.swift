@@ -129,18 +129,26 @@ extension NES {
             
             // Advance PPU state
             cycle += 1
-            if cycle > 340 {
+            
+            // On odd frames with rendering enabled the pre-render scanline runs one
+            // cycle short: (261, 339) jumps straight to (0, 0), so cycle 340 of the
+            // pre-render line never happens.
+            let renderingEnabled = registers.mask.contains(.showBackground)
+            || registers.mask.contains(.showSprites)
+            
+            if scanline == 261 && cycle == 340 && isOddFrame && renderingEnabled {
+                cycle = 0
+                scanline = 0
+                frame &+= 1
+                isOddFrame = !isOddFrame
+            } else if cycle > 340 {
                 cycle = 0
                 scanline += 1
+                
                 if scanline > 261 {
                     scanline = 0
                     frame &+= 1
                     isOddFrame = !isOddFrame
-                    
-                    // Skip cycle 0 on odd frames when rendering is enabled
-                    if isOddFrame && (registers.mask.contains(.showBackground) || registers.mask.contains(.showSprites)) {
-                        cycle = 1
-                    }
                 }
             }
         }
