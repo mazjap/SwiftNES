@@ -97,10 +97,14 @@ extension NES {
                         // At the end of scanline, increment Y position
                         incrementVerticalPosition()
                     }
-                } else if cycle <= 336 {
-                    // Sprite fetches (257-320, driven by updateSpriteEvaluation)
-                    // then the background prefetch for the next scanline (321-336)
-                    renderState = .prefetch
+                } else {
+                    // 257-320 sprite fetches (driven by updateSpriteEvaluation),
+                    // 321-336 background prefetch for the next scanline,
+                    // 337-340 the two dummy nametable fetches that close the line
+                    if cycle <= 336 {
+                        renderState = .prefetch
+                    }
+                    
                     runBackgroundPrefetch()
                 }
             }
@@ -312,9 +316,16 @@ extension NES {
         }
         
         /// Updates the VRAM address registers during active rendering
+        ///
+        /// `isRenderingScanline` matters as much as the mask here. Most games leave
+        /// rendering enabled in PPUMASK during vblank and do their VRAM updates
+        /// through $2007 then; without the scanline check the cycle 257 copy fired on
+        /// every vblank scanline and reset the low bits of `v` mid-burst, so a run of
+        /// writes kept looping back over the same few bytes.
         private func updateAddressDuringRendering() {
-            // Only update if rendering is enabled
-            guard registers.mask.contains(.showBackground) || registers.mask.contains(.showSprites) else { return }
+            guard isRenderingScanline,
+                  registers.mask.contains(.showBackground) || registers.mask.contains(.showSprites)
+            else { return }
             
             // At cycle 257, copy horizontal bits from t to v
             if cycle == 257 {
@@ -333,20 +344,29 @@ extension NES {
             }
         }
         
-        /// Fetches the first two tiles of the *next* scanline (dots 321-336),
+        /// Fetches the first two tiles of the *next* scanline (cycles 321-336),
         /// together with the shifts and coarse-X increments that belong to them.
         private func runBackgroundPrefetch() {
-            guard cycle >= 321 && cycle <= 336 else { return }
-            
-            if cycle >= 329 {
-                shiftBackgroundRegisters()
-            }
-            
-            fetchBackgroundTile()
-            
-            // At 328 and 336, we need to increment the horizontal position
-            if cycle == 328 || cycle == 336 {
-                incrementHorizontalPosition()
+            if cycle >= 321 && cycle <= 336 {
+                if cycle >= 329 {
+                    shiftBackgroundRegisters()
+                }
+                
+                fetchBackgroundTile()
+                
+                // At 328 and 336, we need to increment the horizontal position
+                if cycle == 328 || cycle == 336 {
+                    incrementHorizontalPosition()
+                }
+            } else if cycle == 338 || cycle == 340 {
+                // Two dummy nametable fetches close out the scanline. Nothing
+                // consumes the bytes, but they are real bus activity — mappers that
+                // watch PPU reads (MMC5, and MMC3's A12 counter) can see them, so
+                // they have to happen even though they feed nothing here.
+                guard registers.mask.contains(.showBackground)
+                        || registers.mask.contains(.showSprites) else { return }
+                
+                _ = memoryManager.read(from: 0x2000 | (registers.currentVramAddress & 0x0FFF))
             }
         }
         
@@ -358,8 +378,11 @@ extension NES {
                 return
             }
             
-            // Only fetch during active rendering
-            guard registers.mask.contains(.showBackground) else { return }
+            // The fetch machinery runs whenever rendering is enabled, not only when
+            // the background is being displayed — with the background hidden the
+            // pixels are suppressed at output time, but the reads still happen.
+            guard registers.mask.contains(.showBackground)
+                    || registers.mask.contains(.showSprites) else { return }
             
             // Get exact cycle within the 8-cycle sequence
             let fetchCycle = cycle & 0x7
@@ -458,7 +481,8 @@ extension NES {
         
         /// Shifts all background registers by one bit
         private func shiftBackgroundRegisters() {
-            guard registers.mask.contains(.showBackground) else {
+            guard registers.mask.contains(.showBackground)
+                    || registers.mask.contains(.showSprites) else {
                 return
             }
             
@@ -756,6 +780,12 @@ extension NES {
             }
             
             if cycle >= 257 && cycle <= 320 {
+                // Hardware holds OAMADDR at 0 for the whole sprite tile loading
+                // window. A game that leaves OAMADDR part-way into OAM and reads
+                // $2004 during rendering sees entry 0, not wherever it left the
+                // pointer.
+                registers.oamAddr = 0
+                
                 // Sprite pattern fetching (cycles 257-320)
                 // Each sprite takes 8 cycles to fetch data
                 fetchSpriteData()
