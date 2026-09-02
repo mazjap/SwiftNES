@@ -387,14 +387,12 @@ extension NES {
             // Get exact cycle within the 8-cycle sequence
             let fetchCycle = cycle & 0x7
             
+            // Each fetch spans two cycles; the data only lands on the second of
+            // them, so only the even cycles do anything here.
             switch fetchCycle {
-            case 1: // Nametable fetch
-                bgFetchState.operation = .nametable
             case 2: // Second cycle of nametable fetch - data becomes available
                 let nametableAddr = 0x2000 | (registers.currentVramAddress & 0x0FFF)
                 bgFetchState.nametableByte = memoryManager.read(from: nametableAddr)
-            case 3: // Attribute fetch
-                bgFetchState.operation = .attribute
             case 4: // Second cycle of attribute fetch - data becomes available
                 let v = registers.currentVramAddress
                 let attributeAddr = 0x23C0 | (v & 0x0C00) | ((v >> 4) & 0x38) | ((v >> 2) & 0x07)
@@ -403,13 +401,9 @@ extension NES {
                 // Calculate attribute bits
                 let shift = ((v >> 4) & 4) | (v & 2)
                 bgFetchState.tileAttribute = (bgFetchState.attributeByte >> shift) & 0x3
-            case 5: // Pattern low byte fetch
-                bgFetchState.operation = .patternLow
             case 6: // Second cycle of pattern low byte fetch - data becomes available
                 let patternAddr = registers.ctrl.backgroundPatternTableBaseAddress | (UInt16(bgFetchState.nametableByte) << 4) | ((registers.currentVramAddress >> 12) & 7)
                 bgFetchState.patternLowByte = memoryManager.read(from: patternAddr)
-            case 7: // Pattern high byte fetch
-                bgFetchState.operation = .patternHigh
             case 0: // Second cycle of pattern high byte (cycle 8/0) - data becomes available
                 let patternAddr = registers.ctrl.backgroundPatternTableBaseAddress | (UInt16(bgFetchState.nametableByte) << 4) | ((registers.currentVramAddress >> 12) & 7) | 8
                 bgFetchState.patternHighByte = memoryManager.read(from: patternAddr)
@@ -417,7 +411,7 @@ extension NES {
                 // Load shift registers at end of sequence
                 loadBackgroundShiftRegisters()
             default:
-                break // Should never happen
+                break // First cycle of each fetch; the read completes next cycle
             }
         }
         
@@ -801,21 +795,13 @@ extension NES {
             let spriteIndex = (cycle - 257) / 8
             let fetchCycle = (cycle - 257) % 8
             
-            // Update state to match the current cycle
-            spriteFetchState.currentSprite = spriteIndex
-            spriteFetchState.fetchCycle = fetchCycle
-            
             switch fetchCycle {
             case 0: // First cycle - Garbage NT fetch, load sprite attributes
-                spriteFetchState.operation = .garbageNT
-                
                 // If we have this sprite in secondary OAM, load its data for fetching
                 if spriteIndex < secondaryOAM.sprites.count {
                     let sprite = secondaryOAM.sprites[spriteIndex]
-                    spriteFetchState.tileIndex = sprite.tile
                     spriteFetchState.attributes = sprite.attributes
                     spriteFetchState.xPosition = sprite.x
-                    spriteFetchState.yPosition = sprite.y
                     spriteFetchState.isSprite0 = spriteIndex == 0 && secondaryOAM.sprite0Present
                     
                     // Calculate which row of the sprite we need
@@ -832,8 +818,6 @@ extension NES {
                             spriteRow = 7 - spriteRow
                         }
                     }
-                    
-                    spriteFetchState.spriteRowY = spriteRow
                     
                     // Calculate pattern table address
                     if registers.ctrl.contains(.spriteSize) {
@@ -857,28 +841,11 @@ extension NES {
                     }
                 }
                 
-            case 1: // Second cycle - Garbage NT fetch completes
-                // The real PPU doesn't do anything useful with this data
-                spriteFetchState.operation = .garbageNT
-                
-            case 2: // Third cycle - Garbage AT fetch
-                spriteFetchState.operation = .garbageAT
-                
-            case 3: // Fourth cycle - Garbage AT fetch completes
-                // The real PPU doesn't do anything useful with this data
-                spriteFetchState.operation = .garbageAT
-                
-            case 4: // Fifth cycle - Pattern table low byte fetch
-                spriteFetchState.operation = .patternLow
-                
             case 5: // Sixth cycle - Pattern table low byte fetch completes
                 // Read the low byte of the pattern
                 if spriteIndex < secondaryOAM.sprites.count {
                     spriteFetchState.patternLowByte = memoryManager.read(from: spriteFetchState.patternTableAddress)
                 }
-                
-            case 6: // Seventh cycle - Pattern table high byte fetch
-                spriteFetchState.operation = .patternHigh
                 
             case 7: // Eighth cycle - Pattern table high byte fetch completes, load to sprite shift registers
                 // Read the high byte of the pattern
@@ -897,7 +864,10 @@ extension NES {
                 }
                 
             default:
-                break // Should never happen
+                // Cycles 1-4 and 6 cover the garbage nametable/attribute fetches
+                // and the first half of the pattern reads. The PPU discards all
+                // of it, so there is nothing to model.
+                break
             }
         }
         
@@ -925,7 +895,10 @@ extension NES {
             return (r << 16) | (g << 8) | b
         }
         
-        private static let masterPalette: [UInt32] = [
+        /// The 2C02 master palette, indexed by the 6-bit value stored in palette
+        /// RAM. Exposed so a renderer that uploads palette indices to the GPU can
+        /// do the lookup itself rather than consuming pre-resolved RGB.
+        public static let masterPalette: [UInt32] = [
             0x626262, 0x001FB2, 0x2404C8, 0x5200B2, // 0x00-0x03
             0x730076, 0x800024, 0x730B00, 0x522800, // 0x04-0x07
             0x244400, 0x005700, 0x005C00, 0x005324, // 0x08-0x0B
@@ -951,13 +924,5 @@ extension NES.PPU {
     
     public func setFrameCallback(_ callback: @escaping (Result<Frame, Error>) -> Void) {
         frameCallback = callback
-    }
-    
-    public func frameSequence() -> AsyncThrowingStream<Frame, Error> {
-        AsyncThrowingStream { continuation in
-            setFrameCallback { result in
-                continuation.yield(with: result)
-            }
-        }
     }
 }

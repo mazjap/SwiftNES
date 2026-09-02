@@ -6,10 +6,6 @@ extension NES.PPU {
         case visible     // Cycles 1-256: Render pixels, fetch tiles/sprites
         case spriteEval  // Cycles 257-320: Sprite evaluation for next line
         case prefetch    // Cycles 321-336: Prefetch first two tiles of next line
-        case fetchNT     // Fetching nametable byte
-        case fetchAT     // Fetching attribute table byte
-        case fetchPTLow  // Fetching pattern table low byte
-        case fetchPTHigh // Fetching pattern table high byte
         case idle        // During VBlank or when rendering is disabled
     }
     
@@ -54,14 +50,6 @@ extension NES.PPU {
 // MARK: - Internal Types
 
 extension NES.PPU {
-    /// Tracks current fetch operation during the 8-cycle pattern
-    enum FetchOperation {
-        case nametable
-        case attribute
-        case patternLow
-        case patternHigh
-    }
-    
     struct FrameBuffer {
         private var pixels: [UInt32]
         
@@ -81,9 +69,6 @@ extension NES.PPU {
     
     /// State needed for background tile fetching
     struct BackgroundFetchState {
-        // Current fetch operation
-        var operation: FetchOperation = .nametable
-        
         // Temporary data for current tile fetch
         var nametableByte: UInt8 = 0
         var attributeByte: UInt8 = 0
@@ -103,13 +88,8 @@ extension NES.PPU {
         var attributeShiftLow: UInt16 = 0
         var attributeShiftHigh: UInt16 = 0
         
-        // Attribute latches for next tile
-        var attributeLatchLow: Bool = false
-        var attributeLatchHigh: Bool = false
-        
         // Reset back to initial state
         mutating func reset() {
-            operation = .nametable
             nametableByte = 0
             attributeByte = 0
             patternLowByte = 0
@@ -234,40 +214,21 @@ extension NES.PPU {
         }
     }
     
-    enum SpriteFetchOperation {
-        case garbageNT // Garbage nametable fetch
-        case garbageAT // Garbage attribute fetch (not used but included for completeness)
-        case patternLow // Sprite pattern table low byte
-        case patternHigh // Sprite pattern table high byte
-    }
-    
-    /// State tracking for sprite fetching during cycles 257-320
+    /// Carries one sprite's data across the eight cycles of its fetch, from the
+    /// cycle that latches it out of secondary OAM to the cycle that hands the
+    /// finished unit to `spriteData`.
     struct SpriteFetchState {
-        var currentSprite: Int = 0 // Current sprite being fetched (0-7)
-        var operation: SpriteFetchOperation = .garbageNT  // Current fetch operation
-        var fetchCycle: Int = 0 // Cycle within the current sprite fetch (0-7)
-        
-        // Temporary data for the current sprite being fetched
-        var tileIndex: UInt8 = 0
         var attributes: UInt8 = 0
         var xPosition: UInt8 = 0
-        var yPosition: UInt8 = 0
-        var spriteRowY: Int = 0 // Which row of the tile we need
-        var isSprite0: Bool = false // Whether this is sprite 0
+        var isSprite0: Bool = false
         var patternTableAddress: UInt16 = 0 // Base address in pattern table
         var patternLowByte: UInt8 = 0 // Low byte of pattern data
         var patternHighByte: UInt8 = 0 // High byte of pattern data
         
         /// Reset the sprite fetch state for a new sprite evaluation phase
         mutating func reset() {
-            currentSprite = 0
-            operation = .garbageNT
-            fetchCycle = 0
-            tileIndex = 0
             attributes = 0
             xPosition = 0
-            yPosition = 0
-            spriteRowY = 0
             isSprite0 = false
             patternTableAddress = 0
             patternLowByte = 0
