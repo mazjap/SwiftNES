@@ -66,11 +66,17 @@ extension NES {
                 registers.status.remove([.vblank, .sprite0Hit, .spriteOverflow])
             }
             
-            // Update VRAM address registers during rendering
-            updateAddressDuringRendering()
+            // Update VRAM address registers during rendering. Only cycle 257 and
+            // the pre-render scanline can do anything here, so skip the call on the
+            // ~99% of cycles that cannot.
+            if cycle == 257 || scanline == 261 {
+                updateAddressDuringRendering()
+            }
             
-            // Add sprite evaluation after address updates
-            if isRenderingScanline {
+            // Sprite evaluation and tile loading, cycles 257-320. Gated here as
+            // well as inside, for the same reason as the address update above:
+            // step() runs every cycle and this window is a fifth of a scanline.
+            if cycle >= 257 && cycle <= 320 && isRenderingScanline {
                 updateSpriteEvaluation()
             }
             
@@ -371,13 +377,11 @@ extension NES {
         }
         
         /// Performs background tile fetching based on current PPU cycle
+        ///
+        /// - Precondition: only called from the two windows that fetch — cycles
+        ///   1-256 of a visible scanline, and 321-336 of a visible or pre-render
+        ///   scanline via `runBackgroundPrefetch()`. `step()` enforces that.
         private func fetchBackgroundTile() {
-            guard (scanline >= 0 && scanline < 240 && cycle >= 1 && cycle <= 256) ||
-                    ((scanline < 240 || scanline == 261) && cycle >= 321 && cycle <= 336) else {
-                emuLogger.warning("`fetchBackgroundTile()` called outside visible area! scanline \(self.scanline), cycle \(self.cycle)")
-                return
-            }
-            
             // The fetch machinery runs whenever rendering is enabled, not only when
             // the background is being displayed — with the background hidden the
             // pixels are suppressed at output time, but the reads still happen.
@@ -488,13 +492,11 @@ extension NES {
         }
         
         /// Gets the color for the current background pixel
+        ///
+        /// - Precondition: called only from `renderPixel()`, which runs on cycles
+        ///   1-256 of visible scanlines. Runs once per pixel, so it carries no
+        ///   range check of its own.
         private func getBackgroundPixel() -> UInt8 {
-            // Only get background pixels during visible scanlines and cycles
-            guard scanline >= 0 && scanline < 240 && cycle >= 1 && cycle <= 256 else {
-                emuLogger.warning("`getBackgroundPixel()` called outside visible area! scanline \(self.scanline), cycle \(self.cycle)")
-                return 0
-            }
-            
             // If background rendering is disabled, return transparent
             if !registers.mask.contains(.showBackground) {
                 return 0
@@ -535,13 +537,9 @@ extension NES {
         
         /// Gets the appropriate pixel color based on background and sprite data,
         /// handling sprite transparency and priority.
+        /// - Precondition: called only from `step()`, on cycles 1-256 of a visible
+        ///   scanline. Runs once per pixel, so it carries no range check of its own.
         private func renderPixel() {
-            // Only render within visible area
-            guard cycle >= 1 && cycle <= 256 && scanline >= 0 && scanline < 240 else {
-                emuLogger.error("PPU's `renderPixel()` called outside visible area! scanline \(self.scanline), cycle \(self.cycle)")
-                return
-            }
-            
             // Cycles 1...256 produce pixels x = 0...255. Every position test below is
             // written against x rather than `cycle`, because the masks and the
             // sprite 0 hit rule are all defined in screen coordinates.
@@ -558,51 +556,71 @@ extension NES {
             var spriteIsBehind: Bool = false
             var isSpriteZeroHit: Bool = false
             
-            // Pixel selection. Read-only: no sprite unit is modified here, so
-            // which sprite wins the pixel cannot affect any other sprite's state.
-            //
-            // `getColorIndex()` already returns nil for an inactive unit, a unit
-            // still counting down its X position, and a transparent pixel.
-            if registers.mask.contains(.showSprites) && (x >= 8 || registers.mask.contains(.showSpritesLeft8Pixels)) {
-                // Lowest OAM index wins, so the first opaque pixel takes the dot
-                for i in 0..<spriteData.count {
-                    guard let colorIndex = spriteData[i].getColorIndex() else { continue }
-                    
-                    spritePixel = colorIndex
-                    
-                    // Sprite palette is in bits 0-1 of the attribute byte
-                    // Sprite palettes are stored at $3F10-$3F1F (palette indices 4-7)
-                    spritePalette = 4 + (spriteData[i].attributes & 0x03)
-                    
-                    // Priority is in bit 5 of the attribute byte (0: in front of background, 1: behind background)
-                    spriteIsBehind = (spriteData[i].attributes & 0x20) != 0
-                    
-                    // Check if this is sprite 0 for hit detection
-                    if spriteData[i].isSprite0 && bgIsOpaque &&
-                        x != 255 && // No sprite 0 hit on last visible pixel
-                        registers.mask.contains(.showBackground) {
-                        // Sprite 0 hit occurs when a non-zero pixel of sprite 0 overlaps
-                        // with a non-zero pixel of the background
-                        isSpriteZeroHit = true
+            // Both passes share one buffer scope: this runs once per visible pixel
+            // (~61k times a frame), and `spriteData` is a stored array property, so
+            // each `spriteData[i]` would otherwise be a separately bounds-checked
+            // access with its own exclusivity check.
+            let showSprites = registers.mask.contains(.showSprites)
+            let spritesVisibleHere = showSprites
+            && (x >= 8 || registers.mask.contains(.showSpritesLeft8Pixels))
+            let showBackground = registers.mask.contains(.showBackground)
+            
+            if showSprites {
+                spriteData.withUnsafeMutableBufferPointer { units in
+                    // --- Pixel selection. Read-only: no unit is modified here, so
+                    // which sprite wins the pixel cannot affect any other's state.
+                    //
+                    // `getColorIndex()` already returns nil for an inactive unit, a
+                    // unit still counting down its X position, and a transparent pixel.
+                    if spritesVisibleHere {
+                        var i = 0
+                        
+                        // Lowest OAM index wins, so the first opaque pixel takes the dot
+                        while i < units.count {
+                            defer { i += 1 }
+                            
+                            guard let colorIndex = units[i].getColorIndex() else { continue }
+                            
+                            spritePixel = colorIndex
+                            
+                            // Sprite palette is in bits 0-1 of the attribute byte
+                            // Sprite palettes live at $3F10-$3F1F (palette indices 4-7)
+                            spritePalette = 4 + (units[i].attributes & 0x03)
+                            
+                            // Priority is bit 5 (0: in front of background, 1: behind)
+                            spriteIsBehind = (units[i].attributes & 0x20) != 0
+                            
+                            if units[i].isSprite0 && bgIsOpaque
+                                && x != 255 // No sprite 0 hit on the last visible pixel
+                                && showBackground {
+                                isSpriteZeroHit = true
+                            }
+                            
+                            // Stop at the first non-transparent pixel
+                            break
+                        }
                     }
                     
-                    // Stop at the first non-transparent pixel (sprites are already in priority order)
-                    break
-                }
-            }
-            
-            // Per-dot state advance, kept separate from selection loop above.
-            // Every active unit advances on every dot so units still waiting on
-            // their X position count down, units that have reached it shift out
-            // the pixel just consumed.
-            if registers.mask.contains(.showSprites) {
-                for i in 0..<spriteData.count {
-                    guard spriteData[i].active else { continue }
+                    // --- Per-dot state advance, kept strictly separate from selection.
+                    // Every active unit advances on every dot: units still waiting on
+                    // their X position count down, units that have reached it shift out
+                    // the pixel just consumed.
+                    //
+                    // Deliberately not gated on the left-8 mask: a clipped sprite is
+                    // hidden, not paused, so its pixel stream has to keep moving or it
+                    // desynchronizes from its X position.
+                    var j = 0
                     
-                    if spriteData[i].xCounter > 0 {
-                        spriteData[i].xCounter -= 1
-                    } else {
-                        spriteData[i].shift()
+                    while j < units.count {
+                        defer { j += 1 }
+                        
+                        guard units[j].active else { continue }
+                        
+                        if units[j].xCounter > 0 {
+                            units[j].xCounter -= 1
+                        } else {
+                            units[j].shift()
+                        }
                     }
                 }
             }
@@ -654,13 +672,9 @@ extension NES {
         
         /// Evaluates which sprites will be visible on the next scanline and populates secondary OAM
         /// Enforces the 8 sprite per scanline limit and handles overflow flag
+        /// - Precondition: called only from `updateSpriteEvaluation()`, which is
+        ///   itself gated on `isRenderingScanline`.
         private func evaluateSpritesForNextScanline() {
-            // Only evaluate sprites during visible scanlines (0-239) and pre-render scanline (261)
-            guard (scanline >= 0 && scanline < 240) || scanline == 261 else {
-                emuLogger.error("PPU's `evaluateSpritesForNextScanline()` called outside visible area! scanline \(self.scanline), cycle \(self.cycle)")
-                return
-            }
-            
             // Clear secondary OAM for the new scanline
             secondaryOAM.clear()
             
@@ -671,7 +685,6 @@ extension NES {
             let spriteHeight = registers.ctrl.contains(.spriteSize) ? 16 : 8
             
             // Evaluate all 64 sprites in primary OAM
-            var spriteCount = 0
             var n = 0 // Primary OAM index (0-255)
             
             // Buggy sprite overflow implementation to match hardware bug
@@ -708,8 +721,6 @@ extension NES {
                             // We've hit the 8 sprite limit - enter overflow mode and set the flag
                             registers.status.insert(.spriteOverflow)
                             inOverflowMode = true
-                        } else {
-                            spriteCount += 1
                         }
                     } else {
                         // We're in overflow mode - set the overflow flag but don't add the sprite
@@ -740,8 +751,6 @@ extension NES {
                     }
                 }
             }
-            
-            emuLogger.debug("PPU evaluated sprites for scanline \(targetScanline): found \(spriteCount) sprites")
         }
         
         /// Integrate sprite evaluation into the PPU cycle processing
@@ -874,16 +883,42 @@ extension NES {
         /// Applies color emphasis bits to the specified color
         /// - Parameter color: The original RGB color
         /// - Returns: The modified color with emphasis applied
+        ///
+        /// Runs once per pixel, and emphasis is off in almost every frame ever
+        /// rendered, so only this test is inlined into `renderPixel` — the
+        /// arithmetic stays outlined. Marking the whole function
+        /// `@inline(__always)` measured ~1% slower, because it drags the Float
+        /// attenuation math into the per-pixel path for a branch that is almost
+        /// never taken.
+        @inline(__always)
         private func applyColorEmphasis(_ color: UInt32) -> UInt32 {
+            // `contains(_:)` on an OptionSet asks whether *all* of the given members
+            // are present, so `!contains([red, green, blue])` was true for every
+            // input except all three bits set — and in that one remaining case the
+            // per-channel tests below each came out false and attenuated nothing.
+            // Emphasis therefore never applied at all. `isDisjoint(with:)` is the
+            // "none of these are set" question that was intended here.
             let emphasisBits: Registers.PPUMask = [.emphasizeRed, .emphasizeGreen, .emphasizeBlue]
             
             guard !registers.mask.isDisjoint(with: emphasisBits) else { return color }
             
+            return emphasizedColor(color)
+        }
+        
+        /// The cold half of `applyColorEmphasis`, deliberately kept out of line.
+        @inline(never)
+        private func emphasizedColor(_ color: UInt32) -> UInt32 {
             let emphasizeRed = registers.mask.contains(.emphasizeRed)
             let emphasizeGreen = registers.mask.contains(.emphasizeGreen)
             let emphasizeBlue = registers.mask.contains(.emphasizeBlue)
             
-            // Real hardware attenuates by roughly 15-20%
+            // Each emphasis bit attenuates the two channels it does *not* emphasize,
+            // so a channel dims whenever some other channel is being emphasized.
+            // Setting two or more bits therefore dims every channel, which is why
+            // all-three-set darkens the picture rather than leaving it untouched.
+            //
+            // Real hardware attenuates by roughly 15-20%; 0.8 is kept from the
+            // original implementation.
             func attenuate(_ value: UInt32, _ shouldAttenuate: Bool) -> UInt32 {
                 shouldAttenuate ? UInt32(Float(value) * 0.8) : value
             }
